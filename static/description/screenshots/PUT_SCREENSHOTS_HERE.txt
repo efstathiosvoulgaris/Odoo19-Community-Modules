@@ -1,0 +1,10 @@
+Place screenshot images in this folder.
+Recommended size: 800x500 px, PNG format.
+Name them: screenshot_1.png, screenshot_2.png, etc.
+
+Suggested screenshots:
+1. Ticket list view (showing all statuses/colors)
+2. Ticket form (filled in with parts and labor)
+3. Kanban view (grouped by status)
+4. Printed receipt example
+5. Invoice created from ticket

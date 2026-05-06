@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="paperformat_service_receipt" model="report.paperformat">
+        <field name="name">Service Receipt 80mm</field>
+        <field name="default" eval="False"/>
+        <field name="format">custom</field>
+        <field name="page_width">80</field>
+        <field name="page_height">297</field>
+        <field name="orientation">Portrait</field>
+        <field name="margin_top">5</field>
+        <field name="margin_bottom">5</field>
+        <field name="margin_left">4</field>
+        <field name="margin_right">4</field>
+        <field name="header_line" eval="False"/>
+        <field name="header_spacing">3</field>
+        <field name="dpi">96</field>
+    </record>
+
+    <record id="action_report_service_receipt" model="ir.actions.report">
+        <field name="name">Service Receipt</field>
+        <field name="model">service.ticket</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">service.report_service_receipt</field>
+        <field name="report_file">service.report_service_receipt</field>
+        <field name="paperformat_id" ref="paperformat_service_receipt"/>
+    </record>
+
+    <template id="report_service_receipt">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <t t-set="parts_total" t-value="sum(o.line_ids.mapped('price_subtotal'))"/>
+                <t t-set="grand_total" t-value="parts_total + o.labor_price"/>
+                <div class="page" style="
+                    font-family: 'DejaVu Sans', Arial, sans-serif;
+                    font-size: 9pt;
+                    width: 72mm;
+                    margin: 0 auto;
+                    color: #000;
+                ">
+                    <!-- ===== HEADER ===== -->
+                    <div style="text-align: center; margin-bottom: 4mm;">
+                        <div style="font-size: 13pt; font-weight: bold;">
+                            <t t-esc="o.env.company.name"/>
+                        </div>
+                        <div style="font-size: 10pt; font-weight: bold; letter-spacing: 2px; margin-top: 2px;">
+                            ΑΠΟΔΕΙΞΗ ΣΕΡΒΙΣ
+                        </div>
+                    </div>
+
+                    <div style="border-top: 1px dashed #000; border-bottom: 1px dashed #000; padding: 2mm 0; margin-bottom: 4mm;">
+                        <table style="width: 100%;">
+                            <tr>
+                                <td>&#916;&#949;&#955;&#964;&#943;&#959;</td>
+                                <td style="text-align: right; font-weight: bold;"><t t-esc="o.name"/></td>
+                            </tr>
+                            <tr>
+                                <td>&#919;&#956;&#949;&#961;&#959;&#956;&#951;&#957;&#943;&#945;</td>
+                                <td style="text-align: right;">
+                                    <t t-esc="o.create_date.strftime('%d/%m/%Y %H:%M') if o.create_date else ''"/>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>&#922;&#945;&#964;&#940;&#963;&#964;&#945;&#963;&#951;</td>
+                                <td style="text-align: right; text-transform: capitalize;">
+                                    <t t-esc="dict(o.fields_get(['state'])['state']['selection']).get(o.state, o.state)"/>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <!-- ===== CUSTOMER ===== -->
+                    <div style="margin-bottom: 4mm;">
+                        <div style="font-weight: bold; text-decoration: underline; margin-bottom: 1mm;">&#928;&#917;&#923;&#913;&#932;&#919;&#931;</div>
+                        <div><t t-esc="o.partner_id.name if o.partner_id else '-'"/></div>
+                        <t t-if="o.phone">
+                            <div>&#932;&#951;&#955;.: <t t-esc="o.phone"/></div>
+                        </t>
+                        <t t-if="o.partner_id and o.partner_id.email">
+                            <div><t t-esc="o.partner_id.email"/></div>
+                        </t>
+                    </div>
+
+                    <!-- ===== DEVICE ===== -->
+                    <div style="margin-bottom: 4mm;">
+                        <div style="font-weight: bold; text-decoration: underline; margin-bottom: 1mm;">&#931;&#933;&#931;&#922;&#917;&#933;&#919;</div>
+                        <t t-if="o.brand_id">
+                            <div>&#924;&#940;&#961;&#954;&#945;: <t t-esc="o.brand_id.name"/></div>
+                        </t>
+                        <t t-if="o.product_model_id">
+                            <div>&#924;&#959;&#957;&#964;&#941;&#955;&#959;: <t t-esc="o.product_model_id.name"/></div>
+                        </t>
+                    </div>
+
+                    <!-- ===== JOB TYPE ===== -->
+                    <t t-if="o.job_type_id">
+                        <div style="margin-bottom: 4mm;">
+                            <div style="font-weight: bold; text-decoration: underline; margin-bottom: 1mm;">&#932;&#933;&#928;&#927;&#931; &#917;&#929;&#915;&#913;&#931;&#921;&#913;&#931;</div>
+                            <div><t t-esc="o.job_type_id.name"/></div>
+                        </div>
+                    </t>
+
+                    <!-- ===== PARTS ===== -->
+                    <t t-if="o.line_ids">
+                        <div style="margin-bottom: 2mm;">
+                            <div style="font-weight: bold; text-decoration: underline; margin-bottom: 1mm;">&#913;&#925;&#932;&#913;&#923;&#923;&#913;&#922;&#932;&#921;&#922;&#913;</div>
+                            <table style="width: 100%; font-size: 8.5pt; border-collapse: collapse;">
+                                <tr style="border-bottom: 1px solid #000;">
+                                    <td style="width: 48%; padding-bottom: 1mm;">&#928;&#961;&#959;&#970;&#972;&#957;</td>
+                                    <td style="width: 12%; text-align: center;">&#928;&#959;&#963;.</td>
+                                    <td style="width: 20%; text-align: right;">&#932;&#953;&#956;&#942;</td>
+                                    <td style="width: 20%; text-align: right;">&#931;&#973;&#957;&#959;&#955;&#959;</td>
+                                </tr>
+                                <t t-foreach="o.line_ids" t-as="line">
+                                    <tr>
+                                        <td style="padding: 1mm 0;"><t t-esc="line.name or line.product_id.name"/></td>
+                                        <td style="text-align: center;"><t t-esc="int(line.quantity) if line.quantity == int(line.quantity) else '%.1f' % line.quantity"/></td>
+                                        <td style="text-align: right;"><t t-esc="'%.2f' % line.price_unit"/></td>
+                                        <td style="text-align: right;"><t t-esc="'%.2f' % line.price_subtotal"/></td>
+                                    </tr>
+                                </t>
+                            </table>
+                        </div>
+                    </t>
+
+                    <!-- ===== TOTALS ===== -->
+                    <div style="border-top: 1px solid #000; padding-top: 2mm; margin-bottom: 4mm;">
+                        <table style="width: 100%; font-size: 9pt;">
+                            <t t-if="o.line_ids">
+                                <tr>
+                                    <td>&#933;&#960;&#959;&#963;&#973;&#957;&#959;&#955;&#959; &#913;&#957;&#964;&#945;&#955;&#955;&#945;&#954;&#964;&#953;&#954;&#974;&#957;</td>
+                                    <td style="text-align: right;"><t t-esc="'%.2f' % parts_total"/></td>
+                                </tr>
+                            </t>
+                            <t t-if="o.labor_price">
+                                <tr>
+                                    <td>&#917;&#961;&#947;&#945;&#963;&#943;&#945;</td>
+                                    <td style="text-align: right;"><t t-esc="'%.2f' % o.labor_price"/></td>
+                                </tr>
+                            </t>
+                        </table>
+                        <table style="width: 100%; font-size: 11pt; font-weight: bold; border-top: 1px dashed #000; margin-top: 1mm; padding-top: 1mm;">
+                            <tr>
+                                <td>TOTAL PRICE Incl TAX 24%</td>
+                                <td style="text-align: right;">
+                                    &#8364;<t t-esc="'%.2f' % grand_total"/>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <!-- ===== TERMS ===== -->
+                    <div style="border-top: 1px dashed #000; padding-top: 3mm; font-size: 7.5pt; text-align: center;">
+                        <div style="font-weight: bold; margin-bottom: 2mm; font-size: 8.5pt;">&#927;&#929;&#927;&#921; &amp; &#928;&#929;&#927;&#933;&#928;&#927;&#920;&#917;&#931;&#917;&#921;&#931;</div>
+                        <div style="text-align: left; line-height: 1.5;">
+                            <b>Δεδομένα (Backup):</b> Είστε αποκλειστικά υπεύθυνοι να έχετε κάνει backup. Η εταιρεία δεν φέρει καμία ευθύνη για τυχόν απώλεια αρχείων.
+                        </div>
+                        <div style="text-align: left; line-height: 1.5; margin-top: 1.5mm;">
+                            <b>Χρέωση Ελέγχου:</b> Υπάρχει ελάχιστη χρέωση διάγνωσης 10&#8364;, την οποία πληρώνετε μόνο αν αποφασίσετε να μην φτιάξετε τη συσκευή ή αν η συσκευή δεν φτιάχνεται. Αν την επισκευάσετε, πληρώνετε μόνο την επισκευή.
+                        </div>
+                        <div style="text-align: left; line-height: 1.5; margin-top: 1.5mm;">
+                            <b>Εγγύηση Επισκευής:</b> Η εγγύηση καλύπτει αυστηρά και μόνο τα ανταλλακτικά που αλλάχτηκαν. Ακυρώνεται αν η συσκευή βραχεί, σπάσει, ή αν σκιστεί το εσωτερικό αυτοκόλλητο εγγύησης.
+                        </div>
+                        <div style="text-align: left; line-height: 1.5; margin-top: 1.5mm;">
+                            <b>Εργοστασιακή Εγγύηση:</b> Η επισκευή ενδέχεται να ακυρώσει την επίσημη εγγύηση του κατασκευαστή (π.χ. Apple). Υπάρχει δυνατότητα προώθησης σε εξουσιοδοτημένο σέρβις, αλλά απαιτεί περισσότερο χρόνο.
+                        </div>
+                        <div style="text-align: left; line-height: 1.5; margin-top: 1.5mm;">
+                            <b>Συσκευές που Βράχηκαν:</b> Εγγύηση 180 ημερών μόνο για τα νέα ανταλλακτικά. Η εταιρεία δεν ευθύνεται για μελλοντικές βλάβες λόγω σταδιακής οξείδωσης από το νερό.
+                        </div>
+                        <div style="text-align: left; line-height: 1.5; margin-top: 1.5mm;">
+                            <b>Εγκατάλειψη Συσκευής:</b> Αν δεν παραλάβετε τη συσκευή σας εντός 90 ημερών, η εταιρεία έχει το δικαίωμα να την ανακυκλώσει ή να την πουλήσει.
+                        </div>
+                        <div style="text-align: left; line-height: 1.5; margin-top: 1.5mm;">
+                            <b>Περιορισμός Ευθύνης:</b> Αν η συσκευή δεν μπορεί να φτιαχτεί ή παρουσιάσει νέα βλάβη λόγω αρχικής φθοράς, θα επιστραφεί στην κατάσταση που βρίσκεται. Το ανώτατο όριο ευθύνης είναι ίσο με το ποσό που καταβλήθηκε για την επισκευή.
+                        </div>
+                    </div>
+
+                    <div style="text-align: center; margin-top: 4mm; font-size: 8pt;">
+                        *** &#931;&#945;&#962; &#949;&#965;&#967;&#945;&#961;&#953;&#963;&#964;&#959;&#973;&#956;&#949; &#947;&#953;&#945; &#964;&#951;&#957; &#949;&#956;&#960;&#953;&#963;&#964;&#959;&#963;&#973;&#957;&#951; &#963;&#945;&#962; ***
+                    </div>
+
+                </div>
+            </t>
+        </t>
+    </template>
+
+</odoo>

@@ -1,0 +1,240 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- List View -->
+    <record id="view_service_ticket_tree" model="ir.ui.view">
+        <field name="name">service.ticket.tree</field>
+        <field name="model">service.ticket</field>
+        <field name="arch" type="xml">
+            <list string="Service Tickets"
+                  decoration-info="state == 'new'"
+                  decoration-warning="state in ('in_progress', 'waiting_for_parts')"
+                  decoration-success="state == 'resolved'"
+                  decoration-primary="state == 'ready_for_pickup'"
+                  decoration-muted="state == 'cancelled'">
+                <field name="name"/>
+                <field name="partner_id"/>
+                <field name="phone"/>
+                <field name="job_type_id" optional="show"/>
+                <field name="brand_id" optional="show"/>
+                <field name="product_model_id" optional="show"/>
+                <field name="total_price" optional="show"/>
+                <field name="invoice_id" optional="show"/>
+                <field name="state" widget="badge"
+                       decoration-info="state == 'new'"
+                       decoration-warning="state in ('in_progress', 'waiting_for_parts')"
+                       decoration-success="state == 'resolved'"
+                       decoration-primary="state == 'ready_for_pickup'"
+                       decoration-muted="state == 'cancelled'"/>
+                <field name="create_date" optional="show"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Form View -->
+    <record id="view_service_ticket_form" model="ir.ui.view">
+        <field name="name">service.ticket.form</field>
+        <field name="model">service.ticket</field>
+        <field name="arch" type="xml">
+            <form string="Service Ticket">
+                <header>
+                    <button name="action_in_progress" string="Set In Progress" type="object"
+                            class="oe_highlight" invisible="state != 'new'"/>
+                    <button name="action_waiting_for_parts" string="Waiting for Parts" type="object"
+                            invisible="state != 'in_progress'"/>
+                    <button name="action_in_progress" string="Back to In Progress" type="object"
+                            invisible="state != 'waiting_for_parts'"/>
+                    <button name="action_resolved" string="Resolve" type="object"
+                            class="oe_highlight" invisible="state not in ('in_progress', 'waiting_for_parts')"/>
+                    <button name="action_ready_for_pickup" string="Ready for Pickup" type="object"
+                            class="oe_highlight" invisible="state != 'resolved'"/>
+                    <button name="action_reset_to_in_progress" string="Reopen (Repair Failed)" type="object"
+                            invisible="state not in ('resolved', 'ready_for_pickup')"/>
+                    <button name="action_cancelled" string="Cancel" type="object"
+                            invisible="state == 'cancelled'"/>
+                    <button name="action_create_invoice" string="Create Invoice" type="object"
+                            class="oe_highlight" invisible="invoice_id != False"/>
+                    <button name="action_view_invoice" string="View Invoice" type="object"
+                            invisible="invoice_id == False"/>
+                    <button name="action_print_receipt" string="Print Receipt" type="object"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="new,in_progress,waiting_for_parts,resolved,ready_for_pickup"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" readonly="1"/>
+                        </h1>
+                    </div>
+
+                    <group>
+                        <group>
+                            <field name="partner_id"/>
+                            <field name="phone"/>
+                        </group>
+                        <group>
+                            <field name="brand_id"/>
+                            <field name="product_model_id"
+                                   context="{'default_brand_id': brand_id}"/>
+                            <field name="job_type_id"/>
+                        </group>
+                    </group>
+
+                    <separator/>
+
+                    <field name="fixes_needed"
+                           placeholder="Σημειώσεις..."
+                           rows="6"
+                           style="background-color: #f0f0f0;"/>
+
+                    <separator/>
+
+                    <group>
+                        <group>
+                            <field name="labor_price"/>
+                        </group>
+                        <group>
+                            <field name="total_price" readonly="1"/>
+                        </group>
+                    </group>
+
+                    <field name="line_ids">
+                        <list editable="bottom">
+                            <field name="product_id"/>
+                            <field name="name"/>
+                            <field name="quantity"/>
+                            <field name="price_unit"/>
+                            <field name="price_subtotal" readonly="1"/>
+                        </list>
+                    </field>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- Kanban View -->
+    <record id="view_service_ticket_kanban" model="ir.ui.view">
+        <field name="name">service.ticket.kanban</field>
+        <field name="model">service.ticket</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="state" class="o_kanban_small_column" quick_create="false">
+                <field name="name"/>
+                <field name="partner_id"/>
+                <field name="brand_id"/>
+                <field name="product_model_id"/>
+                <field name="state"/>
+                <templates>
+                    <t t-name="card">
+                        <main>
+                            <strong><field name="name"/></strong>
+                            <field t-if="record.partner_id.raw_value" name="partner_id"/>
+                            <field t-if="record.brand_id.raw_value" name="brand_id"/>
+                            <field t-if="record.product_model_id.raw_value" name="product_model_id"/>
+                        </main>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- Search View -->
+    <record id="view_service_ticket_search" model="ir.ui.view">
+        <field name="name">service.ticket.search</field>
+        <field name="model">service.ticket</field>
+        <field name="arch" type="xml">
+            <search string="Search Service Tickets">
+                <field name="name"/>
+                <field name="partner_id"/>
+                <field name="job_type_id"/>
+                <field name="brand_id"/>
+                <field name="product_model_id"/>
+                <field name="fixes_needed"/>
+                <separator/>
+                <filter string="New" name="state_new" domain="[('state', '=', 'new')]"/>
+                <filter string="In Progress" name="state_in_progress" domain="[('state', '=', 'in_progress')]"/>
+                <filter string="Waiting for Parts" name="state_waiting" domain="[('state', '=', 'waiting_for_parts')]"/>
+                <filter string="Resolved" name="state_resolved" domain="[('state', '=', 'resolved')]"/>
+                <filter string="Ready for Pickup" name="state_pickup" domain="[('state', '=', 'ready_for_pickup')]"/>
+                <filter string="Invoiced" name="invoiced" domain="[('invoice_id', '!=', False)]"/>
+                <group>
+                    <filter string="Customer" name="group_by_partner" context="{'group_by': 'partner_id'}"/>
+                    <filter string="Job Type" name="group_by_job_type" context="{'group_by': 'job_type_id'}"/>
+                    <filter string="Brand" name="group_by_brand" context="{'group_by': 'brand_id'}"/>
+                    <filter string="Status" name="group_by_state" context="{'group_by': 'state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Brand List View -->
+    <record id="view_service_brand_tree" model="ir.ui.view">
+        <field name="name">service.brand.tree</field>
+        <field name="model">service.brand</field>
+        <field name="arch" type="xml">
+            <list string="Brands">
+                <field name="name"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Brand Form View -->
+    <record id="view_service_brand_form" model="ir.ui.view">
+        <field name="name">service.brand.form</field>
+        <field name="model">service.brand</field>
+        <field name="arch" type="xml">
+            <form string="Brand">
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                    </group>
+                    <field name="product_model_ids">
+                        <list editable="bottom">
+                            <field name="name"/>
+                        </list>
+                    </field>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Brand Action -->
+    <record id="action_service_brand" model="ir.actions.act_window">
+        <field name="name">Brands</field>
+        <field name="res_model">service.brand</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- Job Type List View -->
+    <record id="view_service_job_type_tree" model="ir.ui.view">
+        <field name="name">service.job.type.tree</field>
+        <field name="model">service.job.type</field>
+        <field name="arch" type="xml">
+            <list string="Job Types" editable="bottom">
+                <field name="name"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Job Type Form View -->
+    <record id="view_service_job_type_form" model="ir.ui.view">
+        <field name="name">service.job.type.form</field>
+        <field name="model">service.job.type</field>
+        <field name="arch" type="xml">
+            <form string="Job Type">
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Job Type Action -->
+    <record id="action_service_job_type" model="ir.actions.act_window">
+        <field name="name">Job Types</field>
+        <field name="res_model">service.job.type</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+</odoo>

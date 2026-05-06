@@ -1,0 +1,205 @@
+# Greek translation for the service module
+# Copyright (C) 2026
+# This file is distributed under the same license as the service module.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 19.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-05-07 00:00+0000\n"
+"PO-Revision-Date: 2026-05-07 00:00+0000\n"
+"Last-Translator: \n"
+"Language-Team: Greek\n"
+"Language: el\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#. module: service
+msgid "Service Ticket"
+msgstr "Δελτίο Σέρβις"
+
+#. module: service
+msgid "Service Ticket Part"
+msgstr "Εξάρτημα Δελτίου Σέρβις"
+
+#. module: service
+msgid "Service Job Type"
+msgstr "Τύπος Εργασίας Σέρβις"
+
+#. module: service
+msgid "Service Brand"
+msgstr "Μάρκα Σέρβις"
+
+#. module: service
+msgid "Product Model"
+msgstr "Μοντέλο Προϊόντος"
+
+#. module: service
+msgid "Ticket Reference"
+msgstr "Αριθμός Δελτίου"
+
+#. module: service
+msgid "Labor Price"
+msgstr "Τιμή Εργασίας"
+
+#. module: service
+msgid "Parts"
+msgstr "Ανταλλακτικά"
+
+#. module: service
+msgid "Part"
+msgstr "Εξάρτημα"
+
+#. module: service
+msgid "Unit Price"
+msgstr "Τιμή Μονάδας"
+
+#. module: service
+msgid "Subtotal"
+msgstr "Υποσύνολο"
+
+#. module: service
+msgid "Job Type"
+msgstr "Τύπος Εργασίας"
+
+#. module: service
+msgid "Notes"
+msgstr "Σημειώσεις"
+
+#. module: service
+msgid "Status"
+msgstr "Κατάσταση"
+
+#. module: service
+msgid "New"
+msgstr "Νέο"
+
+#. module: service
+msgid "In Progress"
+msgstr "Σε Εξέλιξη"
+
+#. module: service
+msgid "Waiting for Parts"
+msgstr "Αναμονή Ανταλλακτικών"
+
+#. module: service
+msgid "Resolved"
+msgstr "Επιλύθηκε"
+
+#. module: service
+msgid "Ready for Pickup"
+msgstr "Έτοιμο για Παραλαβή"
+
+#. module: service
+msgid "Cancelled"
+msgstr "Ακυρώθηκε"
+
+#. module: service
+msgid "Set In Progress"
+msgstr "Ορισμός σε Εξέλιξη"
+
+#. module: service
+msgid "Back to In Progress"
+msgstr "Επιστροφή σε Εξέλιξη"
+
+#. module: service
+msgid "Resolve"
+msgstr "Επίλυση"
+
+#. module: service
+msgid "Reopen (Repair Failed)"
+msgstr "Επαναφορά (Αποτυχία Επισκευής)"
+
+#. module: service
+msgid "Create Invoice"
+msgstr "Δημιουργία Τιμολογίου"
+
+#. module: service
+msgid "View Invoice"
+msgstr "Προβολή Τιμολογίου"
+
+#. module: service
+msgid "Print Receipt"
+msgstr "Εκτύπωση Απόδειξης"
+
+#. module: service
+msgid "Service Tickets"
+msgstr "Δελτία Σέρβις"
+
+#. module: service
+msgid "Tickets"
+msgstr "Δελτία"
+
+#. module: service
+msgid "All Tickets"
+msgstr "Όλα τα Δελτία"
+
+#. module: service
+msgid "Configuration"
+msgstr "Ρυθμίσεις"
+
+#. module: service
+msgid "Brands & Models"
+msgstr "Μάρκες & Μοντέλα"
+
+#. module: service
+msgid "Job Types"
+msgstr "Τύποι Εργασίας"
+
+#. module: service
+msgid "Brands"
+msgstr "Μάρκες"
+
+#. module: service
+msgid "Brand"
+msgstr "Μάρκα"
+
+#. module: service
+msgid "Models"
+msgstr "Μοντέλα"
+
+#. module: service
+msgid "Model"
+msgstr "Μοντέλο"
+
+#. module: service
+msgid "Customer"
+msgstr "Πελάτης"
+
+#. module: service
+msgid "Phone"
+msgstr "Τηλέφωνο"
+
+#. module: service
+msgid "Invoice"
+msgstr "Τιμολόγιο"
+
+#. module: service
+msgid "Total"
+msgstr "Σύνολο"
+
+#. module: service
+msgid "Search Service Tickets"
+msgstr "Αναζήτηση Δελτίων Σέρβις"
+
+#. module: service
+msgid "Invoiced"
+msgstr "Τιμολογημένο"
+
+#. module: service
+msgid "Service Receipt"
+msgstr "Απόδειξη Σέρβις"
+
+#. module: service
+msgid "Service Receipt 80mm"
+msgstr "Απόδειξη Σέρβις 80mm"
+
+#. module: service
+msgid "Create your first service ticket!"
+msgstr "Δημιουργήστε το πρώτο σας δελτίο σέρβις!"
+
+#. module: service
+msgid "Track customer issues and manage their progress."
+msgstr "Παρακολουθήστε τα αιτήματα πελατών και διαχειριστείτε την εξέλιξή τους."

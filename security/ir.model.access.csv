@@ -1,0 +1,11 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_service_ticket_user,service.ticket.user,model_service_ticket,base.group_user,1,1,1,1
+access_service_ticket_manager,service.ticket.manager,model_service_ticket,group_service_ticket_manager,1,1,1,1
+access_service_ticket_line_user,service.ticket.line.user,model_service_ticket_line,base.group_user,1,1,1,1
+access_service_ticket_line_manager,service.ticket.line.manager,model_service_ticket_line,group_service_ticket_manager,1,1,1,1
+access_service_job_type_user,service.job.type.user,model_service_job_type,base.group_user,1,1,1,1
+access_service_job_type_manager,service.job.type.manager,model_service_job_type,group_service_ticket_manager,1,1,1,1
+access_service_brand_user,service.brand.user,model_service_brand,base.group_user,1,1,1,1
+access_service_brand_manager,service.brand.manager,model_service_brand,group_service_ticket_manager,1,1,1,1
+access_service_product_model_user,service.product.model.user,model_service_product_model,base.group_user,1,1,1,0
+access_service_product_model_manager,service.product.model.manager,model_service_product_model,group_service_ticket_manager,1,1,1,1
