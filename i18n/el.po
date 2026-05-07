@@ -65,8 +65,12 @@ msgid "Job Type"
 msgstr "Τύπος Εργασίας"
 
 #. module: service
-msgid "Notes"
-msgstr "Σημειώσεις"
+msgid "Customer Notes"
+msgstr "Σημειώσεις Πελάτη"
+
+#. module: service
+msgid "Technician Notes"
+msgstr "Σημειώσεις Τεχνικού"
 
 #. module: service
 msgid "Status"
@@ -91,6 +95,10 @@ msgstr "Επιλύθηκε"
 #. module: service
 msgid "Ready for Pickup"
 msgstr "Έτοιμο για Παραλαβή"
+
+#. module: service
+msgid "Picked Up"
+msgstr "Παραλήφθηκε"
 
 #. module: service
 msgid "Cancelled"

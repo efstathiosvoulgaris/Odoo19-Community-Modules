@@ -32,6 +32,7 @@
                 <t t-set="parts_total" t-value="sum(o.line_ids.mapped('price_subtotal'))"/>
                 <t t-set="grand_total" t-value="parts_total + o.labor_price"/>
                 <t t-set="is_greek" t-value="o.partner_id.lang == 'el_GR'"/>
+                <t t-set="vat_rate" t-value="o._get_receipt_vat_rate()"/>
                 <div class="page" style="
                     font-family: 'DejaVu Sans', Arial, sans-serif;
                     font-size: 9pt;
@@ -132,17 +133,6 @@
                         </div>
                     </t>
 
-                    <!-- ===== NOTES ===== -->
-                    <t t-if="o.fixes_needed">
-                        <div style="margin-bottom: 4mm;">
-                            <div style="font-weight: bold; text-decoration: underline; margin-bottom: 1mm;">
-                                <t t-if="is_greek">ΣΗΜΕΙΩΣΕΙΣ</t>
-                                <t t-else="">NOTES</t>
-                            </div>
-                            <div style="font-size: 8.5pt;"><t t-esc="o.fixes_needed"/></div>
-                        </div>
-                    </t>
-
                     <!-- ===== PARTS ===== -->
                     <t t-if="o.line_ids">
                         <div style="margin-bottom: 2mm;">
@@ -206,8 +196,8 @@
                         <table style="width: 100%; font-size: 11pt; font-weight: bold; border-top: 1px dashed #000; margin-top: 1mm; padding-top: 1mm;">
                             <tr>
                                 <td>
-                                    <t t-if="is_greek">ΣΥΝΟΛΟ Συμπ. ΦΠΑ 24%</t>
-                                    <t t-else="">TOTAL Incl. VAT 24%</t>
+                                    <t t-if="is_greek">ΣΥΝΟΛΟ Συμπ. ΦΠΑ <t t-esc="vat_rate"/>%</t>
+                                    <t t-else="">TOTAL Incl. VAT <t t-esc="vat_rate"/>%</t>
                                 </td>
                                 <td style="text-align: right;">
                                     &#8364;<t t-esc="'%.2f' % grand_total"/>

@@ -1,10 +1,11 @@
 {
     'name': 'Repair Shop Tickets',
-    'version': '19.0.1.1.0',
+    'version': '19.0.1.2.0',
     'category': 'Services/Field Service',
     'summary': 'Manage repair jobs, parts, invoices & receipts',
     'author': 'Punished_Snake',
     'website': '',
+    'support': 'efstathiosvoulgaris@gmail.com',
     'license': 'OPL-1',
     'depends': ['base', 'product', 'account', 'mail', 'stock'],
     'data': [

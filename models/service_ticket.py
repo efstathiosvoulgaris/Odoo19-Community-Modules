@@ -41,7 +41,8 @@ class ServiceTicket(models.Model):
                                        domain="[('brand_id', '=', brand_id)]")
 
     job_type_id = fields.Many2one('service.job.type', string='Job Type')
-    fixes_needed = fields.Text(string='Notes')
+    fixes_needed = fields.Text(string='Customer Notes')
+    technician_notes = fields.Text(string='Technician Notes')
     labor_price = fields.Float(string='Labor Price')
     total_price = fields.Float(string='Total', compute='_compute_total', store=True)
 
@@ -65,6 +66,7 @@ class ServiceTicket(models.Model):
         ('waiting_for_parts', 'Waiting for Parts'),
         ('resolved', 'Resolved'),
         ('ready_for_pickup', 'Ready for Pickup'),
+        ('picked_up', 'Picked Up'),
         ('cancelled', 'Cancelled'),
     ], string='Status', default='new', group_expand='_read_group_state')
 
@@ -174,6 +176,9 @@ class ServiceTicket(models.Model):
     def action_ready_for_pickup(self):
         self.write({'state': 'ready_for_pickup'})
 
+    def action_picked_up(self):
+        self.write({'state': 'picked_up'})
+
     def action_reset_to_in_progress(self):
         if self.stock_consumed:
             self._reverse_stock()
@@ -244,6 +249,23 @@ class ServiceTicket(models.Model):
             'view_mode': 'form',
             'target': 'current',
         }
+
+    def _get_receipt_vat_rate(self):
+        if self.invoice_id:
+            tax = self.invoice_id.invoice_line_ids.tax_ids.filtered(
+                lambda t: t.type_tax_use == 'sale' and t.amount_type == 'percent' and t.active
+            )[:1]
+        else:
+            tax = self.env['account.tax'].search([
+                ('type_tax_use', '=', 'sale'),
+                ('amount_type', '=', 'percent'),
+                ('active', '=', True),
+                ('company_id', '=', self.env.company.id),
+            ], order='amount desc', limit=1)
+        if not tax:
+            return 0
+        rate = tax.amount
+        return int(rate) if rate == int(rate) else rate
 
     def action_print_receipt(self):
         return self.env.ref('service.action_report_service_receipt').report_action(self)
