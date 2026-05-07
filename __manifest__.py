@@ -6,6 +6,8 @@
     'author': 'Punished_Snake',
     'website': '',
     'support': 'efstathiosvoulgaris@gmail.com',
+    'price': 49.99,
+    'currency': 'EUR',
     'license': 'OPL-1',
     'depends': ['base', 'product', 'account', 'mail', 'stock'],
     'data': [
