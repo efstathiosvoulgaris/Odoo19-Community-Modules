@@ -49,17 +49,26 @@
                             class="oe_highlight" invisible="state != 'resolved'"/>
                     <button name="action_reset_to_in_progress" string="Reopen (Repair Failed)" type="object"
                             invisible="state not in ('resolved', 'ready_for_pickup')"/>
-                    <button name="action_cancelled" string="Cancel" type="object"
-                            invisible="state == 'cancelled'"/>
                     <button name="action_create_invoice" string="Create Invoice" type="object"
                             class="oe_highlight" invisible="invoice_id != False"/>
                     <button name="action_view_invoice" string="View Invoice" type="object"
                             invisible="invoice_id == False"/>
                     <button name="action_print_receipt" string="Print Receipt" type="object"/>
+                    <button name="action_cancelled" string="Cancel Ticket" type="object"
+                            class="btn-danger" style="margin-left: 32px;"
+                            confirm="Are you sure you want to cancel this ticket? This action cannot be undone."
+                            invisible="state == 'cancelled'"/>
                     <field name="state" widget="statusbar"
                            statusbar_visible="new,in_progress,waiting_for_parts,resolved,ready_for_pickup"/>
                 </header>
                 <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_stock_moves" type="object"
+                                class="oe_stat_button" icon="fa-cubes"
+                                invisible="stock_move_count == 0">
+                            <field name="stock_move_count" widget="statinfo" string="Stock Moves"/>
+                        </button>
+                    </div>
                     <div class="oe_title">
                         <h1>
                             <field name="name" readonly="1"/>
@@ -96,6 +105,8 @@
                             <field name="total_price" readonly="1"/>
                         </group>
                     </group>
+
+                    <field name="stock_consumed" invisible="1"/>
 
                     <field name="line_ids">
                         <list editable="bottom">
