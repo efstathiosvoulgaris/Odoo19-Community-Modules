@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <!-- Website top-nav menu item linking to /brands -->
+        <record id="menu_brands" model="website.menu">
+            <field name="name">Brands</field>
+            <field name="url">/brands</field>
+            <field name="parent_id" ref="website.main_menu"/>
+            <field name="sequence" type="int">25</field>
+        </record>
+
+    </data>
+</odoo>

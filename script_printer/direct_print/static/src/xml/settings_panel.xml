@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates>
+
+    <t t-name="direct_print.SettingsPanel">
+        <div class="o_action o_form_view" style="overflow-y: auto;">
+            <div class="o_form_sheet_bg p-4">
+                <div class="o_form_sheet" style="max-width: 720px; margin: 0 auto;">
+
+                    <h2 class="mb-1">Direct Print — Printer Settings</h2>
+                    <p class="text-muted mb-4">
+                        Printer selections are saved per browser. The Agent URL is a global setting (admin only).
+                    </p>
+
+                    <t t-if="state.loading">
+                        <div class="text-center py-5">
+                            <i class="fa fa-spinner fa-spin fa-2x text-muted"/>
+                        </div>
+                    </t>
+
+                    <t t-else="">
+                        <!-- Agent status banner -->
+                        <div t-attf-class="alert {{ state.agentOnline ? 'alert-success' : 'alert-danger' }} d-flex align-items-center gap-2 mb-4">
+                            <i t-attf-class="fa fa-{{ state.agentOnline ? 'check-circle' : 'times-circle' }} fa-lg"/>
+                            <span>
+                                Print Agent is <strong t-esc="state.agentOnline ? 'Online' : 'Offline'"/>.
+                                <t t-if="!state.agentOnline">
+                                    Make sure <code>start_print_agent.bat</code> is running.
+                                </t>
+                            </span>
+                            <button class="btn btn-sm btn-outline-secondary ms-auto" t-on-click="refresh">
+                                <i class="fa fa-refresh"/> Refresh
+                            </button>
+                        </div>
+
+                        <div class="row g-4">
+                            <!-- Agent URL -->
+                            <div class="col-12">
+                                <label class="form-label fw-bold">Agent URL</label>
+                                <input type="text" class="form-control"
+                                       t-model="state.agentUrl"
+                                       placeholder="http://127.0.0.1:5000"/>
+                                <div class="form-text">
+                                    Change only if port 5000 is taken. Requires admin rights to save.
+                                </div>
+                            </div>
+
+                            <!-- PDF Printer -->
+                            <div class="col-12 col-md-6">
+                                <label class="form-label fw-bold">PDF / Report Printer</label>
+                                <select class="form-select" t-model="state.selectedPrinter">
+                                    <option value="">— Use Windows Default —</option>
+                                    <t t-foreach="state.printers" t-as="p" t-key="p.name">
+                                        <option t-att-value="p.name">
+                                            <t t-esc="p.name"/>
+                                            <t t-if="p.is_default"> (default)</t>
+                                        </option>
+                                    </t>
+                                </select>
+                                <div class="form-text">Used for all PDF reports unless overridden by a Print Route.</div>
+                            </div>
+
+                            <!-- Receipt Printer -->
+                            <div class="col-12 col-md-6">
+                                <label class="form-label fw-bold">Receipt / Thermal Printer</label>
+                                <select class="form-select" t-model="state.receiptPrinter">
+                                    <option value="">— None —</option>
+                                    <t t-foreach="state.printers" t-as="p" t-key="p.name">
+                                        <option t-att-value="p.name" t-esc="p.name"/>
+                                    </t>
+                                </select>
+                                <div class="form-text">Used for POS receipts. Set to your ESC/POS thermal printer.</div>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 d-flex gap-2">
+                            <button class="btn btn-primary" t-on-click="save"
+                                    t-att-disabled="state.saving">
+                                <i t-attf-class="fa fa-{{ state.saving ? 'spinner fa-spin' : 'save' }} me-1"/>
+                                Save Settings
+                            </button>
+                            <a class="btn btn-outline-secondary" href="/odoo/direct-print/routes">
+                                <i class="fa fa-list me-1"/> Manage Print Routes
+                            </a>
+                        </div>
+                    </t>
+
+                </div>
+            </div>
+        </div>
+    </t>
+
+</templates>

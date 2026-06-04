@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="res_config_settings_view_form_skroutz" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.skroutz</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="base.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form" position="inside">
+                <app string="Skroutz" name="odoo_skroutz_connector" logo="/odoo_skroutz_connector/static/description/icon.png">
+
+                    <block title="XML Feed" name="skroutz_feed_block">
+
+                        <setting string="Feed URL" name="skroutz_feed_url_setting"
+                                 help="Give this URL to Skroutz to fetch your product feed.">
+                            <field name="skroutz_feed_url" widget="CopyClipboardChar" readonly="1" class="w-100"/>
+                            <div class="mt8 d-flex gap-2">
+                                <button type="object" name="action_preview_skroutz_feed"
+                                        string="Preview Feed" icon="fa-eye"
+                                        class="btn-secondary btn-sm"/>
+                                <button type="object" name="action_download_skroutz_feed"
+                                        string="Download XML" icon="fa-download"
+                                        class="btn-primary btn-sm"/>
+                            </div>
+                        </setting>
+
+                        <setting string="Feed Token" name="skroutz_feed_token_setting"
+                                 help="Optional secret token appended to the feed URL (?token=...). Leave empty to disable protection.">
+                            <field name="skroutz_feed_token" placeholder="Leave empty for no protection"/>
+                        </setting>
+
+                        <setting string="Default Availability (0 stock)" name="skroutz_default_avail_setting"
+                                 help="Availability label shown when a product has 0 stock.">
+                            <field name="skroutz_default_availability"/>
+                        </setting>
+
+                        <setting string="Include 0-stock products" name="skroutz_zero_stock_setting"
+                                 help="Keep products with 0 stock in the feed. Skroutz recommends this so products reactivate automatically when stock returns.">
+                            <field name="skroutz_include_zero_stock"/>
+                        </setting>
+
+                    </block>
+
+                </app>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

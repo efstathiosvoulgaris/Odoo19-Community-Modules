@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Odoo
+*.pyc
+/filestore/
+/sessions/
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Claude Code settings
+.claude/
+
+# Logs
+logs/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db

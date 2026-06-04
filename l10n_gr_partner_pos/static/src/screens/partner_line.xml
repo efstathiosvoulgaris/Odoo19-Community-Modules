@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+
+    <t t-name="l10n_gr_partner_pos.PartnerLine"
+       t-inherit="point_of_sale.PartnerLine"
+       t-inherit-mode="extension">
+
+        <!-- Mobile (ui.isSmall) branch: μετά το phone -->
+        <xpath expr="//div[hasclass('partner-line-email')]/div[@t-if='props.partner.phone']"
+               position="after">
+            <div class="mb-1" t-if="props.partner.kinito">
+                <i class="fa fa-fw fa-mobile me-2" /><t t-esc="props.partner.kinito" />
+            </div>
+        </xpath>
+
+        <!-- Desktop branch: μετά το phone στο td.partner-line-email -->
+        <xpath expr="//td[hasclass('partner-line-email')]/div[@t-if='props.partner.phone']"
+               position="after">
+            <div t-if="props.partner.kinito">
+                <i class="fa fa-fw fa-mobile me-2"/><t t-esc="props.partner.kinito"/>
+            </div>
+        </xpath>
+
+    </t>
+
+</templates>

@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+      <meta charset="utf-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1" />
+      <title>POS Community Addons</title>
+</head>
+
+<body
+      style="font-family: Arial, Helvetica, sans-serif; line-height:1.6; color:#333; margin:0; padding:0; background:#f7f7f7;">
+      <div
+            style="max-width:980px; margin:22px auto; padding:18px; background:#fff; border-radius:6px; box-shadow:0 2px 12px rgba(0,0,0,.04)">
+            <div style="background:#fff; padding:24px; display:flex; gap:20px; align-items:center;">
+                  <div style="flex:1">
+                        <h1 style="margin:0 0 8px 0; font-size:22px">POS Community Addons</h1>
+                        <p style="font-size:13px; color:#666">Restaurant POS customizations: kitchen receipts, floor plan styling, streamlined UI</p>
+                        <p style="font-size:13px; color:#444">Author: Efstathios Voulgaris</p>
+                        <p style="font-size:13px; color:#444">Category: Point of Sale</p>
+                  </div>
+            </div>
+
+            <h2 style="margin-top:18px">What it does</h2>
+            <p>Extends the <code>pos_restaurant</code> module for café and restaurant use. Focuses on kitchen workflow,
+                  floor plan visibility, and a stripped-down UI suited for quick table service.</p>
+
+            <h2 style="margin-top:18px">Features</h2>
+            <ul style="margin:10px 0 10px 20px">
+                  <li><strong>Kitchen receipts</strong> — custom barista/preparation ticket printed via Epson ePOS on every order send. Includes table reference, employee, timestamp, item attributes, and notes. Dynamic company name from Odoo config.</li>
+                  <li><strong>Auto receipt after payment</strong> — respects the built-in <em>Automatic Receipt Printing</em> setting (<code>iface_print_auto</code>). Navigates straight back to the floor plan after payment.</li>
+                  <li><strong>Table number on payment screen</strong> — displays the current table prominently above the total on the payment screen.</li>
+                  <li><strong>Occupied table timer</strong> — shows elapsed time since first order on each occupied table (green &lt;30 min, yellow 30–60 min, red &gt;60 min). No background polling.</li>
+                  <li><strong>Occupied table highlighting</strong> — red border and glow on occupied tables; table color used as background.</li>
+                  <li><strong>Item count badge</strong> — shopping basket icon with total item count on each occupied table.</li>
+                  <li><strong>Streamlined UI</strong> — Customer and Course buttons removed from both mobile and desktop order screens. Send button item-count label removed to prevent mobile layout issues.</li>
+                  <li><strong>Pay button visibility</strong> — Pay button shown only when there are unsent items and the order is non-empty.</li>
+            </ul>
+
+            <h2 style="margin-top:18px">Compatibility</h2>
+            <p>Odoo 19.0. Requires the official <code>pos_restaurant</code> module.</p>
+
+            <footer style="margin-top:18px; font-size:13px; color:#777">
+                  <p>For support or customizations contact Efstathios Voulgaris</p>
+            </footer>
+      </div>
+</body>
+
+</html>

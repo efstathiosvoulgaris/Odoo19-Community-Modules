@@ -1,0 +1,5 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_direct_print_log_user,direct.print.log user,model_direct_print_log,base.group_user,1,0,1,0
+access_direct_print_log_manager,direct.print.log manager,model_direct_print_log,base.group_system,1,1,1,1
+access_direct_print_route_user,direct.print.route user,model_direct_print_route,base.group_user,1,0,0,0
+access_direct_print_route_manager,direct.print.route manager,model_direct_print_route,base.group_system,1,1,1,1

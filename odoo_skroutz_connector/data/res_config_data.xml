@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <record id="skroutz_default_availability" model="ir.config_parameter">
+            <field name="key">skroutz.default_availability</field>
+            <field name="value">Delivery 1 to 3 days</field>
+        </record>
+        <record id="skroutz_include_zero_stock" model="ir.config_parameter">
+            <field name="key">skroutz.include_zero_stock</field>
+            <field name="value">True</field>
+        </record>
+    </data>
+</odoo>

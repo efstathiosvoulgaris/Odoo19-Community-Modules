@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates>
+
+    <t t-name="direct_print.SystrayStatus">
+        <div class="o_menu_systray_item" t-on-click="toggleDropdown">
+            <a class="nav-link d-flex align-items-center px-2" href="#" t-on-click.prevent=""
+               t-att-title="agentOnline ? 'Direct Print — Online' : 'Direct Print — Offline'">
+                <i t-attf-class="fa fa-print {{ agentOnline ? 'text-success' : 'text-danger' }}"/>
+            </a>
+
+            <div t-if="state.open"
+                 class="dropdown-menu dropdown-menu-end show"
+                 style="min-width: 260px; right: 0; position: absolute;"
+                 t-on-click.stop="">
+
+                <div class="px-3 py-2 d-flex align-items-center justify-content-between border-bottom">
+                    <strong>Direct Print</strong>
+                    <span t-attf-class="badge {{ agentOnline ? 'text-bg-success' : 'text-bg-danger' }}"
+                          t-esc="agentOnline ? 'Agent Online' : 'Agent Offline'"/>
+                </div>
+
+                <div class="px-3 py-2 small">
+                    <div class="text-muted mb-1">PDF Printer</div>
+                    <div t-esc="selectedPrinter"/>
+                    <div class="text-muted mt-2 mb-1">Receipt Printer</div>
+                    <div t-esc="receiptPrinter"/>
+                </div>
+
+                <div class="dropdown-divider"/>
+
+                <button class="dropdown-item small" t-on-click="refresh">
+                    <i class="fa fa-refresh me-1"/> Refresh Status
+                </button>
+                <a class="dropdown-item small" href="/odoo/settings?modules=direct_print" t-on-click="closeDropdown">
+                    <i class="fa fa-cog me-1"/> Settings
+                </a>
+            </div>
+        </div>
+    </t>
+
+</templates>

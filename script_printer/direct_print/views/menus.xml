@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <menuitem id="menu_direct_print_root"
+              name="Direct Print"
+              sequence="80"/>
+
+    <menuitem id="menu_direct_print_routes"
+              name="Print Routes"
+              parent="menu_direct_print_root"
+              action="action_direct_print_routes"
+              sequence="10"/>
+
+    <menuitem id="menu_direct_print_log"
+              name="Print Log"
+              parent="menu_direct_print_root"
+              action="action_direct_print_log"
+              sequence="20"/>
+
+</odoo>

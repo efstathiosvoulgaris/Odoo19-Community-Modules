@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates>
+
+    <t t-name="pos_community_addons.ProductScreenPayWhenSent"
+       t-inherit="pos_restaurant.ProductScreen"
+       t-inherit-mode="extension">
+
+        <!-- Send button: replace the per-category breakdown with a single
+             total item count. -->
+        <xpath expr="//button[hasclass('order-button')]/t[@t-if='displayCategoryCount.length']" position="replace">
+        </xpath>
+
+        <!-- Replace pos_restaurant's "New" button (shown when no unsent
+             changes exist on a non-empty, non-direct-sale order) with a
+             real "Pay" button so the server can settle the table directly
+             from the order screen. -->
+        <xpath expr="//button[hasclass('new-button')]" position="replace">
+            <button
+                class="btn-switchpane pay-button btn btn-lg flex-grow-1 lh-sm btn-primary"
+                t-on-click="() =&gt; this.pos.pay()"
+                t-if="!this.currentOrder.isDirectSale and !nbrOfChanges and !this.currentOrder.isEmpty()">
+                <span class="d-block">Pay</span>
+                <small><t t-esc="total" /></small>
+            </button>
+        </xpath>
+
+    </t>
+
+</templates>

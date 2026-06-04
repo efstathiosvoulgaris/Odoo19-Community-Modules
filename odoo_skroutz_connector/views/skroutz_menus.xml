@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Skroutz top-level menu under eCommerce -->
+    <menuitem
+        id="menu_skroutz_root"
+        name="Skroutz"
+        parent="website_sale.menu_ecommerce"
+        sequence="99"/>
+
+    <!-- Skroutz > Settings -->
+    <menuitem
+        id="menu_skroutz_settings"
+        name="Settings"
+        parent="odoo_skroutz_connector.menu_skroutz_root"
+        action="base_setup.action_general_configuration"
+        sequence="10"/>
+
+</odoo>

@@ -1,0 +1,31 @@
+<?xml version='1.0' encoding='utf-8'?>
+<templates>
+
+    <t t-name="pos_community_addons.BaristaTicket">
+        <div class="pos-receipt">
+
+            <div style="text-align:center; font-size:22px; font-weight:bold; padding:8px 0; border-bottom:2px dashed #000;">
+                <t t-if="order.table_id">
+                    TABLE: <t t-esc="order.table_id.table_number"/>
+                </t>
+                <t t-else="">
+                    DIRECT SALE
+                </t>
+            </div>
+
+            <div style="margin:10px 0;">
+                <t t-foreach="order.lines" t-as="line" t-key="line.uuid">
+                    <div style="font-size:15px; padding:4px 0; border-bottom:1px dotted #ccc;">
+                        <strong><t t-esc="line.qty"/>x</strong>&#160;<t t-esc="line.full_product_name"/>
+                    </div>
+                </t>
+            </div>
+
+            <div style="text-align:center; font-size:12px; padding-top:6px; border-top:2px dashed #000;">
+                * * *
+            </div>
+
+        </div>
+    </t>
+
+</templates>

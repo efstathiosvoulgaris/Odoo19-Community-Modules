@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- eCommerce backend menu (Products > Brands) -->
+    <menuitem
+        id="menu_product_brand"
+        name="Brands"
+        parent="website_sale.menu_catalog"
+        action="website_sale_brand.action_product_brand"
+        sequence="8"/>
+
+    <!-- Inventory > Products > Brands -->
+    <menuitem
+        id="menu_product_brand_stock"
+        name="Brands"
+        parent="stock.menu_stock_inventory_control"
+        action="website_sale_brand.action_product_brand"
+        sequence="20"/>
+
+    <!-- Inventory > Configuration > Products > Brands -->
+    <menuitem
+        id="menu_product_brand_stock_config"
+        name="Brands"
+        parent="stock.menu_product_in_config_stock"
+        action="website_sale_brand.action_product_brand"
+        sequence="10"/>
+
+</odoo>

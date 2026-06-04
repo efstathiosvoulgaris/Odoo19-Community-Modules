@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Action for products of a brand - defined FIRST so stat button can reference it -->
+    <record id="action_product_brand_products" model="ir.actions.act_window">
+        <field name="name">Brand Products</field>
+        <field name="res_model">product.template</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('brand_id', '=', active_id)]</field>
+        <field name="context">{'default_brand_id': active_id}</field>
+    </record>
+
+    <!-- Form View -->
+    <record id="product_brand_form_view" model="ir.ui.view">
+        <field name="name">product.brand.form</field>
+        <field name="model">product.brand</field>
+        <field name="arch" type="xml">
+            <form string="Brand">
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="%(action_product_brand_products)d"
+                                type="action"
+                                class="oe_stat_button"
+                                icon="fa-list">
+                            <field name="product_count" widget="statinfo" string="Products"/>
+                        </button>
+                    </div>
+                    <field name="image_1920"
+                           widget="image"
+                           class="oe_avatar"
+                           options="{'preview_image': 'image_128'}"/>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" placeholder="Brand Name..." required="True"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <field name="website_published"/>
+                    </group>
+                    <notebook>
+                        <page string="Description" name="description">
+                            <field name="description" placeholder="Brand description..."/>
+                        </page>
+                        <page string="Products" name="products">
+                            <field name="product_tmpl_ids" readonly="1">
+                                <list>
+                                    <field name="name"/>
+                                    <field name="categ_id"/>
+                                    <field name="list_price"/>
+                                    <field name="website_published"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- List View -->
+    <record id="product_brand_list_view" model="ir.ui.view">
+        <field name="name">product.brand.list</field>
+        <field name="model">product.brand</field>
+        <field name="arch" type="xml">
+            <list string="Brands">
+                <field name="image_128" widget="image" string=" " options="{'size': [40, 40]}"/>
+                <field name="name"/>
+                <field name="product_count" string="Products"/>
+                <field name="website_published" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Kanban View -->
+    <record id="product_brand_kanban_view" model="ir.ui.view">
+        <field name="name">product.brand.kanban</field>
+        <field name="model">product.brand</field>
+        <field name="arch" type="xml">
+            <kanban class="o_kanban_mobile">
+                <field name="id"/>
+                <field name="name"/>
+                <field name="image_128"/>
+                <field name="product_count"/>
+                <field name="website_published"/>
+                <templates>
+                    <t t-name="card">
+                        <aside>
+                            <field name="image_128" widget="image" alt="Brand Image"/>
+                        </aside>
+                        <main>
+                            <strong><field name="name"/></strong>
+                            <div class="text-muted">
+                                <field name="product_count"/> Products
+                            </div>
+                        </main>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- Search View -->
+    <record id="product_brand_search_view" model="ir.ui.view">
+        <field name="name">product.brand.search</field>
+        <field name="model">product.brand</field>
+        <field name="arch" type="xml">
+            <search string="Search Brand">
+                <field name="name" string="Brand"/>
+                <filter name="published" string="Published" domain="[('website_published', '=', True)]"/>
+                <filter name="unpublished" string="Unpublished" domain="[('website_published', '=', False)]"/>
+            </search>
+        </field>
+    </record>
+
+    <!-- Main Action -->
+    <record id="action_product_brand" model="ir.actions.act_window">
+        <field name="name">Brands</field>
+        <field name="res_model">product.brand</field>
+        <field name="view_mode">list,kanban,form</field>
+        <field name="search_view_id" ref="product_brand_search_view"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create your first Brand!
+            </p>
+            <p>
+                Brands appear on the website and can be used as a shop filter.
+            </p>
+        </field>
+    </record>
+
+</odoo>

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="res_config_settings_view_form_direct_print" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.inherit.direct_print</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="base_setup.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form" position="inside">
+                <app string="Direct Print" name="direct_print">
+                    <block title="Print Agent">
+                        <setting string="Agent URL"
+                                 help="URL of the local print agent running on this machine. Change only if port 5000 is taken.">
+                            <field name="direct_print_agent_url"/>
+                        </setting>
+                    </block>
+                </app>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

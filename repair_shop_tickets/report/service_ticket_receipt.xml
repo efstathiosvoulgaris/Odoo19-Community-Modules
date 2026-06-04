@@ -1,0 +1,282 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="paperformat_service_receipt" model="report.paperformat">
+        <field name="name">Service Receipt 80mm</field>
+        <field name="default" eval="False"/>
+        <field name="format">custom</field>
+        <field name="page_width">80</field>
+        <field name="page_height">297</field>
+        <field name="orientation">Portrait</field>
+        <field name="margin_top">5</field>
+        <field name="margin_bottom">5</field>
+        <field name="margin_left">4</field>
+        <field name="margin_right">4</field>
+        <field name="header_line" eval="False"/>
+        <field name="header_spacing">3</field>
+        <field name="dpi">96</field>
+    </record>
+
+    <record id="action_report_service_receipt" model="ir.actions.report">
+        <field name="name">Service Receipt</field>
+        <field name="model">service.ticket</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">repair_shop_tickets.report_service_receipt</field>
+        <field name="report_file">repair_shop_tickets.report_service_receipt</field>
+        <field name="paperformat_id" ref="paperformat_service_receipt"/>
+    </record>
+
+    <template id="report_service_receipt">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <t t-set="parts_total" t-value="sum(o.line_ids.mapped('price_subtotal'))"/>
+                <t t-set="grand_total" t-value="parts_total + o.labor_price"/>
+                <t t-set="is_greek" t-value="o.partner_id.lang == 'el_GR'"/>
+                <t t-set="vat_rate" t-value="o._get_receipt_vat_rate()"/>
+                <div class="page" style="
+                    font-family: 'DejaVu Sans', Arial, sans-serif;
+                    font-size: 9pt;
+                    width: 72mm;
+                    margin: 0 auto;
+                    color: #000;
+                ">
+                    <!-- ===== HEADER ===== -->
+                    <div style="text-align: center; margin-bottom: 4mm;">
+                        <div style="font-size: 13pt; font-weight: bold;">
+                            <t t-esc="o.env.company.name"/>
+                        </div>
+                        <div style="font-size: 10pt; font-weight: bold; letter-spacing: 2px; margin-top: 2px;">
+                            <t t-if="is_greek">ΑΠΟΔΕΙΞΗ ΣΕΡΒΙΣ</t>
+                            <t t-else="">SERVICE RECEIPT</t>
+                        </div>
+                    </div>
+
+                    <div style="border-top: 1px dashed #000; border-bottom: 1px dashed #000; padding: 2mm 0; margin-bottom: 4mm;">
+                        <table style="width: 100%;">
+                            <tr>
+                                <td>
+                                    <t t-if="is_greek">Δελτίο</t>
+                                    <t t-else="">Ticket</t>
+                                </td>
+                                <td style="text-align: right; font-weight: bold;"><t t-esc="o.name"/></td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <t t-if="is_greek">Ημερομηνία</t>
+                                    <t t-else="">Date</t>
+                                </td>
+                                <td style="text-align: right;">
+                                    <t t-esc="o.create_date.strftime('%d/%m/%Y %H:%M') if o.create_date else ''"/>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <t t-if="is_greek">Κατάσταση</t>
+                                    <t t-else="">Status</t>
+                                </td>
+                                <td style="text-align: right; text-transform: capitalize;">
+                                    <t t-esc="dict(o.fields_get(['state'])['state']['selection']).get(o.state, o.state)"/>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <!-- ===== CUSTOMER ===== -->
+                    <div style="margin-bottom: 4mm;">
+                        <div style="font-weight: bold; text-decoration: underline; margin-bottom: 1mm;">
+                            <t t-if="is_greek">ΠΕΛΑΤΗΣ</t>
+                            <t t-else="">CUSTOMER</t>
+                        </div>
+                        <div><t t-esc="o.partner_id.name if o.partner_id else '-'"/></div>
+                        <t t-if="o.phone">
+                            <div>
+                                <t t-if="is_greek">Τηλ.:</t>
+                                <t t-else="">Tel.:</t>
+                                <t t-esc="o.phone"/>
+                            </div>
+                        </t>
+                        <t t-if="o.partner_id and o.partner_id.email">
+                            <div><t t-esc="o.partner_id.email"/></div>
+                        </t>
+                    </div>
+
+                    <!-- ===== DEVICE ===== -->
+                    <div style="margin-bottom: 4mm;">
+                        <div style="font-weight: bold; text-decoration: underline; margin-bottom: 1mm;">
+                            <t t-if="is_greek">ΣΥΣΚΕΥΗ</t>
+                            <t t-else="">DEVICE</t>
+                        </div>
+                        <t t-if="o.brand_id">
+                            <div>
+                                <t t-if="is_greek">Μάρκα:</t>
+                                <t t-else="">Brand:</t>
+                                <t t-esc="o.brand_id.name"/>
+                            </div>
+                        </t>
+                        <t t-if="o.product_model_id">
+                            <div>
+                                <t t-if="is_greek">Μοντέλο:</t>
+                                <t t-else="">Model:</t>
+                                <t t-esc="o.product_model_id.name"/>
+                            </div>
+                        </t>
+                    </div>
+
+                    <!-- ===== JOB TYPE ===== -->
+                    <t t-if="o.job_type_id">
+                        <div style="margin-bottom: 4mm;">
+                            <div style="font-weight: bold; text-decoration: underline; margin-bottom: 1mm;">
+                                <t t-if="is_greek">ΤΥΠΟΣ ΕΡΓΑΣΙΑΣ</t>
+                                <t t-else="">JOB TYPE</t>
+                            </div>
+                            <div><t t-esc="o.job_type_id.name"/></div>
+                        </div>
+                    </t>
+
+                    <!-- ===== TECHNICIAN ===== -->
+                    <t t-if="o.employee_id">
+                        <div style="margin-bottom: 4mm;">
+                            <div style="font-weight: bold; text-decoration: underline; margin-bottom: 1mm;">
+                                <t t-if="is_greek">ΤΕΧΝΙΚΟΣ</t>
+                                <t t-else="">TECHNICIAN</t>
+                            </div>
+                            <div><t t-esc="o.employee_id.name"/></div>
+                        </div>
+                    </t>
+
+                    <!-- ===== PARTS ===== -->
+                    <t t-if="o.line_ids">
+                        <div style="margin-bottom: 2mm;">
+                            <div style="font-weight: bold; text-decoration: underline; margin-bottom: 1mm;">
+                                <t t-if="is_greek">ΑΝΤΑΛΛΑΚΤΙΚΑ</t>
+                                <t t-else="">PARTS</t>
+                            </div>
+                            <table style="width: 100%; font-size: 8.5pt; border-collapse: collapse;">
+                                <tr style="border-bottom: 1px solid #000;">
+                                    <td style="width: 48%; padding-bottom: 1mm;">
+                                        <t t-if="is_greek">Προϊόν</t>
+                                        <t t-else="">Product</t>
+                                    </td>
+                                    <td style="width: 12%; text-align: center;">
+                                        <t t-if="is_greek">Ποσ.</t>
+                                        <t t-else="">Qty</t>
+                                    </td>
+                                    <td style="width: 20%; text-align: right;">
+                                        <t t-if="is_greek">Τιμή</t>
+                                        <t t-else="">Price</t>
+                                    </td>
+                                    <td style="width: 20%; text-align: right;">
+                                        <t t-if="is_greek">Σύνολο</t>
+                                        <t t-else="">Total</t>
+                                    </td>
+                                </tr>
+                                <t t-foreach="o.line_ids" t-as="line">
+                                    <tr>
+                                        <td style="padding: 1mm 0;"><t t-esc="line.name or line.product_id.name"/></td>
+                                        <td style="text-align: center;"><t t-esc="int(line.quantity) if line.quantity == int(line.quantity) else '%.1f' % line.quantity"/></td>
+                                        <td style="text-align: right;"><t t-esc="'%.2f' % line.price_unit"/></td>
+                                        <td style="text-align: right;"><t t-esc="'%.2f' % line.price_subtotal"/></td>
+                                    </tr>
+                                </t>
+                            </table>
+                        </div>
+                    </t>
+
+                    <!-- ===== TOTALS ===== -->
+                    <div style="border-top: 1px solid #000; padding-top: 2mm; margin-bottom: 4mm;">
+                        <table style="width: 100%; font-size: 9pt;">
+                            <t t-if="o.line_ids">
+                                <tr>
+                                    <td>
+                                        <t t-if="is_greek">Υποσύνολο Ανταλλακτικών</t>
+                                        <t t-else="">Parts Subtotal</t>
+                                    </td>
+                                    <td style="text-align: right;"><t t-esc="'%.2f' % parts_total"/></td>
+                                </tr>
+                            </t>
+                            <t t-if="o.labor_price">
+                                <tr>
+                                    <td>
+                                        <t t-if="is_greek">Εργασία</t>
+                                        <t t-else="">Labor</t>
+                                    </td>
+                                    <td style="text-align: right;"><t t-esc="'%.2f' % o.labor_price"/></td>
+                                </tr>
+                            </t>
+                        </table>
+                        <table style="width: 100%; font-size: 11pt; font-weight: bold; border-top: 1px dashed #000; margin-top: 1mm; padding-top: 1mm;">
+                            <tr>
+                                <td>
+                                    <t t-if="is_greek">ΣΥΝΟΛΟ Συμπ. ΦΠΑ <t t-esc="vat_rate"/>%</t>
+                                    <t t-else="">TOTAL Incl. VAT <t t-esc="vat_rate"/>%</t>
+                                </td>
+                                <td style="text-align: right;">
+                                    &#8364;<t t-esc="'%.2f' % grand_total"/>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <!-- ===== TERMS ===== -->
+                    <div style="border-top: 1px dashed #000; padding-top: 3mm; font-size: 7.5pt; text-align: center;">
+                        <t t-if="is_greek">
+                            <div style="font-weight: bold; margin-bottom: 2mm; font-size: 8.5pt;">ΟΡΟΙ &amp; ΠΡΟΥΠΟΘΕΣΕΙΣ</div>
+                            <div style="text-align: left; line-height: 1.5;">
+                                <b>Δεδομένα (Backup):</b> Είστε αποκλειστικά υπεύθυνοι να έχετε κάνει backup. Η εταιρεία δεν φέρει καμία ευθύνη για τυχόν απώλεια αρχείων.
+                            </div>
+                            <div style="text-align: left; line-height: 1.5; margin-top: 1.5mm;">
+                                <b>Χρέωση Ελέγχου:</b> Υπάρχει ελάχιστη χρέωση διάγνωσης 10&#8364;, την οποία πληρώνετε μόνο αν αποφασίσετε να μην φτιάξετε τη συσκευή ή αν η συσκευή δεν φτιάχνεται. Αν την επισκευάσετε, πληρώνετε μόνο την επισκευή.
+                            </div>
+                            <div style="text-align: left; line-height: 1.5; margin-top: 1.5mm;">
+                                <b>Εγγύηση Επισκευής:</b> Η εγγύηση καλύπτει αυστηρά και μόνο τα ανταλλακτικά που αλλάχτηκαν. Ακυρώνεται αν η συσκευή βραχεί, σπάσει, ή αν σκιστεί το εσωτερικό αυτοκόλλητο εγγύησης.
+                            </div>
+                            <div style="text-align: left; line-height: 1.5; margin-top: 1.5mm;">
+                                <b>Εργοστασιακή Εγγύηση:</b> Η επισκευή ενδέχεται να ακυρώσει την επίσημη εγγύηση του κατασκευαστή (π.χ. Apple). Υπάρχει δυνατότητα προώθησης σε εξουσιοδοτημένο σέρβις, αλλά απαιτεί περισσότερο χρόνο.
+                            </div>
+                            <div style="text-align: left; line-height: 1.5; margin-top: 1.5mm;">
+                                <b>Συσκευές που Βράχηκαν:</b> Εγγύηση 180 ημερών μόνο για τα νέα ανταλλακτικά. Η εταιρεία δεν ευθύνεται για μελλοντικές βλάβες λόγω σταδιακής οξείδωσης από το νερό.
+                            </div>
+                            <div style="text-align: left; line-height: 1.5; margin-top: 1.5mm;">
+                                <b>Εγκατάλειψη Συσκευής:</b> Αν δεν παραλάβετε τη συσκευή σας εντός 90 ημερών, η εταιρεία έχει το δικαίωμα να την ανακυκλώσει ή να την πουλήσει.
+                            </div>
+                            <div style="text-align: left; line-height: 1.5; margin-top: 1.5mm;">
+                                <b>Περιορισμός Ευθύνης:</b> Αν η συσκευή δεν μπορεί να φτιαχτεί ή παρουσιάσει νέα βλάβη λόγω αρχικής φθοράς, θα επιστραφεί στην κατάσταση που βρίσκεται. Το ανώτατο όριο ευθύνης είναι ίσο με το ποσό που καταβλήθηκε για την επισκευή.
+                            </div>
+                        </t>
+                        <t t-else="">
+                            <div style="font-weight: bold; margin-bottom: 2mm; font-size: 8.5pt;">TERMS &amp; CONDITIONS</div>
+                            <div style="text-align: left; line-height: 1.5;">
+                                <b>Data (Backup):</b> You are solely responsible for backing up your data. The company bears no responsibility for any loss of files.
+                            </div>
+                            <div style="text-align: left; line-height: 1.5; margin-top: 1.5mm;">
+                                <b>Diagnosis Fee:</b> A minimum diagnosis fee of &#8364;10 applies, payable only if you decide not to repair the device or if the device cannot be repaired. If you proceed with the repair, you pay only for the repair.
+                            </div>
+                            <div style="text-align: left; line-height: 1.5; margin-top: 1.5mm;">
+                                <b>Repair Warranty:</b> The warranty covers strictly and only the replaced parts. It is voided if the device gets wet, breaks, or if the internal warranty sticker is removed or damaged.
+                            </div>
+                            <div style="text-align: left; line-height: 1.5; margin-top: 1.5mm;">
+                                <b>Manufacturer's Warranty:</b> The repair may void the official manufacturer's warranty (e.g. Apple). Forwarding to an authorized service center is available but requires additional time.
+                            </div>
+                            <div style="text-align: left; line-height: 1.5; margin-top: 1.5mm;">
+                                <b>Water-Damaged Devices:</b> A 180-day warranty applies only to the new parts installed. The company is not liable for future damage caused by gradual water oxidation.
+                            </div>
+                            <div style="text-align: left; line-height: 1.5; margin-top: 1.5mm;">
+                                <b>Device Abandonment:</b> If the device is not collected within 90 days, the company reserves the right to recycle or sell it.
+                            </div>
+                            <div style="text-align: left; line-height: 1.5; margin-top: 1.5mm;">
+                                <b>Limitation of Liability:</b> If the device cannot be repaired or develops a new fault due to pre-existing damage, it will be returned as-is. Maximum liability is limited to the amount paid for the repair.
+                            </div>
+                        </t>
+                    </div>
+
+                    <div style="text-align: center; margin-top: 4mm; font-size: 8pt;">
+                        <t t-if="is_greek">*** Σας ευχαριστούμε για την εμπιστοσύνη σας ***</t>
+                        <t t-else="">*** Thank you for your trust ***</t>
+                    </div>
+
+                </div>
+            </t>
+        </t>
+    </template>
+
+</odoo>

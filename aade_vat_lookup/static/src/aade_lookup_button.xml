@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="aade_vat_lookup.AadeLookupButton">
+        <button t-if="isVisible"
+                type="button"
+                class="btn btn-link p-0 ms-2"
+                t-on-click="onClick"
+                title="Άντληση στοιχείων από το μητρώο της ΑΑΔΕ βάσει του ΑΦΜ">
+            <i class="fa fa-download me-1"/>
+            <span>Άντληση από ΑΑΔΕ</span>
+        </button>
+    </t>
+</templates>

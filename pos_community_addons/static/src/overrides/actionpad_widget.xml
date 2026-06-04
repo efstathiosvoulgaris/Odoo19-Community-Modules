@@ -1,0 +1,20 @@
+<?xml version='1.0' encoding='utf-8'?>
+<templates>
+
+    <!-- Mobile actionpad: remove SelectPartnerButton and Course button -->
+    <t t-name="pos_community_addons.ActionpadOverrides"
+       t-inherit="point_of_sale.ActionpadWidget"
+       t-inherit-mode="extension">
+        <xpath expr="//SelectPartnerButton" position="replace"/>
+        <xpath expr="//button[@t-on-click='()=>this.pos.addCourse()']" position="replace"/>
+    </t>
+
+    <!-- Desktop control buttons row: remove SelectPartnerButton and Course button -->
+    <t t-name="pos_community_addons.ControlButtonsOverrides"
+       t-inherit="point_of_sale.ControlButtons"
+       t-inherit-mode="extension">
+        <xpath expr="//SelectPartnerButton" position="replace"/>
+        <xpath expr="//button[hasclass('course-btn')]" position="replace"/>
+    </t>
+
+</templates>

@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ================================================================
+         BRAND FILTER IN SHOP SIDEBAR
+         Injected into the shop filter form alongside attributes/tags.
+    ================================================================ -->
+    <template
+        id="filter_products_brands"
+        name="Filter by Brand"
+        inherit_id="website_sale.product_attribute_filters_form"
+    >
+        <!-- Reset brands when form is submitted -->
+        <xpath expr="//form" position="attributes">
+            <attribute name="t-att-action">keep(attribute_values=0, tags=0, brands=0)</attribute>
+        </xpath>
+
+        <!-- Insert brand filter before closing form tag -->
+        <xpath expr="//form" position="inside">
+            <t t-if="all_brands">
+
+                <!-- Desktop sidebar -->
+                <t t-if="not isMobile">
+                    <div id="wsale_brand_filter" class="nav-item mb-1 rounded-0">
+                        <h6 class="mb-2"><b>Brand</b></h6>
+                        <div class="flex-column mb-3">
+                            <t t-call="website_sale_brand.filter_products_brands_list"/>
+                        </div>
+                    </div>
+                </t>
+
+                <!-- Mobile offcanvas -->
+                <t t-if="isMobile">
+                    <h2 class="accordion-header mb-0" id="o_wsale_offcanvas_brands_header">
+                        <button
+                            t-attf-class="o_wsale_offcanvas_title accordion-button border-top rounded-0 {{not active_brand_ids and 'collapsed'}}"
+                            type="button"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#o_wsale_offcanvas_brands"
+                            t-att-aria-expanded="'true' if active_brand_ids else 'false'"
+                            aria-controls="o_wsale_offcanvas_brands"
+                        >
+                            <b>Brand</b>
+                        </button>
+                    </h2>
+                    <div
+                        id="o_wsale_offcanvas_brands"
+                        t-attf-class="accordion-collapse collapse {{'show' if active_brand_ids else ''}}"
+                        aria-labelledby="o_wsale_offcanvas_brands_header"
+                    >
+                        <div class="accordion-body pt-0">
+                            <t t-call="website_sale_brand.filter_products_brands_list"/>
+                        </div>
+                    </div>
+                </t>
+
+            </t>
+        </xpath>
+    </template>
+
+    <!-- Brand checkboxes -->
+    <template id="filter_products_brands_list" name="Brand Filter List">
+        <t t-foreach="all_brands" t-as="brand">
+            <div class="form-check mb-2 d-flex align-items-center gap-2">
+                <input
+                    type="checkbox"
+                    name="brands"
+                    class="form-check-input"
+                    t-attf-id="brand_#{brand.id}"
+                    t-att-value="brand.id"
+                    t-att-checked="'checked' if brand.id in (active_brand_ids or set()) else None"
+                />
+                <label
+                    class="form-check-label fw-normal d-flex align-items-center gap-2 cursor-pointer"
+                    t-attf-for="brand_#{brand.id}"
+                >
+                    <img
+                        t-if="brand.image_128"
+                        t-attf-src="/web/image/product.brand/#{brand.id}/image_128"
+                        t-attf-alt="#{brand.name}"
+                        style="height:20px; width:auto; max-width:70px; object-fit:contain;"
+                        loading="lazy"
+                    />
+                    <span t-field="brand.name"/>
+                </label>
+            </div>
+        </t>
+    </template>
+
+    <!-- ================================================================
+         BRAND DISPLAY ON PRODUCT PAGE
+         Inherits product_title (the sub-template that contains the h1).
+         Shows brand logo/name above the product title, linked to shop filter.
+    ================================================================ -->
+    <template
+        id="product_brand_display"
+        name="Brand on Product Page"
+        inherit_id="website_sale.product_title"
+    >
+        <h1 t-field="product.name" position="before">
+            <t t-if="product.brand_id">
+                <a
+                    t-attf-href="/shop?brands=#{product.brand_id.id}"
+                    class="d-inline-flex align-items-center gap-2 text-decoration-none mb-2"
+                >
+                    <img
+                        t-if="product.brand_id.image_128"
+                        t-attf-src="/web/image/product.brand/#{product.brand_id.id}/image_128"
+                        t-attf-alt="#{product.brand_id.name}"
+                        style="height:36px; width:auto; max-width:130px; object-fit:contain;"
+                        loading="lazy"
+                    />
+                    <small
+                        t-if="not product.brand_id.image_128"
+                        class="text-muted fw-semibold text-uppercase"
+                        t-field="product.brand_id.name"
+                    />
+                </a>
+            </t>
+        </h1>
+    </template>
+
+    <!-- ================================================================
+         BRAND NAME ON PRODUCT TILE (shop grid card)
+         Shows brand name below the product title in each tile.
+    ================================================================ -->
+    <template
+        id="product_tile_brand"
+        name="Brand on Product Tile"
+        inherit_id="website_sale.products_item"
+        active="True"
+    >
+        <xpath expr="//h2[contains(@class,'o_wsale_products_item_title')]" position="after">
+            <t t-if="product.brand_id">
+                <div class="o_wsale_brand_tile mb-1">
+                    <small class="text-muted" t-field="product.brand_id.name"/>
+                </div>
+            </t>
+        </xpath>
+    </template>
+
+
+    <!-- ================================================================
+         /brands PAGE - Grid of all published brands
+    ================================================================ -->
+    <template id="brands_page" name="Brands">
+        <t t-call="website.layout">
+            <div id="wrap" class="o_wsale_brands_page">
+                <div class="oe_structure oe_empty" id="oe_structure_brands_top"/>
+                <section class="container py-5">
+                    <h1 class="mb-4">Brands</h1>
+                    <div class="row g-4">
+                        <t t-foreach="brands" t-as="brand">
+                            <div class="col-6 col-sm-4 col-md-3 col-lg-2">
+                                <a t-attf-href="/shop?brands=#{brand.id}"
+                                   class="d-block text-center text-decoration-none p-3 border rounded h-100 d-flex flex-column align-items-center justify-content-center gap-2 o_wsale_brand_card">
+                                    <img t-if="brand.image_512"
+                                         t-attf-src="/web/image/product.brand/#{brand.id}/image_512"
+                                         t-attf-alt="#{brand.name}"
+                                         class="img-fluid"
+                                         style="max-height:80px; object-fit:contain;"
+                                         loading="lazy"/>
+                                    <span class="fw-semibold small text-dark" t-field="brand.name"/>
+                                    <small class="text-muted">
+                                        <t t-out="brand.product_count"/> products
+                                    </small>
+                                </a>
+                            </div>
+                        </t>
+                        <div t-if="not brands" class="col-12 text-center text-muted py-5">
+                            <p>No brands available yet.</p>
+                        </div>
+                    </div>
+                </section>
+                <div class="oe_structure oe_empty" id="oe_structure_brands_bottom"/>
+            </div>
+        </t>
+    </template>
+
+</odoo>

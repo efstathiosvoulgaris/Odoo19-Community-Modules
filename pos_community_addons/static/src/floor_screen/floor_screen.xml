@@ -1,0 +1,100 @@
+<?xml version='1.0' encoding='utf-8'?>
+<templates>
+
+      <t t-name="pos_community_addons.FloorScreenTron" t-inherit="pos_restaurant.FloorScreen"
+            t-inherit-mode="extension">
+
+            <xpath expr="//div[@t-on-click='(ev) =&gt; this.onClickTable(table, ev)']"
+                  position="replace">
+
+                  <div
+                        t-on-click="(ev) =&gt; this.onClickTable(table, ev)"
+                        class="floor-table table o_draggable d-flex flex-column align-items-center justify-content-between cursor-pointer"
+                        t-att-class="{
+                                        'position-relative m-0': isKanban,
+                                        'position-absolute': pos.floorPlanStyle !== 'kanban',
+                                        'selected': state.selectedTableIds.includes(table.id),
+                                        'occupied': isOccupied,
+                                    }"
+                        t-attf-class="tableId-{{table.id}}"
+                        t-attf-style="
+                                                border-radius: {{table.shape === 'round' ? 1000 : 6}}px;
+                                                background-color: {{table.color || '#35d374'}};
+                                                border: 4px solid {{isOccupied ? '#dc3545' : (table.color || '#35d374')}};
+                                                box-shadow: {{isOccupied ? '0 0 0 2px rgba(220,53,69,0.35), 0 0 10px rgba(220,53,69,0.55)' : 'none'}};
+                                                color: {{isOccupied ? 'var(--tableOccupied-color, #000000)' : 'var(--table-color, #FFFFFF)'}};
+                                                opacity: {{state.potentialLink ? (isIntersecting or isIntersected ? 1 : 0.25) : 1}};
+                                                {{isKanban ?
+                                                    `
+                                                        width: 100%;
+                                                        min-height: 120px;
+                                                    ` :
+                                                    `
+                                                        width: ${table.width}px;
+                                                        height: ${table.height}px;
+                                                        top: ${table.getY() +  state.floorMapOffset.y}px;
+                                                        left: ${table.getX() + state.floorMapOffset.x}px;
+                                                    `
+                                                }}
+                                            "
+                  >
+                        <t t-set="offset" t-value="getTableHandleOffset(table)" />
+                        <div
+                              class="info position-relative w-100 h-100 overflow-hidden"
+                              t-att-class="{'opacity-25': table.parent_id}"
+                              t-attf-style="border-radius: {{table.shape === 'round' ? 1000 : 3}}px;"
+                        >
+                              <div t-esc="table.table_number"
+                                    class="label fw-bolder fs-4 position-absolute top-50 start-50 translate-middle" />
+                        </div>
+                        <t t-set="data" t-value="getChangeCount(table)" />
+                        <div
+                              t-if="data.changes &gt; 0"
+                              t-esc="this.env.utils.formatProductQty(data.changes, false)"
+                              t-att-class="{
+                                            'text-bg-danger': data.changes,
+                                        }"
+                              class="order-count d-flex align-items-center justify-content-center position-absolute top-0 end-0 rounded-3 smaller fw-bolder z-2 badge"
+                        />
+                        <t t-set="activeItemCount" t-value="pos.getActiveOrdersOnTable(table).reduce((sum, o) =&gt; sum + o.lines.reduce((s, l) =&gt; s + l.qty, 0), 0)" />
+                        <div
+                              t-if="activeItemCount &gt; 0"
+                              class="item-count d-flex align-items-center justify-content-center position-absolute bottom-0 start-50 translate-middle-x rounded-pill smaller fw-bolder z-2 badge text-bg-dark"
+                              style="margin-bottom: -10px;"
+                        >
+                              <i class="fa fa-shopping-basket me-1"/><t t-esc="activeItemCount"/>
+                        </div>
+                        <t t-if="isOccupied">
+                              <t t-set="_firstOrder" t-value="pos.getActiveOrdersOnTable(table)[0]"/>
+                              <t t-if="_firstOrder and _firstOrder.date_order">
+                                    <t t-set="_min" t-value="Math.floor((Date.now() - _firstOrder.date_order.toMillis()) / 60000)"/>
+                                    <div class="position-absolute top-0 start-0 rounded-2 fw-bold z-2"
+                                         style="margin:3px;font-size:68%;padding:1px 5px;"
+                                         t-att-class="{
+                                             'text-bg-success': _min &lt; 30,
+                                             'text-bg-warning': _min &gt;= 30 and _min &lt; 60,
+                                             'text-bg-danger': _min &gt;= 60
+                                         }">
+                                         <t t-if="_min &gt;= 60"><t t-esc="Math.floor(_min / 60)"/>h<t t-if="_min % 60"> <t t-esc="_min % 60"/>m</t></t>
+                                         <t t-else=""><t t-esc="_min"/>m</t>
+                                    </div>
+                              </t>
+                        </t>
+                        <t t-if="state.selectedTableIds.includes(table.id)">
+                              <span t-attf-class="tableId-{{table.id}}"
+                                    class="table-handle position-absolute top left"
+                                    t-attf-style="top: {{offset}}px; left: {{offset}}px" />
+                              <span t-attf-class="tableId-{{table.id}}"
+                                    class="table-handle position-absolute top right"
+                                    t-attf-style="top: {{offset}}px; right: {{offset}}px" />
+                              <span t-attf-class="tableId-{{table.id}}"
+                                    class="table-handle position-absolute bottom right"
+                                    t-attf-style="bottom: {{offset}}px; right: {{offset}}px" />
+                              <span t-attf-class="tableId-{{table.id}}"
+                                    class="table-handle position-absolute bottom left"
+                                    t-attf-style="bottom: {{offset}}px; left: {{offset}}px" />
+                        </t>
+                  </div>
+            </xpath>
+      </t>
+</templates>

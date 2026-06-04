@@ -1,0 +1,22 @@
+<?xml version='1.0' encoding='utf-8'?>
+<templates>
+
+    <t t-name="pos_community_addons.PaymentScreenDue"
+       t-inherit="point_of_sale.PaymentScreenDue"
+       t-inherit-mode="extension">
+        <xpath expr="//div[hasclass('total')]" position="before">
+            <div t-if="currentOrder.table_id"
+                 class="text-center fw-bold text-dark mb-1"
+                 style="font-size: 180%; letter-spacing: 3px;">
+                ΤΡΑΠΕΖΙ <t t-esc="currentOrder.table_id.table_number"/>
+            </div>
+        </xpath>
+    </t>
+
+    <t t-name="pos_community_addons.PaymentScreenButtons"
+       t-inherit="point_of_sale.PaymentScreenButtons"
+       t-inherit-mode="extension">
+        <xpath expr="//button[hasclass('js_invoice')]" position="replace"/>
+    </t>
+
+</templates>

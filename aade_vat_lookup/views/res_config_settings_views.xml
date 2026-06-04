@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_view_form_aade" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.aade</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="base.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form" position="inside">
+                <app data-string="AADE VAT Lookup" string="AADE VAT Lookup" name="aade_vat_lookup">
+                    <block title="Διαπιστευτήρια ΑΑΔΕ (RgWsPublic2)"
+                           name="aade_credentials">
+                        <setting help="Όνομα χρήστη TaxisNet εξουσιοδοτημένο για την υπηρεσία RgWsPublic2.">
+                            <field name="aade_username"/>
+                        </setting>
+                        <setting help="Κωδικός TaxisNet για την υπηρεσία RgWsPublic2.">
+                            <field name="aade_password" password="True"/>
+                        </setting>
+                    </block>
+                </app>
+            </xpath>
+        </field>
+    </record>
+</odoo>

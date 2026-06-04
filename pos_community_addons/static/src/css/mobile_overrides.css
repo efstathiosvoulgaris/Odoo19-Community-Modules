@@ -1,0 +1,17 @@
+/* Payment screen: hide Customer, Invoice, Tip */
+.payment-screen .customer-button,
+.payment-screen .partner-button,
+.payment-screen .invoice-toggle,
+.payment-screen .invoice-button,
+.payment-screen .tip-button,
+.payment-screen .tip-row {
+    display: none !important;
+}
+
+/* Order screen actionpad: hide Customer/Partner button */
+.action-pad .partner-button,
+.action-pad .customer-button,
+.actionpad .partner-button,
+.actionpad .customer-button {
+    display: none !important;
+}

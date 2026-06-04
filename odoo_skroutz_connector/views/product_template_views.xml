@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Add Skroutz tab to product form -->
+    <record id="product_template_form_view_skroutz" model="ir.ui.view">
+        <field name="name">product.template.form.skroutz</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_form_view"/>
+        <field name="arch" type="xml">
+            <notebook position="inside">
+                <page string="Skroutz" name="skroutz">
+                    <group string="Feed Status">
+                        <field name="default_code" string="MPN (Unique ID)" readonly="1"/>
+                        <field name="barcode" string="EAN" readonly="1"/>
+                        <field name="skroutz_category_path" string="Category Path" readonly="1"/>
+                    </group>
+                    <group string="Optional Skroutz Fields">
+                        <group>
+                            <field name="skroutz_color"/>
+                            <field name="skroutz_season"/>
+                            <field name="skroutz_size_fit"/>
+                        </group>
+                        <group>
+                            <field name="skroutz_outlet"/>
+                            <field name="skroutz_shipping_cost"/>
+                        </group>
+                    </group>
+                    <div class="alert alert-info" role="alert">
+                        <strong>Feed inclusion:</strong>
+                        This product is included in the Skroutz feed when it is
+                        <strong>published on the website</strong> and has a
+                        <strong>non-empty Internal Reference (MPN)</strong>.
+                    </div>
+                </page>
+            </notebook>
+        </field>
+    </record>
+
+</odoo>

@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         Form view – Greek fields inline above the notebook
+    ═══════════════════════════════════════════════════════════════════════ -->
+    <record id="view_partner_form_gr_fields" model="ir.ui.view">
+        <field name="name">res.partner.form.gr.fields</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+
+            <!-- Αριθμός οδού αμέσως μετά την Οδό, μέσα στο o_address_format -->
+            <xpath expr="//div[hasclass('o_address_format')]/field[@name='street']" position="after">
+                <field name="arithmos_odou"
+                       class="o_address_street"
+                       placeholder="Αριθμός..."/>
+            </xpath>
+
+            <!-- Κινητό κάτω από το Σταθερό, με ίδιο styling -->
+            <xpath expr="//field[@name='phone'][@widget='phone']/.." position="after">
+                <div class="d-flex align-items-baseline w-md-50">
+                    <i class="fa fa-fw me-1 fa-mobile text-primary" title="Mobile"/>
+                    <field name="kinito" class="w-100" widget="phone" placeholder="Κινητό"/>
+                </div>
+            </xpath>
+
+            <!-- Ελληνικά πεδία πριν τις καρτέλες, δύο ισοβαρείς κολόνες χωρίς τίτλους -->
+            <xpath expr="//notebook" position="before">
+                <group>
+                    <group>
+                        <field name="eponymia"/>
+                        <field name="drastiriotita"/>
+                        <field name="legal_form"/>
+                        <field name="mydata_entity_type"/>
+                    </group>
+                    <group>
+                        <field name="doy"/>
+                        <field name="gemh"/>
+                        <field name="branch_number"/>
+                    </group>
+                </group>
+            </xpath>
+
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         List view
+         Ήδη στο base: display_name, vat, email, phone, street, city,
+                       state_id, country_id
+         Προσθέτουμε:  eponymia, drastiriotita, doy, arithmos_odou, zip, mobile
+    ═══════════════════════════════════════════════════════════════════════ -->
+    <record id="view_partner_list_gr_fields" model="ir.ui.view">
+        <field name="name">res.partner.list.gr.fields</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_tree"/>
+        <field name="arch" type="xml">
+
+            <!-- Επωνυμία + Δραστηριότητα μετά από το Όνομα -->
+            <field name="display_name" position="after">
+                <field name="eponymia"      optional="show"/>
+                <field name="drastiriotita" optional="hide"/>
+            </field>
+
+            <!-- ΔΟΥ μετά από ΑΦΜ -->
+            <field name="vat" position="after">
+                <field name="doy" optional="show"/>
+            </field>
+
+            <!-- Αριθμός Οδού μετά από Οδός -->
+            <field name="street" position="after">
+                <field name="arithmos_odou" optional="show" string="Αριθμός"/>
+            </field>
+
+            <!-- Τ.Κ. μετά από Πόλη -->
+            <field name="city" position="after">
+                <field name="zip" optional="show" string="Τ.Κ."/>
+            </field>
+
+            <!-- Κινητό μετά από Σταθερό (phone) -->
+            <field name="phone" position="after">
+                <field name="kinito" optional="show" string="Κινητό"/>
+            </field>
+
+        </field>
+    </record>
+
+</odoo>

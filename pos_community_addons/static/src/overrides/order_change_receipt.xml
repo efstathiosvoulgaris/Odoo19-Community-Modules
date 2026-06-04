@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+
+    <t t-name="pos_community_addons.OrderChangeReceipt"
+       t-inherit="point_of_sale.OrderChangeReceipt"
+       t-inherit-mode="extension">
+
+        <xpath expr="//div[hasclass('pos-receipt')]" position="replace">
+            <div class="pos-receipt m-0 p-0" style="font-family: Arial, sans-serif; width: 560px;">
+
+                <!-- HEADER -->
+                <div class="text-center" style="padding: 14px 8px 8px 8px;">
+                    <div style="font-size: 190%; font-weight: 900; letter-spacing: 1px; line-height: 1.2;">
+                        Erkyna Cafe
+                    </div>
+                    <div style="font-size: 140%; font-weight: 700; letter-spacing: 2px; margin-top: 4px;">
+                        ΠΑΡΑΓΓΕΛΙΟΛΗΨΙΑ
+                    </div>
+                </div>
+
+                <hr style="border: none; border-top: 5px solid black; margin: 4px 0;"/>
+
+                <!-- TABLE + META -->
+                <div class="text-center" style="padding: 8px 4px;">
+                    <div style="font-size: 280%; font-weight: 900; letter-spacing: 3px; line-height: 1; margin-bottom: 6px;">
+                        <t t-esc="data.pos_reference"/>
+                    </div>
+                    <div t-if="data.customer_count" style="font-size: 130%; font-weight: 600; margin-bottom: 4px;">
+                        Episkeptes: <t t-esc="data.customer_count"/>
+                    </div>
+                    <div style="font-size: 120%; margin-top: 4px;">
+                        <strong><t t-esc="data.employee_name"/></strong>
+                        <span style="margin: 0 10px;">|</span>
+                        <t t-esc="data.time"/>
+                    </div>
+                    <div t-if="data.reprint" style="font-size: 130%; font-weight: 900; margin-top: 8px; border: 3px solid black; display: inline-block; padding: 2px 12px;">
+                        *** ANTIGRAFO ***
+                    </div>
+                </div>
+
+                <hr style="border: none; border-top: 5px dashed black; margin: 4px 0;"/>
+
+                <!-- ORDER LINES -->
+                <div style="padding: 6px 8px 16px 8px;">
+                    <t t-set="hasDataChanges" t-value="data.changes.data?.length or data.changes.groupedData or data.changes.title"/>
+
+                    <div t-if="hasDataChanges">
+                        <div t-if="data.changes.title" class="text-center" style="font-size: 140%; font-weight: 900; margin-bottom: 10px; letter-spacing: 2px;">
+                            <t t-esc="data.changes.title"/>
+                        </div>
+
+                        <!-- Grouped by category -->
+                        <t t-if="data.changes.groupedData">
+                            <div t-foreach="data.changes.groupedData" t-as="group" t-key="group_index">
+                                <div style="font-size: 120%; font-weight: 900; letter-spacing: 1px; border-bottom: 3px solid black; padding-bottom: 2px; margin: 12px 0 6px 0;">
+                                    <t t-esc="group.name"/>
+                                </div>
+                                <div t-foreach="group.data" t-as="line" t-key="change_index">
+                                    <t t-call="pos_community_addons.KitchenLine"/>
+                                </div>
+                            </div>
+                        </t>
+
+                        <!-- Ungrouped -->
+                        <t t-else="">
+                            <div t-foreach="data.changes.data" t-as="line" t-key="change_index">
+                                <t t-call="pos_community_addons.KitchenLine"/>
+                            </div>
+                        </t>
+                    </div>
+
+                    <!-- Internal note only (no item changes) -->
+                    <div t-if="data.internal_note and !hasDataChanges" style="margin-bottom: 10px;">
+                        <div class="text-center" style="font-size: 130%; font-weight: 900; margin-bottom: 6px;">ESOTERIKE SEMEIVSE</div>
+                        <div class="text-center" style="font-size: 150%; font-weight: 700;">
+                            <t t-esc="data.internal_note"/>
+                        </div>
+                    </div>
+
+                    <!-- Customer note only -->
+                    <div t-if="data.general_customer_note and !hasDataChanges">
+                        <div class="text-center" style="font-size: 130%; font-weight: 900; margin-bottom: 6px;">SEMEIVSE PELATE</div>
+                        <div class="text-center" style="font-size: 150%; font-weight: 700;">
+                            <t t-esc="data.general_customer_note"/>
+                        </div>
+                    </div>
+                </div>
+
+                <hr style="border: none; border-top: 3px solid black; margin: 4px 0 20px 0;"/>
+
+            </div>
+        </xpath>
+
+    </t>
+
+    <!-- Kitchen line sub-template -->
+    <t t-name="pos_community_addons.KitchenLine">
+        <div style="margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px dashed #666;">
+
+            <!-- Quantity + Name -->
+            <div style="margin-left: 0px;">
+                <span style="font-size: 240%; font-weight: 900; margin-right: 12px;">
+                    <t t-esc="line.quantity"/>
+                </span>
+                <span style="font-size: 200%; font-weight: 700;">
+                    <t t-esc="line.basic_name"/>
+                </span>
+            </div>
+
+            <!-- Attribute values (options/variables) -->
+            <div t-if="line.attribute_value_names?.length" style="margin-left: 50px; margin-top: 4px;">
+                <div t-foreach="line.attribute_value_names" t-as="attr" t-key="attr_index"
+                     style="font-size: 150%; font-weight: 600; color: #333;">
+                    + <t t-esc="attr"/>
+                </div>
+            </div>
+
+            <!-- Line note -->
+            <div t-if="line.note" style="margin-left: 50px; margin-top: 6px; font-size: 150%; font-weight: 700; font-style: italic; background-color: #eeeeee; padding: 3px 8px; border-left: 5px solid #333;">
+                <t t-esc="line.note"/>
+            </div>
+
+            <!-- Customer note on line -->
+            <div t-if="line.customer_note" style="margin-left: 50px; margin-top: 6px; font-size: 150%; font-weight: 700; font-style: italic; background-color: #eeeeee; padding: 3px 8px; border-left: 5px solid #333;">
+                <t t-esc="line.customer_note"/>
+            </div>
+        </div>
+    </t>
+
+</templates>

@@ -1,0 +1,381 @@
+# Greek translation for the repair_shop_tickets module
+# Copyright (C) 2026
+# This file is distributed under the same license as the repair_shop_tickets module.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 19.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-05-27 00:00+0000\n"
+"PO-Revision-Date: 2026-05-27 00:00+0000\n"
+"Last-Translator: \n"
+"Language-Team: Greek\n"
+"Language: el\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+# ─── Model descriptions ────────────────────────────────────────────────────────
+
+#. module: repair_shop_tickets
+#: model:ir.model,name:repair_shop_tickets.model_service_ticket
+msgid "Service Ticket"
+msgstr "Δελτίο Σέρβις"
+
+#. module: repair_shop_tickets
+#: model:ir.model,name:repair_shop_tickets.model_service_ticket_line
+msgid "Service Ticket Part"
+msgstr "Εξάρτημα Δελτίου Σέρβις"
+
+#. module: repair_shop_tickets
+#: model:ir.model,name:repair_shop_tickets.model_service_job_type
+msgid "Service Job Type"
+msgstr "Τύπος Εργασίας Σέρβις"
+
+#. module: repair_shop_tickets
+#: model:ir.model,name:repair_shop_tickets.model_service_brand
+msgid "Service Brand"
+msgstr "Μάρκα Σέρβις"
+
+#. module: repair_shop_tickets
+#: model:ir.model,name:repair_shop_tickets.model_service_product_model
+msgid "Product Model"
+msgstr "Μοντέλο Προϊόντος"
+
+# ─── service.ticket field labels ──────────────────────────────────────────────
+
+#. module: repair_shop_tickets
+#: model:ir.model.fields,field_description:repair_shop_tickets.field_service_ticket__name
+msgid "Ticket Reference"
+msgstr "Αριθμός Δελτίου"
+
+#. module: repair_shop_tickets
+#: model:ir.model.fields,field_description:repair_shop_tickets.field_service_ticket__partner_id
+#: model:ir.ui.view,arch_db:repair_shop_tickets.view_service_ticket_search
+msgid "Customer"
+msgstr "Πελάτης"
+
+#. module: repair_shop_tickets
+#: model:ir.model.fields,field_description:repair_shop_tickets.field_service_ticket__phone
+msgid "Phone"
+msgstr "Τηλέφωνο"
+
+#. module: repair_shop_tickets
+#: model:ir.model.fields,field_description:repair_shop_tickets.field_service_ticket__brand_id
+#: model:ir.model.fields,field_description:repair_shop_tickets.field_service_brand__name
+#: model:ir.model.fields,field_description:repair_shop_tickets.field_service_product_model__brand_id
+#: model:ir.ui.view,arch_db:repair_shop_tickets.view_service_brand_form
+#: model:ir.ui.view,arch_db:repair_shop_tickets.view_service_ticket_search
+msgid "Brand"
+msgstr "Μάρκα"
+
+#. module: repair_shop_tickets
+#: model:ir.model.fields,field_description:repair_shop_tickets.field_service_ticket__product_model_id
+#: model:ir.model.fields,field_description:repair_shop_tickets.field_service_product_model__name
+msgid "Model"
+msgstr "Μοντέλο"
+
+#. module: repair_shop_tickets
+#: model:ir.model.fields,field_description:repair_shop_tickets.field_service_ticket__job_type_id
+#: model:ir.model.fields,field_description:repair_shop_tickets.field_service_job_type__name
+#: model:ir.ui.view,arch_db:repair_shop_tickets.view_service_job_type_form
+#: model:ir.ui.view,arch_db:repair_shop_tickets.view_service_ticket_search
+msgid "Job Type"
+msgstr "Τύπος Εργασίας"
+
+#. module: repair_shop_tickets
+#: model:ir.model.fields,field_description:repair_shop_tickets.field_service_ticket__employee_id
+msgid "Assigned Technician"
+msgstr "Ανατεθειμένος Τεχνικός"
+
+#. module: repair_shop_tickets
+#: model:ir.model.fields,field_description:repair_shop_tickets.field_service_ticket__fixes_needed
+#: model:ir.ui.view,arch_db:repair_shop_tickets.view_service_ticket_form
+msgid "Customer Notes"
+msgstr "Σημειώσεις Πελάτη"
+
+#. module: repair_shop_tickets
+#: model:ir.model.fields,field_description:repair_shop_tickets.field_service_ticket__technician_notes
+#: model:ir.ui.view,arch_db:repair_shop_tickets.view_service_ticket_form
+msgid "Technician Notes"
+msgstr "Σημειώσεις Τεχνικού"
+
+#. module: repair_shop_tickets
+#: model:ir.model.fields,field_description:repair_shop_tickets.field_service_ticket__labor_price
+msgid "Labor Price"
+msgstr "Τιμή Εργασίας"
+
+#. module: repair_shop_tickets
+#: model:ir.model.fields,field_description:repair_shop_tickets.field_service_ticket__total_price
+msgid "Total"
+msgstr "Σύνολο"
+
+#. module: repair_shop_tickets
+#: model:ir.model.fields,field_description:repair_shop_tickets.field_service_ticket__line_ids
+msgid "Parts"
+msgstr "Ανταλλακτικά"
+
+#. module: repair_shop_tickets
+#: model:ir.model.fields,field_description:repair_shop_tickets.field_service_ticket__invoice_id
+msgid "Invoice"
+msgstr "Τιμολόγιο"
+
+#. module: repair_shop_tickets
+#: model:ir.model.fields,field_description:repair_shop_tickets.field_service_ticket__stock_move_ids
+#: model:ir.ui.view,arch_db:repair_shop_tickets.view_service_ticket_form
+#: code:addons/repair_shop_tickets/models/service_ticket.py:0
+msgid "Stock Moves"
+msgstr "Κινήσεις Αποθήκης"
+
+#. module: repair_shop_tickets
+#: model:ir.model.fields,field_description:repair_shop_tickets.field_service_ticket__stock_consumed
+msgid "Stock Consumed"
+msgstr "Αναλωθείσα Αποθήκη"
+
+#. module: repair_shop_tickets
+#: model:ir.model.fields,field_description:repair_shop_tickets.field_service_ticket__state
+#: model:ir.ui.view,arch_db:repair_shop_tickets.view_service_ticket_search
+msgid "Status"
+msgstr "Κατάσταση"
+
+# ─── service.ticket.line field labels ─────────────────────────────────────────
+
+#. module: repair_shop_tickets
+#: model:ir.model.fields,field_description:repair_shop_tickets.field_service_ticket_line__product_id
+msgid "Part"
+msgstr "Εξάρτημα"
+
+#. module: repair_shop_tickets
+#: model:ir.model.fields,field_description:repair_shop_tickets.field_service_ticket_line__name
+msgid "Description"
+msgstr "Περιγραφή"
+
+#. module: repair_shop_tickets
+#: model:ir.model.fields,field_description:repair_shop_tickets.field_service_ticket_line__quantity
+msgid "Qty"
+msgstr "Ποσ."
+
+#. module: repair_shop_tickets
+#: model:ir.model.fields,field_description:repair_shop_tickets.field_service_ticket_line__price_unit
+msgid "Unit Price"
+msgstr "Τιμή Μονάδας"
+
+#. module: repair_shop_tickets
+#: model:ir.model.fields,field_description:repair_shop_tickets.field_service_ticket_line__price_subtotal
+msgid "Subtotal"
+msgstr "Υποσύνολο"
+
+# ─── service.brand extra field labels ─────────────────────────────────────────
+
+#. module: repair_shop_tickets
+#: model:ir.model.fields,field_description:repair_shop_tickets.field_service_brand__product_model_ids
+msgid "Models"
+msgstr "Μοντέλα"
+
+# ─── State selection values ────────────────────────────────────────────────────
+
+#. module: repair_shop_tickets
+#: model:ir.model.fields.selection,name:repair_shop_tickets.selection__service_ticket__state__new
+#: model:ir.ui.view,arch_db:repair_shop_tickets.view_service_ticket_search
+#: code:addons/repair_shop_tickets/models/service_ticket.py:0
+msgid "New"
+msgstr "Νέο"
+
+#. module: repair_shop_tickets
+#: model:ir.model.fields.selection,name:repair_shop_tickets.selection__service_ticket__state__in_progress
+#: model:ir.ui.view,arch_db:repair_shop_tickets.view_service_ticket_search
+msgid "In Progress"
+msgstr "Σε Εξέλιξη"
+
+#. module: repair_shop_tickets
+#: model:ir.model.fields.selection,name:repair_shop_tickets.selection__service_ticket__state__waiting_for_parts
+#: model:ir.ui.view,arch_db:repair_shop_tickets.view_service_ticket_form
+#: model:ir.ui.view,arch_db:repair_shop_tickets.view_service_ticket_search
+msgid "Waiting for Parts"
+msgstr "Αναμονή Ανταλλακτικών"
+
+#. module: repair_shop_tickets
+#: model:ir.model.fields.selection,name:repair_shop_tickets.selection__service_ticket__state__resolved
+#: model:ir.ui.view,arch_db:repair_shop_tickets.view_service_ticket_search
+msgid "Resolved"
+msgstr "Επιλύθηκε"
+
+#. module: repair_shop_tickets
+#: model:ir.model.fields.selection,name:repair_shop_tickets.selection__service_ticket__state__picked_up
+#: model:ir.ui.view,arch_db:repair_shop_tickets.view_service_ticket_form
+#: model:ir.ui.view,arch_db:repair_shop_tickets.view_service_ticket_search
+msgid "Picked Up"
+msgstr "Παραλήφθηκε"
+
+#. module: repair_shop_tickets
+#: model:ir.model.fields.selection,name:repair_shop_tickets.selection__service_ticket__state__cancelled
+msgid "Cancelled"
+msgstr "Ακυρώθηκε"
+
+# ─── Buttons (form view) ───────────────────────────────────────────────────────
+
+#. module: repair_shop_tickets
+#: model:ir.ui.view,arch_db:repair_shop_tickets.view_service_ticket_form
+msgid "Set In Progress"
+msgstr "Ορισμός σε Εξέλιξη"
+
+#. module: repair_shop_tickets
+#: model:ir.ui.view,arch_db:repair_shop_tickets.view_service_ticket_form
+msgid "Back to In Progress"
+msgstr "Επιστροφή σε Εξέλιξη"
+
+#. module: repair_shop_tickets
+#: model:ir.ui.view,arch_db:repair_shop_tickets.view_service_ticket_form
+msgid "Resolve"
+msgstr "Επίλυση"
+
+#. module: repair_shop_tickets
+#: model:ir.ui.view,arch_db:repair_shop_tickets.view_service_ticket_form
+msgid "Reopen (Repair Failed)"
+msgstr "Επαναφορά (Αποτυχία Επισκευής)"
+
+#. module: repair_shop_tickets
+#: model:ir.ui.view,arch_db:repair_shop_tickets.view_service_ticket_form
+msgid "Create Invoice"
+msgstr "Δημιουργία Τιμολογίου"
+
+#. module: repair_shop_tickets
+#: model:ir.ui.view,arch_db:repair_shop_tickets.view_service_ticket_form
+msgid "View Invoice"
+msgstr "Προβολή Τιμολογίου"
+
+#. module: repair_shop_tickets
+#: model:ir.ui.view,arch_db:repair_shop_tickets.view_service_ticket_form
+msgid "Print Receipt"
+msgstr "Εκτύπωση Απόδειξης"
+
+#. module: repair_shop_tickets
+#: model:ir.ui.view,arch_db:repair_shop_tickets.view_service_ticket_form
+msgid "Cancel Ticket"
+msgstr "Ακύρωση Δελτίου"
+
+#. module: repair_shop_tickets
+#: model:ir.ui.view,arch_db:repair_shop_tickets.view_service_ticket_form
+msgid "Are you sure you want to cancel this ticket? This action cannot be undone."
+msgstr "Είστε σίγουροι ότι θέλετε να ακυρώσετε αυτό το δελτίο; Αυτή η ενέργεια δεν μπορεί να αναιρεθεί."
+
+# ─── Search view filters / groups ─────────────────────────────────────────────
+
+#. module: repair_shop_tickets
+#: model:ir.ui.view,arch_db:repair_shop_tickets.view_service_ticket_search
+msgid "Invoiced"
+msgstr "Τιμολογημένο"
+
+#. module: repair_shop_tickets
+#: model:ir.ui.view,arch_db:repair_shop_tickets.view_service_ticket_search
+msgid "Search Service Tickets"
+msgstr "Αναζήτηση Δελτίων Σέρβις"
+
+# ─── List / Form view strings ──────────────────────────────────────────────────
+
+#. module: repair_shop_tickets
+#: model:ir.ui.view,arch_db:repair_shop_tickets.view_service_ticket_tree
+#: model:ir.actions.act_window,name:repair_shop_tickets.action_service_ticket
+#: model:ir.ui.menu,name:repair_shop_tickets.menu_service_ticket_root
+#: model:res.groups.privilege,name:repair_shop_tickets.res_groups_privilege_service
+msgid "Service Tickets"
+msgstr "Δελτία Σέρβις"
+
+#. module: repair_shop_tickets
+#: model:ir.ui.view,arch_db:repair_shop_tickets.view_service_brand_tree
+#: model:ir.actions.act_window,name:repair_shop_tickets.action_service_brand
+msgid "Brands"
+msgstr "Μάρκες"
+
+#. module: repair_shop_tickets
+#: model:ir.ui.view,arch_db:repair_shop_tickets.view_service_job_type_tree
+#: model:ir.actions.act_window,name:repair_shop_tickets.action_service_job_type
+#: model:ir.ui.menu,name:repair_shop_tickets.menu_service_job_types
+msgid "Job Types"
+msgstr "Τύποι Εργασίας"
+
+# ─── Menu items ────────────────────────────────────────────────────────────────
+
+#. module: repair_shop_tickets
+#: model:ir.ui.menu,name:repair_shop_tickets.menu_service_ticket_tickets
+msgid "Tickets"
+msgstr "Δελτία"
+
+#. module: repair_shop_tickets
+#: model:ir.ui.menu,name:repair_shop_tickets.menu_service_ticket_all_tickets
+msgid "All Tickets"
+msgstr "Όλα τα Δελτία"
+
+#. module: repair_shop_tickets
+#: model:ir.ui.menu,name:repair_shop_tickets.menu_service_ticket_config
+msgid "Configuration"
+msgstr "Ρυθμίσεις"
+
+#. module: repair_shop_tickets
+#: model:ir.ui.menu,name:repair_shop_tickets.menu_service_ticket_brands
+msgid "Brands & Models"
+msgstr "Μάρκες & Μοντέλα"
+
+# ─── Action help text ─────────────────────────────────────────────────────────
+
+#. module: repair_shop_tickets
+#: model:ir.actions.act_window,help:repair_shop_tickets.action_service_ticket
+msgid "Create your first service ticket!"
+msgstr "Δημιουργήστε το πρώτο σας δελτίο σέρβις!"
+
+#. module: repair_shop_tickets
+#: model:ir.actions.act_window,help:repair_shop_tickets.action_service_ticket
+msgid "Track customer issues and manage their progress."
+msgstr "Παρακολουθήστε τα αιτήματα πελατών και διαχειριστείτε την εξέλιξή τους."
+
+# ─── Report & paperformat names ───────────────────────────────────────────────
+
+#. module: repair_shop_tickets
+#: model:ir.actions.report,name:repair_shop_tickets.action_report_service_receipt
+msgid "Service Receipt"
+msgstr "Απόδειξη Σέρβις"
+
+#. module: repair_shop_tickets
+#: model:report.paperformat,name:repair_shop_tickets.paperformat_service_receipt
+msgid "Service Receipt 80mm"
+msgstr "Απόδειξη Σέρβις 80mm"
+
+# ─── Sequence name ─────────────────────────────────────────────────────────────
+
+#. module: repair_shop_tickets
+#: model:ir.sequence,name:repair_shop_tickets.seq_service_ticket
+msgid "Service Ticket"
+msgstr "Δελτίο Σέρβις"
+
+# ─── Security groups ───────────────────────────────────────────────────────────
+
+#. module: repair_shop_tickets
+#: model:res.groups,name:repair_shop_tickets.group_service_ticket_user
+msgid "User"
+msgstr "Χρήστης"
+
+#. module: repair_shop_tickets
+#: model:res.groups,name:repair_shop_tickets.group_service_ticket_manager
+msgid "Manager"
+msgstr "Διαχειριστής"
+
+# ─── Security rules ────────────────────────────────────────────────────────────
+
+#. module: repair_shop_tickets
+#: model:ir.rule,name:repair_shop_tickets.service_ticket_rule_user
+msgid "Service Ticket: User can see all tickets"
+msgstr "Δελτίο Σέρβις: Ο χρήστης μπορεί να δει όλα τα δελτία"
+
+#. module: repair_shop_tickets
+#: model:ir.rule,name:repair_shop_tickets.service_ticket_rule_manager
+msgid "Service Ticket: Manager can see all"
+msgstr "Δελτίο Σέρβις: Ο διαχειριστής μπορεί να δει όλα"
+
+# ─── Python runtime strings ────────────────────────────────────────────────────
+
+#. module: repair_shop_tickets
+#: code:addons/repair_shop_tickets/models/service_ticket.py:0
+#, python-format
+msgid "Reversal: %s"
+msgstr "Αντιστροφή: %s"

@@ -1,0 +1,1374 @@
+# Translation of pos_community_addons to Greek (el).
+# Covers own strings + fills gaps in point_of_sale and pos_restaurant.
+msgid ""
+msgstr ""
+"Project-Id-Version: pos_community_addons\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-05-18 00:00+0000\n"
+"PO-Revision-Date: 2026-05-18 00:00+0000\n"
+"Language-Team: Greek\n"
+"Language: el\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/floor_screen/floor_screen.js:0
+msgid "File Too Large"
+msgstr "Αρχείο Πολύ Μεγάλο"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/floor_screen/floor_screen.js:0
+msgid "Please select an image smaller than 5MB."
+msgstr "Επιλέξτε εικόνα μικρότερη από 5MB."
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/floor_screen/floor_screen.js:0
+msgid "Loading Image Error"
+msgstr "Σφάλμα Φόρτωσης Εικόνας"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/floor_screen/floor_screen.js:0
+msgid "Failed to load the image. Please ensure the image is not corrupted and try again."
+msgstr "Αποτυχία φόρτωσης εικόνας. Βεβαιωθείτε ότι η εικόνα δεν είναι κατεστραμμένη και δοκιμάστε ξανά."
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/floor_screen/floor_screen.js:0
+msgid "Image Upload Error"
+msgstr "Σφάλμα Ανεβάσματος Εικόνας"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/floor_screen/floor_screen.js:0
+msgid "An error occurred while processing the image. Please try again."
+msgstr "Παρουσιάστηκε σφάλμα κατά την επεξεργασία της εικόνας. Δοκιμάστε ξανά."
+
+#. module: pos_community_addons
+#: model:ir.model.fields,field_description:pos_community_addons.field_restaurant_table__background_image
+msgid "Table Background Image"
+msgstr "Εικόνα Φόντου Τραπεζιού"
+
+#. module: pos_community_addons
+#: model:ir.model.fields,help:pos_community_addons.field_restaurant_table__background_image
+msgid "Custom image displayed on the table in floor view."
+msgstr "Προσαρμοσμένη εικόνα που εμφανίζεται στο τραπέζι στην κάτοψη."
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/floor_screen/floor_screen.xml:0
+msgid "Upload Table Image"
+msgstr "Ανέβασμα Εικόνας Τραπεζιού"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "items"
+msgstr "τεμ."
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "Pay"
+msgstr "Πληρωμή"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "Send"
+msgstr "Αποστολή"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "Cart"
+msgstr "Καλάθι"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "New"
+msgstr "Νέα"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "Payment"
+msgstr "Πληρωμή"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/receipt_screen.js:0
+msgid "%s, sent to the kitchen"
+msgstr "%s, εστάλη στην κουζίνα"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/floor_screen/floor_screen.xml:0
+msgid "New Order"
+msgstr "Νέα Παραγγελία"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/floor_screen/floor_screen.xml:0
+msgid "Back"
+msgstr "Πίσω"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/floor_screen/floor_screen.xml:0
+msgid "Add Floor"
+msgstr "Προσθήκη Αίθουσας"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/floor_screen/floor_screen.xml:0
+msgid "Save"
+msgstr "Αποθήκευση"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/floor_screen/floor_screen.xml:0
+msgid "Table"
+msgstr "Τραπέζι"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/floor_screen/floor_screen.xml:0
+msgid "Add Table"
+msgstr "Προσθήκη Τραπεζιού"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/floor_screen/floor_screen.xml:0
+msgid "Seats"
+msgstr "Θέσεις"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/floor_screen/floor_screen.xml:0
+msgid "Round Shape"
+msgstr "Στρογγυλό Σχήμα"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/floor_screen/floor_screen.xml:0
+msgid "Make Round"
+msgstr "Μετατροπή σε Στρογγυλό"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/floor_screen/floor_screen.xml:0
+msgid "Square Shape"
+msgstr "Τετράγωνο Σχήμα"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/floor_screen/floor_screen.xml:0
+msgid "Make Square"
+msgstr "Μετατροπή σε Τετράγωνο"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/floor_screen/floor_screen.xml:0
+msgid "Change Floor Background"
+msgstr "Αλλαγή Φόντου Αίθουσας"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/floor_screen/floor_screen.xml:0
+msgid "Picture"
+msgstr "Εικόνα"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/floor_screen/floor_screen.xml:0
+msgid "File"
+msgstr "Αρχείο"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/floor_screen/floor_screen.xml:0
+msgid "Rename"
+msgstr "Μετονομασία"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/floor_screen/floor_screen.xml:0
+msgid "Clone"
+msgstr "Κλωνοποίηση"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/floor_screen/floor_screen.xml:0
+msgid "Delete"
+msgstr "Διαγραφή"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/floor_screen/floor_screen.xml:0
+msgid "Loading"
+msgstr "Φόρτωση..."
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/floor_screen/floor_screen.xml:0
+msgid "Floor"
+msgstr "Αίθουσα"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/floor_screen/floor_screen.xml:0
+msgid "Floor Plan"
+msgstr "Κάτοψη"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/floor_screen/floor_screen.xml:0
+msgid "Floor Name"
+msgstr "Όνομα Αίθουσας"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/floor_screen/floor_screen.xml:0
+msgid "Floor name"
+msgstr "Όνομα αίθουσας"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/floor_screen/floor_screen.xml:0
+msgid "Floor Name ?"
+msgstr "Όνομα Αίθουσας;"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/floor_screen/floor_screen.xml:0
+msgid "New Floor"
+msgstr "Νέα Αίθουσα"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/floor_screen/floor_screen.xml:0
+msgid "Removing a table cannot be undone"
+msgstr "Η αφαίρεση τραπεζιού δεν μπορεί να αναιρεθεί"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/floor_screen/floor_screen.xml:0
+msgid "You cannot delete a floor with orders still in draft for this floor."
+msgstr "Δεν μπορείτε να διαγράψετε αίθουσα με παραγγελίες σε εκκρεμότητα."
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/floor_screen/floor_screen.xml:0
+msgid "You cannot delete a table with orders still in draft for this table."
+msgstr "Δεν μπορείτε να διαγράψετε τραπέζι με παραγγελίες σε εκκρεμότητα."
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/floor_screen/floor_screen.xml:0
+msgid "Enter a table number"
+msgstr "Εισάγετε αριθμό τραπεζιού"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/floor_screen/floor_screen.xml:0
+msgid "Change table number?"
+msgstr "Αλλαγή αριθμού τραπεζιού;"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/floor_screen/floor_screen.xml:0
+msgid "Number of Seats?"
+msgstr "Αριθμός Θέσεων;"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/floor_screen/floor_screen.xml:0
+msgid "Edit Order Name"
+msgstr "Επεξεργασία Ονόματος Παραγγελίας"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/floor_screen/floor_screen.xml:0
+msgid "e.g. John"
+msgstr "π.χ. Γιάννης"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/floor_screen/floor_screen.xml:0
+msgid "Direct Sale"
+msgstr "Άμεση Πώληση"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/floor_screen/floor_screen.xml:0
+msgid "Dine In"
+msgstr "Φαγητό στο Χώρο"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/floor_screen/floor_screen.xml:0
+msgid "Dine in"
+msgstr "Φαγητό στο Χώρο"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/floor_screen/floor_screen.xml:0
+msgid "Course"
+msgstr "Σειρά Πιάτων"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/floor_screen/floor_screen.xml:0
+msgid "Order"
+msgstr "Παραγγελία"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/floor_screen/floor_screen.xml:0
+msgid "Open"
+msgstr "Άνοιγμα"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/floor_screen/floor_screen.xml:0
+msgid "You cannot transfer an order to itself"
+msgstr "Δεν μπορείτε να μεταφέρετε παραγγελία στον εαυτό της"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/floor_screen/floor_screen.xml:0
+msgid "Unsynced order"
+msgstr "Μη συγχρονισμένη παραγγελία"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/floor_screen/floor_screen.xml:0
+msgid "Guest"
+msgstr "Άτομο"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/floor_screen/floor_screen.xml:0
+msgid "Amount of guests"
+msgstr "Αριθμός ατόμων"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/floor_screen/floor_screen.xml:0
+msgid "Tipping"
+msgstr "Φιλοδώρημα"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/floor_screen/floor_screen.xml:0
+msgid "Add a tip"
+msgstr "Προσθήκη Φιλοδωρήματος"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/floor_screen/floor_screen.xml:0
+msgid "Book table"
+msgstr "Κράτηση Τραπεζιού"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/floor_screen/floor_screen.xml:0
+msgid "Close Tab"
+msgstr "Κλείσιμο Λογαριασμού"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/floor_screen/floor_screen.xml:0
+msgid "Bill Splitting"
+msgstr "Διαχωρισμός Λογαριασμού"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/floor_screen/floor_screen.xml:0
+msgid "Note"
+msgstr "Σημείωση"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/floor_screen/floor_screen.xml:0
+msgid "Message"
+msgstr "Μήνυμα"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/floor_screen/floor_screen.xml:0
+msgid "Warning !"
+msgstr "Προειδοποίηση!"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/floor_screen/floor_screen.xml:0
+msgid "Are you sure?"
+msgstr "Είστε σίγουροι;"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/floor_screen/floor_screen.xml:0
+msgid "Delete Error"
+msgstr "Σφάλμα Διαγραφής"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/floor_screen/floor_screen.xml:0
+msgid "Encountered error when loading image. Please try again."
+msgstr "Σφάλμα κατά τη φόρτωση εικόνας. Δοκιμάστε ξανά."
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/floor_screen/floor_screen.xml:0
+msgid "Only web-compatible Image formats such as .png or .jpeg are supported."
+msgstr "Υποστηρίζονται μόνο συμβατές μορφές εικόνας .png ή .jpeg."
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/floor_screen/floor_screen.xml:0
+msgid "Unsupported File Format"
+msgstr "Μη Υποστηριζόμενη Μορφή Αρχείου"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/floor_screen/floor_screen.xml:0
+msgid "Discard"
+msgstr "Ακύρωση"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "Qty"
+msgstr "Ποσ."
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "Price"
+msgstr "Τιμή"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "% Disc"
+msgstr "% Έκπτ."
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "% discount"
+msgstr "% Έκπτωση"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "Set the new quantity"
+msgstr "Ορίστε τη νέα ποσότητα"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "Set the new price"
+msgstr "Ορίστε τη νέα τιμή"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "Set the new discount"
+msgstr "Ορίστε τη νέα έκπτωση"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "Empty Order"
+msgstr "Κενή Παραγγελία"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "Delete Orders?"
+msgstr "Διαγραφή Παραγγελιών;"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "Cancel Orders"
+msgstr "Ακύρωση Παραγγελιών"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "Review Orders"
+msgstr "Έλεγχος Παραγγελιών"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "All Orders"
+msgstr "Όλες οι Παραγγελίες"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "Order saved for later"
+msgstr "Η παραγγελία αποθηκεύτηκε"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "Free"
+msgstr "Δωρεάν"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "Maximum Exceeded"
+msgstr "Υπέρβαση Μέγιστου"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/payment_screen.xml:0
+msgid "Invoice"
+msgstr "Τιμολόγιο"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/payment_screen.xml:0
+msgid "Invoice Number"
+msgstr "Αριθμός Τιμολογίου"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/payment_screen.xml:0
+msgid "Customer"
+msgstr "Πελάτης"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/payment_screen.xml:0
+msgid "Customer Required"
+msgstr "Απαιτείται Πελάτης"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/payment_screen.xml:0
+msgid "Please add a valid customer to the order."
+msgstr "Προσθέστε έγκυρο πελάτη στην παραγγελία."
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/payment_screen.xml:0
+msgid "Please select the Customer"
+msgstr "Επιλέξτε Πελάτη"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/payment_screen.xml:0
+msgid "Amount"
+msgstr "Ποσό"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/payment_screen.xml:0
+msgid "Remaining"
+msgstr "Υπόλοιπο"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/payment_screen.xml:0
+msgid "Change"
+msgstr "Ρέστα"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/payment_screen.xml:0
+msgid "Payments Difference"
+msgstr "Διαφορά Πληρωμών"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/payment_screen.xml:0
+msgid "Cash"
+msgstr "Μετρητά"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/payment_screen.xml:0
+msgid "Select a payment method to validate the order."
+msgstr "Επιλέξτε μέθοδο πληρωμής για επικύρωση."
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/payment_screen.xml:0
+msgid "Cancel Payment"
+msgstr "Ακύρωση Πληρωμής"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/payment_screen.xml:0
+msgid "Confirm Payment"
+msgstr "Επιβεβαίωση Πληρωμής"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/payment_screen.xml:0
+msgid "Paid"
+msgstr "Πληρώθηκε"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/payment_screen.xml:0
+msgid "Validate"
+msgstr "Επικύρωση"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/payment_screen.xml:0
+msgid "Total VAT:"
+msgstr "Σύνολο ΦΠΑ:"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/payment_screen.xml:0
+msgid "VAT:"
+msgstr "ΦΠΑ:"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/payment_screen.xml:0
+msgid " (Refund)"
+msgstr " (Επιστροφή)"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/receipt_screen.js:0
+msgid "Receipt"
+msgstr "Απόδειξη"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/receipt_screen.js:0
+msgid "Receipt Number"
+msgstr "Αριθμός Απόδειξης"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/receipt_screen.js:0
+msgid "Printing failed"
+msgstr "Αποτυχία Εκτύπωσης"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/receipt_screen.js:0
+msgid "Closing Session"
+msgstr "Κλείσιμο Ταμείου"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/receipt_screen.js:0
+msgid "Cash in / out"
+msgstr "Εισαγωγή / Εξαγωγή Μετρητών"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/receipt_screen.js:0
+msgid "Confirm"
+msgstr "Επιβεβαίωση"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/receipt_screen.js:0
+msgid "Yes"
+msgstr "Ναι"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/receipt_screen.js:0
+msgid "No"
+msgstr "Όχι"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/receipt_screen.js:0
+msgid "Error"
+msgstr "Σφάλμα"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/receipt_screen.js:0
+msgid "Unknown Error"
+msgstr "Άγνωστο Σφάλμα"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/receipt_screen.js:0
+msgid "Network Error"
+msgstr "Σφάλμα Δικτύου"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/receipt_screen.js:0
+msgid "Connection Lost"
+msgstr "Απώλεια Σύνδεσης"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/receipt_screen.js:0
+msgid "No Internet Connection"
+msgstr "Χωρίς Σύνδεση Internet"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/receipt_screen.js:0
+msgid "Offline"
+msgstr "Εκτός Σύνδεσης"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/receipt_screen.js:0
+msgid "Reload"
+msgstr "Ανανέωση"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/receipt_screen.js:0
+msgid "Unable to sync order"
+msgstr "Αδυναμία συγχρονισμού παραγγελίας"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/receipt_screen.js:0
+msgid "Server communication problem"
+msgstr "Πρόβλημα επικοινωνίας με διακομιστή"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/receipt_screen.js:0
+msgid "An unknown error occurred. Do you want to download the receipt instead?"
+msgstr "Παρουσιάστηκε άγνωστο σφάλμα. Θέλετε να κατεβάσετε την απόδειξη;"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/receipt_screen.js:0
+msgid "A request is still being processed in the background. Please wait."
+msgstr "Υπάρχει αίτημα σε επεξεργασία. Παρακαλώ περιμένετε."
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/receipt_screen.js:0
+msgid "Today"
+msgstr "Σήμερα"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/receipt_screen.js:0
+msgid "Date"
+msgstr "Ημερομηνία"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/receipt_screen.js:0
+msgid "Search"
+msgstr "Αναζήτηση"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/receipt_screen.js:0
+msgid "Active"
+msgstr "Ενεργό"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/receipt_screen.js:0
+msgid "Add Tip"
+msgstr "Προσθήκη Φιλοδωρήματος"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/receipt_screen.js:0
+msgid "NEW"
+msgstr "ΝΕΑ"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/receipt_screen.js:0
+msgid "CANCELLED"
+msgstr "ΑΚΥΡΩΘΗΚΕ"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/receipt_screen.js:0
+msgid "Backend"
+msgstr "Διαχείριση"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/receipt_screen.js:0
+msgid "Select"
+msgstr "Επιλογή"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/receipt_screen.js:0
+msgid "Proceed Anyway"
+msgstr "Συνέχεια Ούτως ή Άλλως"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/receipt_screen.js:0
+msgid "Scale"
+msgstr "Ζυγός"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/receipt_screen.js:0
+msgid "Scanner"
+msgstr "Σαρωτής"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/floor_screen/floor_screen.xml:0
+msgid "Assign"
+msgstr "Ανάθεση"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/floor_screen/floor_screen.xml:0
+msgid "Fired"
+msgstr "Εστάλη"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/floor_screen/floor_screen.xml:0
+msgid "Guests"
+msgstr "Άτομα"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/floor_screen/floor_screen.xml:0
+msgid "Keep Open"
+msgstr "Παραμονή Ανοιχτό"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/floor_screen/floor_screen.xml:0
+msgid "No Tip"
+msgstr "Χωρίς Φιλοδώρημα"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/floor_screen/floor_screen.xml:0
+msgid "Plan"
+msgstr "Κάτοψη"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/floor_screen/floor_screen.xml:0
+msgid "Pro forma receipt"
+msgstr "Προφόρμα Απόδειξης"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/floor_screen/floor_screen.xml:0
+msgid "Release Order"
+msgstr "Αποδέσμευση Παραγγελίας"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/floor_screen/floor_screen.xml:0
+msgid "Release table"
+msgstr "Αποδέσμευση Τραπεζιού"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/floor_screen/floor_screen.xml:0
+msgid "Reprint receipts"
+msgstr "Επανεκτύπωση Αποδείξεων"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/floor_screen/floor_screen.xml:0
+msgid "Settle"
+msgstr "Εξόφληση"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/floor_screen/floor_screen.xml:0
+msgid "Signature"
+msgstr "Υπογραφή"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/floor_screen/floor_screen.xml:0
+msgid "Subtotal"
+msgstr "Υποσύνολο"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/floor_screen/floor_screen.xml:0
+msgid "Tables"
+msgstr "Τραπέζια"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/floor_screen/floor_screen.xml:0
+msgid "Tip"
+msgstr "Φιλοδώρημα"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/floor_screen/floor_screen.xml:0
+msgid "Tip Amount"
+msgstr "Ποσό Φιλοδωρήματος"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "Activate"
+msgstr "Ενεργοποίηση"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "Add"
+msgstr "Προσθήκη"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "Amount Paid"
+msgstr "Ποσό Πληρωθέν"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "Apply"
+msgstr "Εφαρμογή"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "Barcode"
+msgstr "Barcode"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "Barcode Scanner"
+msgstr "Σαρωτής Barcode"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "Cash Count"
+msgstr "Καταμέτρηση Μετρητών"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "Cash In/Out"
+msgstr "Εισαγωγή / Εξαγωγή Μετρητών"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "Choose customer"
+msgstr "Επιλογή Πελάτη"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "Close"
+msgstr "Κλείσιμο"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "Close Register"
+msgstr "Κλείσιμο Ταμείου"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "Closing note"
+msgstr "Σημείωση Κλεισίματος"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "Closing Register"
+msgstr "Κλείσιμο Ταμείου"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "Continue"
+msgstr "Συνέχεια"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "Counted"
+msgstr "Καταμετρήθηκε"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "Create Manually"
+msgstr "Χειροκίνητη Δημιουργία"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "CUSTOMER NOTE"
+msgstr "ΣΗΜΕΙΩΣΗ ΠΕΛΑΤΗ"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "Details"
+msgstr "Λεπτομέρειες"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "Difference"
+msgstr "Διαφορά"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "Discounts"
+msgstr "Εκπτώσεις"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "Download"
+msgstr "Λήψη"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "Edit"
+msgstr "Επεξεργασία"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "Edit Payment"
+msgstr "Επεξεργασία Πληρωμής"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "Financials"
+msgstr "Οικονομικά"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "Full"
+msgstr "Πλήρης"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "Get Weight"
+msgstr "Λήψη Βάρους"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "Hide details"
+msgstr "Απόκρυψη Λεπτομερειών"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "INTERNAL NOTE"
+msgstr "ΕΣΩΤΕΡΙΚΗ ΣΗΜΕΙΩΣΗ"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "Load Order"
+msgstr "Φόρτωση Παραγγελίας"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "Load Sample"
+msgstr "Φόρτωση Δείγματος"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "No cash move found"
+msgstr "Δεν βρέθηκε κίνηση μετρητών"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "No Product Yet?"
+msgstr "Δεν Υπάρχουν Ακόμα Προϊόντα;"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "No products found for"
+msgstr "Δεν βρέθηκαν προϊόντα για"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "Not available"
+msgstr "Μη διαθέσιμο"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "Open Customer Display"
+msgstr "Άνοιγμα Οθόνης Πελάτη"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "Open Register"
+msgstr "Άνοιγμα Ταμείου"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "Opening"
+msgstr "Άνοιγμα"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "Opening cash"
+msgstr "Αρχικό Ταμείο"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "Opening note"
+msgstr "Σημείωση Ανοίγματος"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "Orders"
+msgstr "Παραγγελίες"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "Orders status"
+msgstr "Κατάσταση Παραγγελιών"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "Payment Successful"
+msgstr "Πληρωμή Επιτυχής"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "Payments in"
+msgstr "Πληρωμές εντός"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "Preset"
+msgstr "Προεπιλογή"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "Pricelist"
+msgstr "Τιμοκατάλογος"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "Products"
+msgstr "Προϊόντα"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "Reason"
+msgstr "Αιτία"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "Receipt and invoice sent successfully"
+msgstr "Απόδειξη και τιμολόγιο εστάλησαν επιτυχώς"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "Receipt sent successfully"
+msgstr "Απόδειξη εστάλη επιτυχώς"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "Refund Initiated"
+msgstr "Ξεκίνησε Επιστροφή"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "Register"
+msgstr "Ταμείο"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "Reload data"
+msgstr "Ανανέωση Δεδομένων"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "Replenishment"
+msgstr "Ανεφοδιασμός"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "Retry"
+msgstr "Επανάληψη"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "Review"
+msgstr "Έλεγχος"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "Rounding"
+msgstr "Στρογγυλοποίηση"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "Search more"
+msgstr "Περισσότερη Αναζήτηση"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "Sending"
+msgstr "Αποστολή..."
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "Setup"
+msgstr "Ρύθμιση"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "Show details"
+msgstr "Εμφάνιση Λεπτομερειών"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "Stop"
+msgstr "Διακοπή"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "Stop Barcode Scanner"
+msgstr "Διακοπή Σαρωτή Barcode"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "Tare"
+msgstr "Τάρα"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "Tax"
+msgstr "Φόρος"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "Taxes"
+msgstr "Φόροι"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "Total"
+msgstr "Σύνολο"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "UNSELECT"
+msgstr "ΑΠΟΕΠΙΛΟΓΗ"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "Would you like to continue without printing or retry?"
+msgstr "Θέλετε να συνεχίσετε χωρίς εκτύπωση ή να επαναλάβετε;"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "Reprint Invoice"
+msgstr "Εκ Νέου Εκτύπωση Τιμολογίου"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "Can't change customer"
+msgstr "Αδυναμία αλλαγής πελάτη"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "Do you want to open the customer list to select customer?"
+msgstr "Θέλετε να ανοίξετε τη λίστα πελατών;"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "Ship Later"
+msgstr "Αποστολή Αργότερα"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "Choose your store"
+msgstr "Επιλέξτε το κατάστημά σας"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
+msgid "Powered by"
+msgstr "Με την υποστήριξη του"
