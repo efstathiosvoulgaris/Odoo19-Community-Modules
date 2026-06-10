@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="skroutz_ship_wizard_view_form" model="ir.ui.view">
+        <field name="name">skroutz.ship.wizard.view.form</field>
+        <field name="model">skroutz.ship.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Mark as Dispatched (FBM)">
+                <group>
+                    <field name="order_id" readonly="1"/>
+                    <field name="courier" required="1"/>
+                    <field name="tracking_codes" placeholder="e.g. 224085551 or 111,222"/>
+                </group>
+                <footer>
+                    <button name="action_confirm_ship" type="object"
+                            string="Confirm Shipment" class="btn-primary"/>
+                    <button special="cancel" string="Cancel" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+</odoo>

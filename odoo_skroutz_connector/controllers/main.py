@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+import hashlib
+import hmac
+import json
 import logging
 from datetime import datetime
 from xml.etree.ElementTree import Element, SubElement, tostring
@@ -37,14 +40,17 @@ def _build_product_element(product):
     )
     add('manufacturer', manufacturer)
     add('mpn', product.default_code or '')
-    add('ean', product.barcode or '')
-    add('description', product.description_sale or product.description or '')
+    if product.barcode:
+        add('ean', product.barcode)
+    add('description', product.description_sale or product.description or product.name or '')
     add('quantity', int(max(0, product.qty_available)))
 
     # Optional
     weight = product._get_skroutz_weight()
     if weight:
         add('weight', weight)
+    if product.skroutz_size:
+        add('size', product.skroutz_size)
     if product.skroutz_color:
         add('color', product.skroutz_color)
     if product.skroutz_season:
@@ -110,3 +116,42 @@ class SkroutzFeedController(Controller):
             headers['Content-Disposition'] = 'attachment; filename="skroutz_feed.xml"'
 
         return Response(xml_content, status=200, headers=headers)
+
+    @route('/skroutz/webhook', type='http', auth='public', csrf=False, sitemap=False, methods=['POST'])
+    def skroutz_webhook(self, **kwargs):
+        """Receive Skroutz order event notifications."""
+        raw_body = request.httprequest.get_data()
+
+        # Verify HMAC-SHA256 signature when a webhook secret is configured
+        config = request.env['ir.config_parameter'].sudo()
+        webhook_secret = config.get_param('skroutz.webhook_secret', '')
+        if webhook_secret:
+            sig_header = request.httprequest.headers.get('X-Skroutz-Webhook-Signature', '')
+            expected = 'sha256=' + hmac.new(
+                webhook_secret.encode('utf-8'),
+                raw_body,
+                hashlib.sha256,
+            ).hexdigest()
+            if not hmac.compare_digest(sig_header, expected):
+                _logger.warning("Skroutz webhook: invalid signature.")
+                return Response('Forbidden', status=403, content_type='text/plain')
+
+        try:
+            payload = json.loads(raw_body)
+        except (ValueError, TypeError):
+            return Response('Bad Request', status=400, content_type='text/plain')
+
+        order_data = payload.get('order') or {}
+        order_code = order_data.get('code', '')
+        if not order_code:
+            return Response('Bad Request: missing order.code', status=400, content_type='text/plain')
+
+        try:
+            request.env['skroutz.order'].sudo()._create_or_update_from_webhook(
+                order_code, order_data=order_data
+            )
+        except Exception:
+            _logger.exception("Skroutz webhook: unhandled error processing order %s", order_code)
+            # Return 200 anyway to prevent Skroutz from retrying; order can be re-synced manually.
+
+        return Response('OK', status=200, content_type='text/plain')

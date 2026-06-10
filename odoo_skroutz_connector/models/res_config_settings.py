@@ -35,9 +35,42 @@ class ResConfigSettings(models.TransientModel):
         compute='_compute_skroutz_feed_url',
     )
 
+    # ── Order Management (API) ────────────────────────────────────────────────
+
+    skroutz_api_token = fields.Char(
+        string='API Token',
+        config_parameter='skroutz.api_token',
+        help='Bearer token generated from your Skroutz merchant panel (Merchants > Services > Skroutz Marketplace).',
+    )
+    skroutz_webhook_secret = fields.Char(
+        string='Webhook Secret',
+        config_parameter='skroutz.webhook_secret',
+        help='Shared secret used to verify the HMAC-SHA256 signature on incoming webhook calls. '
+             'Set the same value in your Skroutz merchant panel webhook configuration.',
+    )
+    skroutz_auto_create_sale_order = fields.Boolean(
+        string='Auto-create Sale Order on Accept',
+        config_parameter='skroutz.auto_create_sale_order',
+        default=True,
+        help='When an order is accepted, automatically create a linked Odoo Sale Order.',
+    )
+
+    def _get_public_base_url(self):
+        """Return the public-facing base URL.
+
+        web.base.url stores the last-seen internal URL, which on cloud/Odoo.sh
+        databases is the container hostname (e.g. http://dev) rather than the
+        real public domain. website.get_base_url() reads the website's domain
+        field and always returns the correct public URL.
+        """
+        website = self.env['website'].sudo().search([], limit=1)
+        if website:
+            return website.get_base_url()
+        return self.env['ir.config_parameter'].sudo().get_param('web.base.url', '')
+
     @api.depends('skroutz_feed_token')
     def _compute_skroutz_feed_url(self):
-        base_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url')
+        base_url = self._get_public_base_url()
         token = self.env['ir.config_parameter'].sudo().get_param('skroutz.feed_token', '')
         for rec in self:
             if token:
@@ -46,7 +79,7 @@ class ResConfigSettings(models.TransientModel):
                 rec.skroutz_feed_url = f"{base_url}/skroutz/feed"
 
     def action_preview_skroutz_feed(self):
-        base_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url')
+        base_url = self._get_public_base_url()
         token = self.env['ir.config_parameter'].sudo().get_param('skroutz.feed_token', '')
         url = f"{base_url}/skroutz/feed"
         if token:
@@ -54,7 +87,7 @@ class ResConfigSettings(models.TransientModel):
         return {'type': 'ir.actions.act_url', 'url': url, 'target': 'new'}
 
     def action_download_skroutz_feed(self):
-        base_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url')
+        base_url = self._get_public_base_url()
         token = self.env['ir.config_parameter'].sudo().get_param('skroutz.feed_token', '')
         url = f"{base_url}/skroutz/feed?download=1"
         if token:

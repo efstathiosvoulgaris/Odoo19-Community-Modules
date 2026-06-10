@@ -1,1 +1,8 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_skroutz_order_manager,skroutz.order (manager),model_skroutz_order,sales_team.group_sale_manager,1,1,1,1
+access_skroutz_order_user,skroutz.order (user),model_skroutz_order,base.group_user,1,0,0,0
+access_skroutz_order_line_manager,skroutz.order.line (manager),model_skroutz_order_line,sales_team.group_sale_manager,1,1,1,1
+access_skroutz_order_line_user,skroutz.order.line (user),model_skroutz_order_line,base.group_user,1,0,0,0
+access_skroutz_accept_wizard,skroutz.accept.wizard,model_skroutz_accept_wizard,base.group_user,1,1,1,1
+access_skroutz_reject_wizard,skroutz.reject.wizard,model_skroutz_reject_wizard,base.group_user,1,1,1,1
+access_skroutz_ship_wizard,skroutz.ship.wizard,model_skroutz_ship_wizard,base.group_user,1,1,1,1

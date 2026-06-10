@@ -8,12 +8,20 @@
         parent="website_sale.menu_ecommerce"
         sequence="99"/>
 
+    <!-- Skroutz > Orders -->
+    <menuitem
+        id="menu_skroutz_orders"
+        name="Orders"
+        parent="odoo_skroutz_connector.menu_skroutz_root"
+        action="odoo_skroutz_connector.action_skroutz_orders"
+        sequence="10"/>
+
     <!-- Skroutz > Settings -->
     <menuitem
         id="menu_skroutz_settings"
         name="Settings"
         parent="odoo_skroutz_connector.menu_skroutz_root"
         action="base_setup.action_general_configuration"
-        sequence="10"/>
+        sequence="20"/>
 
 </odoo>

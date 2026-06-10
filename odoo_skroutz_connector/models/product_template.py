@@ -40,6 +40,11 @@ class ProductTemplate(models.Model):
         digits=(10, 2),
         help='Fixed shipping cost for this product. Leave 0 for free shipping.',
     )
+    skroutz_size = fields.Char(
+        string='Size(s) (Skroutz)',
+        help='Comma-separated list of available sizes, e.g. "S,M,L,XL" or "38,39,40". '
+             'Required for fashion and footwear categories.',
+    )
 
     # --- Computed helpers ---
 

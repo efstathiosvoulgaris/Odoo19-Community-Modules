@@ -16,6 +16,7 @@
                     </group>
                     <group string="Optional Skroutz Fields">
                         <group>
+                            <field name="skroutz_size"/>
                             <field name="skroutz_color"/>
                             <field name="skroutz_season"/>
                             <field name="skroutz_size_fit"/>

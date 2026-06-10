@@ -41,6 +41,30 @@
 
                     </block>
 
+                    <block title="Order Management (API)" name="skroutz_api_block">
+
+                        <setting string="API Token" name="skroutz_api_token_setting"
+                                 help="Bearer token from your Skroutz merchant panel (Merchants > Services > Skroutz Marketplace). One token per shop.">
+                            <field name="skroutz_api_token" password="True"
+                                   placeholder="Your Skroutz API token"/>
+                        </setting>
+
+                        <setting string="Webhook Secret" name="skroutz_webhook_secret_setting"
+                                 help="Shared secret to verify HMAC-SHA256 signatures on incoming webhooks. Configure the same value in your Skroutz merchant panel.">
+                            <field name="skroutz_webhook_secret" password="True"
+                                   placeholder="Leave empty to skip signature verification"/>
+                            <div class="mt8">
+                                <small>Webhook URL: <code>/skroutz/webhook</code></small>
+                            </div>
+                        </setting>
+
+                        <setting string="Auto-create Sale Order" name="skroutz_auto_sale_order_setting"
+                                 help="Automatically create a linked Odoo Sale Order when a Skroutz order is accepted.">
+                            <field name="skroutz_auto_create_sale_order"/>
+                        </setting>
+
+                    </block>
+
                 </app>
             </xpath>
         </field>

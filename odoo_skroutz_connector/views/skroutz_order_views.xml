@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ── List view ──────────────────────────────────────────────────────── -->
+    <record id="skroutz_order_view_list" model="ir.ui.view">
+        <field name="name">skroutz.order.view.list</field>
+        <field name="model">skroutz.order</field>
+        <field name="arch" type="xml">
+            <list string="Skroutz Orders" decoration-success="state == 'delivered'"
+                  decoration-info="state in ('accepted', 'dispatched')"
+                  decoration-warning="state == 'open'"
+                  decoration-muted="state in ('cancelled', 'returned', 'partially_returned', 'expired', 'for_return')"
+                  decoration-danger="state == 'rejected'">
+                <field name="code"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'delivered'"
+                       decoration-info="state in ('accepted', 'dispatched')"
+                       decoration-warning="state == 'open'"
+                       decoration-danger="state == 'rejected'"
+                       decoration-muted="state in ('cancelled', 'returned', 'partially_returned', 'expired', 'for_return')"/>
+                <field name="customer_name"/>
+                <field name="ship_city"/>
+                <field name="total_price" sum="Total"/>
+                <field name="payment_method"/>
+                <field name="created_at"/>
+                <field name="dispatch_until" optional="show"/>
+                <field name="odoo_order_id" optional="show"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ── Form view ──────────────────────────────────────────────────────── -->
+    <record id="skroutz_order_view_form" model="ir.ui.view">
+        <field name="name">skroutz.order.view.form</field>
+        <field name="model">skroutz.order</field>
+        <field name="arch" type="xml">
+            <form string="Skroutz Order">
+                <header>
+                    <button name="action_accept" type="object" string="Accept"
+                            class="btn-success"
+                            invisible="state != 'open'"/>
+                    <button name="action_reject" type="object" string="Reject"
+                            class="btn-danger"
+                            invisible="state != 'open'"/>
+                    <button name="action_ship" type="object" string="Mark as Dispatched"
+                            class="btn-primary"
+                            invisible="state != 'accepted'"/>
+                    <button name="action_sync_from_skroutz" type="object" string="Sync from Skroutz"
+                            class="btn-secondary"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="open,accepted,dispatched,delivered"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_sale_order" type="object"
+                                class="oe_stat_button" icon="fa-shopping-cart"
+                                invisible="not odoo_order_id">
+                            <div class="o_field_widget o_stat_info">
+                                <span class="o_stat_text">Sale Order</span>
+                            </div>
+                        </button>
+                    </div>
+                    <div class="oe_title">
+                        <h1><field name="code" readonly="id"/></h1>
+                    </div>
+
+                    <group>
+                        <group string="Customer">
+                            <field name="customer_first_name"/>
+                            <field name="customer_last_name"/>
+                            <field name="customer_email"/>
+                            <field name="customer_phone"/>
+                        </group>
+                        <group string="Order Info">
+                            <field name="created_at" readonly="1"/>
+                            <field name="expires_at" readonly="1"/>
+                            <field name="dispatch_until" readonly="1"/>
+                            <field name="payment_method" readonly="1"/>
+                            <field name="odoo_order_id" readonly="1"/>
+                        </group>
+                    </group>
+
+                    <group>
+                        <group string="Shipping Address">
+                            <field name="ship_first_name"/>
+                            <field name="ship_last_name"/>
+                            <field name="ship_street"/>
+                            <field name="ship_city"/>
+                            <field name="ship_zip"/>
+                            <field name="ship_region"/>
+                            <field name="ship_country_code"/>
+                            <field name="ship_phone"/>
+                            <field name="ship_mobile"/>
+                        </group>
+                        <group string="Financials">
+                            <field name="total_price" readonly="1"/>
+                            <field name="shipping_cost" readonly="1"/>
+                            <field name="payment_cost" readonly="1"/>
+                            <separator string="Shipping"/>
+                            <field name="courier" readonly="1"/>
+                            <field name="courier_tracking_codes" readonly="1"/>
+                            <field name="courier_voucher" widget="url" readonly="1"/>
+                        </group>
+                    </group>
+
+                    <field name="comments" placeholder="Customer comments…" readonly="1"/>
+
+                    <notebook>
+                        <page string="Order Lines" name="order_lines">
+                            <field name="line_ids" readonly="1">
+                                <list>
+                                    <field name="product_name"/>
+                                    <field name="shop_uid"/>
+                                    <field name="ean"/>
+                                    <field name="product_id"/>
+                                    <field name="quantity"/>
+                                    <field name="unit_price"/>
+                                    <field name="total_price" sum="Total"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Raw Data" name="raw_data">
+                            <field name="skroutz_data" widget="ace" options="{'mode': 'json'}" readonly="1"/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- ── Search view ────────────────────────────────────────────────────── -->
+    <record id="skroutz_order_view_search" model="ir.ui.view">
+        <field name="name">skroutz.order.view.search</field>
+        <field name="model">skroutz.order</field>
+        <field name="arch" type="xml">
+            <search string="Skroutz Orders">
+                <field name="code"/>
+                <field name="customer_name"/>
+                <field name="customer_email"/>
+                <filter name="filter_open" string="Open" domain="[('state','=','open')]"/>
+                <filter name="filter_accepted" string="Accepted" domain="[('state','=','accepted')]"/>
+                <filter name="filter_dispatched" string="Dispatched" domain="[('state','=','dispatched')]"/>
+                <filter name="filter_delivered" string="Delivered" domain="[('state','=','delivered')]"/>
+                <separator/>
+                <filter name="filter_unlinked" string="No Sale Order" domain="[('odoo_order_id','=',False)]"/>
+                <group>
+                    <filter name="group_state" string="State" context="{'group_by': 'state'}"/>
+                    <filter name="group_payment" string="Payment Method" context="{'group_by': 'payment_method'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- ── Window action ──────────────────────────────────────────────────── -->
+    <record id="action_skroutz_orders" model="ir.actions.act_window">
+        <field name="name">Skroutz Orders</field>
+        <field name="res_model">skroutz.order</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="skroutz_order_view_search"/>
+        <field name="context">{'search_default_filter_open': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No Skroutz orders yet.
+            </p>
+            <p>
+                Orders appear here automatically when Skroutz sends a webhook notification
+                to <code>/skroutz/webhook</code>.
+            </p>
+        </field>
+    </record>
+
+</odoo>
