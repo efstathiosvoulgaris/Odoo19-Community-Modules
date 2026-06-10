@@ -45,8 +45,10 @@ class ResConfigSettings(models.TransientModel):
     skroutz_webhook_secret = fields.Char(
         string='Webhook Secret',
         config_parameter='skroutz.webhook_secret',
-        help='Shared secret used to verify the HMAC-SHA256 signature on incoming webhook calls. '
-             'Set the same value in your Skroutz merchant panel webhook configuration.',
+        help='Optional secret token embedded in the webhook URL: /skroutz/webhook/<secret>. '
+             'Register the full URL (including the secret) in your Skroutz merchant panel. '
+             'Skroutz does not sign webhook requests, so the URL token is the authentication. '
+             'Leave empty to accept calls on the plain /skroutz/webhook URL.',
     )
     skroutz_auto_create_sale_order = fields.Boolean(
         string='Auto-create Sale Order on Accept',
@@ -71,10 +73,9 @@ class ResConfigSettings(models.TransientModel):
     @api.depends('skroutz_feed_token')
     def _compute_skroutz_feed_url(self):
         base_url = self._get_public_base_url()
-        token = self.env['ir.config_parameter'].sudo().get_param('skroutz.feed_token', '')
         for rec in self:
-            if token:
-                rec.skroutz_feed_url = f"{base_url}/skroutz/feed?token={token}"
+            if rec.skroutz_feed_token:
+                rec.skroutz_feed_url = f"{base_url}/skroutz/feed?token={rec.skroutz_feed_token}"
             else:
                 rec.skroutz_feed_url = f"{base_url}/skroutz/feed"
 

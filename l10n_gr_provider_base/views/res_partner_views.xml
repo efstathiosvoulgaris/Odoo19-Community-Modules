@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_partner_form_l10n_gr_prov" model="ir.ui.view">
+        <field name="name">res.partner.form.l10n.gr.prov</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <field name="category_id" position="after">
+                <field name="l10n_gr_prov_aaht" string="ΑΑΗΤ"
+                       placeholder="e.g. 1234.Ε00123.0001"/>
+            </field>
+        </field>
+    </record>
+
+</odoo>

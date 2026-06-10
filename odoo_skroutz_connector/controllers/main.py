@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-import hashlib
 import hmac
 import json
 import logging
@@ -117,24 +116,24 @@ class SkroutzFeedController(Controller):
 
         return Response(xml_content, status=200, headers=headers)
 
-    @route('/skroutz/webhook', type='http', auth='public', csrf=False, sitemap=False, methods=['POST'])
-    def skroutz_webhook(self, **kwargs):
-        """Receive Skroutz order event notifications."""
+    @route(['/skroutz/webhook', '/skroutz/webhook/<string:token>'],
+           type='http', auth='public', csrf=False, sitemap=False, methods=['POST'])
+    def skroutz_webhook(self, token=None, **kwargs):
+        """Receive Skroutz order event notifications.
+
+        Skroutz does not sign webhook requests (the only headers sent are
+        Content-Type and User-Agent), so authentication is done via a secret
+        token embedded in the URL path: /skroutz/webhook/<secret>.
+        Register the full URL (including the secret) in the Skroutz merchant
+        panel. If no secret is configured, the plain URL is accepted.
+        """
         raw_body = request.httprequest.get_data()
 
-        # Verify HMAC-SHA256 signature when a webhook secret is configured
         config = request.env['ir.config_parameter'].sudo()
         webhook_secret = config.get_param('skroutz.webhook_secret', '')
-        if webhook_secret:
-            sig_header = request.httprequest.headers.get('X-Skroutz-Webhook-Signature', '')
-            expected = 'sha256=' + hmac.new(
-                webhook_secret.encode('utf-8'),
-                raw_body,
-                hashlib.sha256,
-            ).hexdigest()
-            if not hmac.compare_digest(sig_header, expected):
-                _logger.warning("Skroutz webhook: invalid signature.")
-                return Response('Forbidden', status=403, content_type='text/plain')
+        if webhook_secret and not hmac.compare_digest(token or '', webhook_secret):
+            _logger.warning("Skroutz webhook: invalid or missing URL token.")
+            return Response('Forbidden', status=403, content_type='text/plain')
 
         try:
             payload = json.loads(raw_body)
@@ -151,7 +150,8 @@ class SkroutzFeedController(Controller):
                 order_code, order_data=order_data
             )
         except Exception:
-            _logger.exception("Skroutz webhook: unhandled error processing order %s", order_code)
-            # Return 200 anyway to prevent Skroutz from retrying; order can be re-synced manually.
+            _logger.exception("Skroutz webhook: error processing order %s", order_code)
+            # Return 500 so Skroutz retries the delivery (up to 4 times within 20 minutes).
+            return Response('Internal Server Error', status=500, content_type='text/plain')
 
         return Response('OK', status=200, content_type='text/plain')

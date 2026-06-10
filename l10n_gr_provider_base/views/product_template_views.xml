@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="product_template_form_l10n_gr_prov" model="ir.ui.view">
+        <field name="name">product.template.form.l10n.gr.prov</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="account.product_template_form_view"/>
+        <field name="arch" type="xml">
+            <div name="taxes_div" position="after">
+                <field name="l10n_gr_prov_cpv" placeholder="e.g. 30237200-1"/>
+            </div>
+        </field>
+    </record>
+
+</odoo>

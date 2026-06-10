@@ -4,10 +4,18 @@ from odoo.exceptions import UserError
 
 COURIERS = [
     ('acs', 'ACS'),
-    ('dhl', 'DHL'),
+    ('speedex', 'Speedex'),
+    ('elta_courier', 'ELTA Courier'),
     ('geniki_taxydromiki', 'Geniki Taxydromiki'),
+    ('courier_center', 'Courier Center'),
+    ('easy_mail', 'Easy Mail'),
+    ('box_now', 'BOX NOW'),
+    ('dhl', 'DHL'),
     ('dpd', 'DPD'),
     ('gls', 'GLS'),
+    ('ups', 'UPS'),
+    ('tnt', 'TNT'),
+    ('fedex', 'FedEx'),
 ]
 
 

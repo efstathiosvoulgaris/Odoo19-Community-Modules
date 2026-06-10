@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import json
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 
 import requests
 from odoo import api, fields, models
@@ -110,16 +110,13 @@ class SkroutzOrder(models.Model):
     _rec_name = 'code'
     _order = 'created_at desc, id desc'
 
-    @classmethod
-    def _valid_field_parameter(cls, field, name):
-        return name == 'tracking' or super()._valid_field_parameter(field, name)
-
     code = fields.Char(string='Skroutz Code', required=True, index=True, copy=False)
     state = fields.Selection(ORDER_STATES, string='State', default='open', index=True, tracking=True)
     odoo_order_id = fields.Many2one('sale.order', string='Sale Order', copy=False, ondelete='set null')
 
     # Customer
     customer_name = fields.Char(string='Customer Name', compute='_compute_customer_name', store=True)
+    customer_skroutz_id = fields.Char(string='Skroutz Customer ID', index=True)
     customer_first_name = fields.Char(string='First Name')
     customer_last_name = fields.Char(string='Last Name')
     customer_email = fields.Char(string='Email')
@@ -129,6 +126,7 @@ class SkroutzOrder(models.Model):
     ship_first_name = fields.Char(string='First Name')
     ship_last_name = fields.Char(string='Last Name')
     ship_street = fields.Char(string='Street')
+    ship_street_number = fields.Char(string='Street Number')
     ship_city = fields.Char(string='City')
     ship_zip = fields.Char(string='ZIP')
     ship_region = fields.Char(string='Region')
@@ -146,7 +144,10 @@ class SkroutzOrder(models.Model):
     # Financials
     total_price = fields.Float(string='Total Price', digits=(10, 2))
     shipping_cost = fields.Float(string='Shipping Cost', digits=(10, 2))
-    payment_cost = fields.Float(string='Payment Cost', digits=(10, 2))
+    payment_cost = fields.Float(
+        string='Fees (Skroutz)', digits=(10, 2),
+        help='Total of Skroutz fees on this order (handling, installments, etc.).',
+    )
 
     # Dates
     created_at = fields.Datetime(string='Placed At')
@@ -261,7 +262,18 @@ class SkroutzOrder(models.Model):
         return sale_order
 
     def _find_or_create_partner(self):
+        """Find an existing partner for this order's customer, or create one.
+
+        The Skroutz API does not expose the customer's email or phone, so
+        deduplication relies on the stable Skroutz customer ID, stored in the
+        partner's Reference (ref) field as 'SKROUTZ-<id>'.
+        """
         Partner = self.env['res.partner']
+        ref = f'SKROUTZ-{self.customer_skroutz_id}' if self.customer_skroutz_id else False
+        if ref:
+            partner = Partner.search([('ref', '=', ref)], limit=1)
+            if partner:
+                return partner
         if self.customer_email:
             partner = Partner.search([('email', '=', self.customer_email)], limit=1)
             if partner:
@@ -272,24 +284,43 @@ class SkroutzOrder(models.Model):
         name = self.customer_name or ' '.join(
             p for p in [self.ship_first_name or '', self.ship_last_name or ''] if p
         ).strip() or 'Skroutz Customer'
-        return Partner.create({
+        vals = {
             'name': name,
+            'ref': ref or '',
             'email': self.customer_email or '',
             'phone': self.customer_phone or self.ship_phone or '',
-            'street': self.ship_street or '',
             'city': self.ship_city or '',
             'zip': self.ship_zip or '',
             'country_id': country.id if country else False,
-        })
+        }
+        # If the l10n_gr_partner addon is installed, store the street number
+        # in its dedicated field; otherwise combine name + number in street.
+        if 'arithmos_odou' in Partner._fields and self.ship_street_number:
+            vals['street'] = self.ship_street or ''
+            vals['arithmos_odou'] = self.ship_street_number
+        else:
+            vals['street'] = ' '.join(
+                p for p in [self.ship_street or '', self.ship_street_number or ''] if p
+            ).strip()
+        return Partner.create(vals)
 
     # ── Data ingestion ────────────────────────────────────────────────────────
 
     @staticmethod
     def _parse_dt(value):
+        """Parse an ISO-8601 datetime and convert it to naive UTC (Odoo storage format).
+
+        Skroutz returns local-offset timestamps (e.g. +02:00/+03:00 Athens time);
+        simply dropping the tzinfo would store wall-clock time and shift every
+        date by 2-3 hours in the UI.
+        """
         if not value:
             return False
         try:
-            return datetime.fromisoformat(value.replace('Z', '+00:00')).replace(tzinfo=None)
+            dt = datetime.fromisoformat(value.replace('Z', '+00:00'))
+            if dt.tzinfo:
+                dt = dt.astimezone(timezone.utc).replace(tzinfo=None)
+            return dt
         except (ValueError, AttributeError):
             return False
 
@@ -298,24 +329,32 @@ class SkroutzOrder(models.Model):
         address = customer.get('address') or {}
         tracking = order_data.get('courier_tracking_codes') or []
 
-        # Combine street_name + street_number into a single street field
-        street_parts = [address.get('street_name', ''), address.get('street_number', '')]
-        ship_street = ' '.join(p for p in street_parts if p).strip()
+        # Keep street name and number separate (joined again where needed)
+        ship_street = (address.get('street_name') or '').strip()
+        ship_street_number = (str(address.get('street_number') or '')).strip()
 
         # Map Skroutz state to our state; fall back to current state if unknown
         raw_state = order_data.get('state', '')
         mapped_state = _SKROUTZ_STATE_MAP.get(raw_state, self.state)
 
-        # Compute order total from line items (no top-level total_price in the API)
+        # Compute order total from line items (no top-level total_price in the API).
+        # Fees (handling, installments, etc.) are added when present.
         line_items = order_data.get('line_items') or []
         computed_total = sum(float(item.get('total_price', 0)) for item in line_items)
+        fees = order_data.get('fees') or {}
+        fees_total = sum(float(v or 0) for v in fees.values() if isinstance(v, (int, float)))
+        computed_total += fees_total
 
         self.write({
             'state': mapped_state,
+            'customer_skroutz_id': customer.get('id', ''),
             'customer_first_name': customer.get('first_name', ''),
             'customer_last_name': customer.get('last_name', ''),
             'customer_phone': customer.get('phone', ''),
+            'ship_first_name': customer.get('first_name', ''),
+            'ship_last_name': customer.get('last_name', ''),
             'ship_street': ship_street,
+            'ship_street_number': ship_street_number,
             'ship_city': address.get('city', ''),
             'ship_zip': address.get('zip', ''),
             'ship_region': address.get('region', ''),
@@ -328,7 +367,7 @@ class SkroutzOrder(models.Model):
             'courier_voucher': order_data.get('courier_voucher', ''),
             'courier_tracking_codes': ', '.join(str(t) for t in tracking),
             'total_price': computed_total,
-            'shipping_cost': float(order_data.get('shipping_cost') or 0.0),
+            'payment_cost': fees_total,
             'created_at': self._parse_dt(order_data.get('created_at')),
             'expires_at': self._parse_dt(order_data.get('expires_at')),
             'dispatch_until': self._parse_dt(order_data.get('dispatch_until')),
@@ -373,15 +412,12 @@ class SkroutzOrder(models.Model):
         record = self.search([('code', '=', order_code)], limit=1)
         if not record:
             record = self.create({'code': order_code})
-        try:
-            if order_data:
-                record._apply_skroutz_data(order_data)
-            else:
-                client = record._get_api_client()
-                data = client.get_order(order_code)
-                record._apply_skroutz_data(data.get('order', {}))
-        except Exception:
-            _logger.exception("Skroutz webhook: failed to process order %s", order_code)
+        if order_data:
+            record._apply_skroutz_data(order_data)
+        else:
+            client = record._get_api_client()
+            data = client.get_order(order_code)
+            record._apply_skroutz_data(data.get('order', {}))
         return record
 
 

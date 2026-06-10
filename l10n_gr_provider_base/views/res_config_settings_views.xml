@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="res_config_settings_view_form_l10n_gr_prov" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.l10n.gr.prov</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="account.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <block id="account_vendor_bills" position="after">
+                <block title="Greek E-Invoicing Provider (Y.PA.H.E.S.)" name="l10n_gr_prov_block">
+                    <setting string="Provider" name="l10n_gr_prov_provider_setting"
+                             help="Licensed provider used to issue your sales documents. Suppresses the myDATA ERP channel for those documents.">
+                        <field name="l10n_gr_prov_provider"/>
+                    </setting>
+                    <setting string="Test Environment" name="l10n_gr_prov_test_setting"
+                             help="Submit to the provider's test endpoint. Disable only when going live.">
+                        <field name="l10n_gr_prov_test_env"/>
+                    </setting>
+                    <setting string="Auto-send on Post" name="l10n_gr_prov_auto_setting"
+                             help="Queue posted invoices and let the scheduled job transmit them automatically.">
+                        <field name="l10n_gr_prov_auto_send"/>
+                    </setting>
+                </block>
+            </block>
+        </field>
+    </record>
+
+</odoo>

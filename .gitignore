@@ -34,6 +34,10 @@ env/
 logs/
 *.log
 
+# Third-party binaries (bundled tools, not source)
+*.exe
+script_printer/SumatraPDF.exe
+
 # OS
 .DS_Store
 Thumbs.db

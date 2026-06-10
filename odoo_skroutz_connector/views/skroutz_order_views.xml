@@ -85,6 +85,7 @@
                             <field name="ship_first_name"/>
                             <field name="ship_last_name"/>
                             <field name="ship_street"/>
+                            <field name="ship_street_number"/>
                             <field name="ship_city"/>
                             <field name="ship_zip"/>
                             <field name="ship_region"/>
@@ -120,7 +121,7 @@
                             </field>
                         </page>
                         <page string="Raw Data" name="raw_data">
-                            <field name="skroutz_data" widget="ace" options="{'mode': 'json'}" readonly="1"/>
+                            <field name="skroutz_data" widget="code" options="{'mode': 'json'}" readonly="1"/>
                         </page>
                     </notebook>
                 </sheet>

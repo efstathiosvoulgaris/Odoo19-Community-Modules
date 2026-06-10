@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Legal markings block on the printed invoice (A.1035/2020 art. 3 par. 7) -->
+    <template id="report_invoice_document_l10n_gr_prov"
+              inherit_id="account.report_invoice_document">
+        <xpath expr="//div[@id='qrcode']" position="after">
+            <div t-if="o.l10n_gr_prov_mark" class="mt-3" name="l10n_gr_prov_markings">
+                <div class="row">
+                    <div class="col-2">
+                        <img t-if="o._l10n_gr_prov_qr_image()"
+                             t-att-src="'data:image/png;base64,' + o._l10n_gr_prov_qr_image()"
+                             style="width: 30mm; height: 30mm;" alt="Provider QR"/>
+                    </div>
+                    <div class="col-10" style="font-size: 8pt;">
+                        <div><strong>ΜΑΡΚ:</strong> <span t-field="o.l10n_gr_prov_mark"/></div>
+                        <div><strong>Συμβολοσειρά Αυθεντικοποίησης:</strong> <span t-field="o.l10n_gr_prov_verification_hash"/></div>
+                        <div><strong>Αναγνωριστικό Παραστατικού:</strong> <span t-field="o.l10n_gr_prov_invoice_identifier"/></div>
+                        <div>
+                            <strong>Πάροχος:</strong> <span t-field="o.l10n_gr_prov_provider_url"/>
+                            — Ηλεκτρονική έκδοση μέσω Παρόχου Υ.ΠΑ.Η.Ε.Σ.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </xpath>
+    </template>
+
+</odoo>
