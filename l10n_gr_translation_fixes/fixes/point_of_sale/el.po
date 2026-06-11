@@ -1,0 +1,607 @@
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo 19.0 el overrides (point_of_sale)\n"
+"Language: el\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#. module: point_of_sale
+#. odoo-javascript
+#: code:addons/point_of_sale/static/src/app/screens/ticket_screen/ticket_screen.js:0
+msgid "% Disc"
+msgstr "% Έκπτ."
+
+#. module: point_of_sale
+#: model_terms:ir.ui.view,arch_db:point_of_sale.view_pos_config_kanban
+msgid "<span>Reporting</span>"
+msgstr "<span>Αναφορές</span>"
+
+#. module: point_of_sale
+#. odoo-javascript
+#: code:addons/point_of_sale/static/src/app/screens/ticket_screen/ticket_screen.js:0
+#: model:ir.model.fields,field_description:point_of_sale.field_pos_config__active
+#: model:ir.model.fields,field_description:point_of_sale.field_pos_payment_method__active
+msgid "Active"
+msgstr "Ενεργό"
+
+#. module: point_of_sale
+#: model:ir.model.fields,field_description:point_of_sale.field_pos_session__activity_exception_decoration
+msgid "Activity Exception Decoration"
+msgstr "Διακόσμηση Δραστηριότητας Εξαίρεσης"
+
+#. module: point_of_sale
+#. odoo-javascript
+#: code:addons/point_of_sale/static/src/app/screens/feedback_screen/feedback_screen.xml:0
+msgid "Amount Paid"
+msgstr "Ποσό Πληρωθέν"
+
+#. module: point_of_sale
+#: model_terms:ir.ui.view,arch_db:point_of_sale.res_config_settings_view_form
+msgid "Barcode Nomenclature"
+msgstr "Ονοματολογία Barcode"
+
+#. module: point_of_sale
+#. odoo-javascript
+#: code:addons/point_of_sale/static/src/app/components/navbar/navbar.xml:0
+msgid "Barcode Scanner"
+msgstr "Σαρωτής Barcode"
+
+#. module: point_of_sale
+#: model:ir.model.fields,help:point_of_sale.field_pos_config__cash_control
+#: model:ir.model.fields,help:point_of_sale.field_res_config_settings__pos_cash_control
+msgid "Check the amount of the cashbox at opening and closing."
+msgstr "Ελέγξτε το ποσό του ταμείου κατά το άνοιγμα και το κλείσιμο."
+
+#. module: point_of_sale
+#: model:ir.model.fields,field_description:point_of_sale.field_pos_category__child_ids
+msgid "Children Categories"
+msgstr "Θυγατρικές Κατηγορίες"
+
+#. module: point_of_sale
+#: model:ir.model.fields,field_description:point_of_sale.field_product_product__color
+#: model:ir.model.fields,field_description:point_of_sale.field_product_template__color
+msgid "Color Index"
+msgstr "Δείκτης Χρώματος"
+
+#. module: point_of_sale
+#. odoo-javascript
+#: code:addons/point_of_sale/static/src/app/screens/product_screen/product_screen.xml:0
+msgid "Create Manually"
+msgstr "Χειροκίνητη Δημιουργία"
+
+#. module: point_of_sale
+#. odoo-javascript
+#: code:addons/point_of_sale/static/src/app/components/popups/cash_move_popup/cash_move_list_popup/cash_move_list_popup.xml:0
+#: code:addons/point_of_sale/static/src/app/components/popups/cash_move_popup/cash_move_popup.xml:0
+#: code:addons/point_of_sale/static/src/app/components/popups/closing_popup/closing_popup.js:0
+#: code:addons/point_of_sale/static/src/app/components/popups/closing_popup/closing_popup.xml:0
+#: code:addons/point_of_sale/static/src/app/components/popups/number_popup/number_popup.xml:0
+#: code:addons/point_of_sale/static/src/app/components/popups/opening_control_popup/opening_control_popup.xml:0
+#: code:addons/point_of_sale/static/src/app/components/popups/optional_products_popup/optional_products_popup.xml:0
+#: code:addons/point_of_sale/static/src/app/components/popups/product_configurator_popup/product_configurator_popup.xml:0
+#: code:addons/point_of_sale/static/src/app/components/popups/select_lot_popup/select_lot_popup.xml:0
+#: code:addons/point_of_sale/static/src/app/components/popups/sync_popup/sync_popup.xml:0
+#: code:addons/point_of_sale/static/src/app/components/popups/text_input_popup/text_input_popup.xml:0
+#: code:addons/point_of_sale/static/src/app/screens/partner_list/partner_list.xml:0
+#: model_terms:ir.ui.view,arch_db:point_of_sale.pos_config_view_form
+msgid "Discard"
+msgstr "Ακύρωση"
+
+#. module: point_of_sale
+#. odoo-javascript
+#: code:addons/point_of_sale/static/src/app/screens/receipt_screen/receipt/order_receipt.xml:0
+#: model_terms:ir.ui.view,arch_db:point_of_sale.pos_session_sales_details
+msgid "Discounts"
+msgstr "Εκπτώσεις"
+
+#. module: point_of_sale
+#: model:ir.model.fields,field_description:point_of_sale.field_account_account__display_name
+#: model:ir.model.fields,field_description:point_of_sale.field_account_bank_statement_line__display_name
+#: model:ir.model.fields,field_description:point_of_sale.field_account_cash_rounding__display_name
+#: model:ir.model.fields,field_description:point_of_sale.field_account_fiscal_position__display_name
+#: model:ir.model.fields,field_description:point_of_sale.field_account_journal__display_name
+#: model:ir.model.fields,field_description:point_of_sale.field_account_move__display_name
+#: model:ir.model.fields,field_description:point_of_sale.field_account_move_line__display_name
+#: model:ir.model.fields,field_description:point_of_sale.field_account_payment__display_name
+#: model:ir.model.fields,field_description:point_of_sale.field_account_tax__display_name
+#: model:ir.model.fields,field_description:point_of_sale.field_account_tax_group__display_name
+#: model:ir.model.fields,field_description:point_of_sale.field_barcode_rule__display_name
+#: model:ir.model.fields,field_description:point_of_sale.field_decimal_precision__display_name
+#: model:ir.model.fields,field_description:point_of_sale.field_digest_digest__display_name
+#: model:ir.model.fields,field_description:point_of_sale.field_ir_http__display_name
+#: model:ir.model.fields,field_description:point_of_sale.field_ir_module_module__display_name
+#: model:ir.model.fields,field_description:point_of_sale.field_ir_sequence__display_name
+#: model:ir.model.fields,field_description:point_of_sale.field_pos_bill__display_name
+#: model:ir.model.fields,field_description:point_of_sale.field_pos_bus_mixin__display_name
+#: model:ir.model.fields,field_description:point_of_sale.field_pos_category__display_name
+#: model:ir.model.fields,field_description:point_of_sale.field_pos_close_session_wizard__display_name
+#: model:ir.model.fields,field_description:point_of_sale.field_pos_config__display_name
+#: model:ir.model.fields,field_description:point_of_sale.field_pos_confirmation_wizard__display_name
+#: model:ir.model.fields,field_description:point_of_sale.field_pos_daily_sales_reports_wizard__display_name
+#: model:ir.model.fields,field_description:point_of_sale.field_pos_details_wizard__display_name
+#: model:ir.model.fields,field_description:point_of_sale.field_pos_load_mixin__display_name
+#: model:ir.model.fields,field_description:point_of_sale.field_pos_make_invoice__display_name
+#: model:ir.model.fields,field_description:point_of_sale.field_pos_make_payment__display_name
+#: model:ir.model.fields,field_description:point_of_sale.field_pos_note__display_name
+#: model:ir.model.fields,field_description:point_of_sale.field_pos_order__display_name
+#: model:ir.model.fields,field_description:point_of_sale.field_pos_order_line__display_name
+#: model:ir.model.fields,field_description:point_of_sale.field_pos_pack_operation_lot__display_name
+#: model:ir.model.fields,field_description:point_of_sale.field_pos_payment__display_name
+#: model:ir.model.fields,field_description:point_of_sale.field_pos_payment_method__display_name
+#: model:ir.model.fields,field_description:point_of_sale.field_pos_preset__display_name
+#: model:ir.model.fields,field_description:point_of_sale.field_pos_printer__display_name
+#: model:ir.model.fields,field_description:point_of_sale.field_pos_session__display_name
+#: model:ir.model.fields,field_description:point_of_sale.field_product_attribute__display_name
+#: model:ir.model.fields,field_description:point_of_sale.field_product_attribute_custom_value__display_name
+#: model:ir.model.fields,field_description:point_of_sale.field_product_category__display_name
+#: model:ir.model.fields,field_description:point_of_sale.field_product_combo__display_name
+#: model:ir.model.fields,field_description:point_of_sale.field_product_combo_item__display_name
+#: model:ir.model.fields,field_description:point_of_sale.field_product_pricelist__display_name
+#: model:ir.model.fields,field_description:point_of_sale.field_product_pricelist_item__display_name
+#: model:ir.model.fields,field_description:point_of_sale.field_product_product__display_name
+#: model:ir.model.fields,field_description:point_of_sale.field_product_tag__display_name
+#: model:ir.model.fields,field_description:point_of_sale.field_product_template__display_name
+#: model:ir.model.fields,field_description:point_of_sale.field_product_template_attribute_exclusion__display_name
+#: model:ir.model.fields,field_description:point_of_sale.field_product_template_attribute_line__display_name
+#: model:ir.model.fields,field_description:point_of_sale.field_product_template_attribute_value__display_name
+#: model:ir.model.fields,field_description:point_of_sale.field_product_uom__display_name
+#: model:ir.model.fields,field_description:point_of_sale.field_report_point_of_sale_report_invoice__display_name
+#: model:ir.model.fields,field_description:point_of_sale.field_report_point_of_sale_report_saledetails__display_name
+#: model:ir.model.fields,field_description:point_of_sale.field_report_pos_order__display_name
+#: model:ir.model.fields,field_description:point_of_sale.field_res_company__display_name
+#: model:ir.model.fields,field_description:point_of_sale.field_res_config_settings__display_name
+#: model:ir.model.fields,field_description:point_of_sale.field_res_country__display_name
+#: model:ir.model.fields,field_description:point_of_sale.field_res_country_state__display_name
+#: model:ir.model.fields,field_description:point_of_sale.field_res_currency__display_name
+#: model:ir.model.fields,field_description:point_of_sale.field_res_lang__display_name
+#: model:ir.model.fields,field_description:point_of_sale.field_res_partner__display_name
+#: model:ir.model.fields,field_description:point_of_sale.field_res_users__display_name
+#: model:ir.model.fields,field_description:point_of_sale.field_resource_calendar_attendance__display_name
+#: model:ir.model.fields,field_description:point_of_sale.field_stock_move__display_name
+#: model:ir.model.fields,field_description:point_of_sale.field_stock_picking__display_name
+#: model:ir.model.fields,field_description:point_of_sale.field_stock_picking_type__display_name
+#: model:ir.model.fields,field_description:point_of_sale.field_stock_reference__display_name
+#: model:ir.model.fields,field_description:point_of_sale.field_stock_rule__display_name
+#: model:ir.model.fields,field_description:point_of_sale.field_stock_warehouse__display_name
+#: model:ir.model.fields,field_description:point_of_sale.field_uom_uom__display_name
+msgid "Display Name"
+msgstr "Εμφανιζόμενο Όνομα"
+
+#. module: point_of_sale
+#: model:ir.model.fields,help:point_of_sale.field_pos_session__activity_type_icon
+msgid "Font awesome icon e.g. fa-tasks"
+msgstr "Εικονίδιο Font Awesome π.χ. fa-tasks"
+
+#. module: point_of_sale
+#: model_terms:ir.ui.view,arch_db:point_of_sale.res_config_settings_view_form
+msgid "Improve navigation for imprecise industrial touchscreens"
+msgstr "Βελτιώστε την πλοήγηση για βιομηχανικές οθόνες αφής χαμηλής ακρίβειας"
+
+#. module: point_of_sale
+#: model:ir.model.fields.selection,name:point_of_sale.selection__pos_session__state__opened
+#: model_terms:ir.ui.view,arch_db:point_of_sale.view_pos_session_search
+msgid "In Progress"
+msgstr "Σε Εξέλιξη"
+
+#. module: point_of_sale
+#: model_terms:ir.ui.view,arch_db:point_of_sale.res_config_settings_view_form
+msgid "Internal Notes"
+msgstr "Εσωτερικές Σημειώσεις"
+
+#. module: point_of_sale
+#: model:ir.model.fields,field_description:point_of_sale.field_report_pos_order__invoiced
+#: model_terms:ir.ui.view,arch_db:point_of_sale.view_pos_order_filter
+#: model_terms:ir.ui.view,arch_db:point_of_sale.view_report_pos_order_search
+msgid "Invoiced"
+msgstr "Τιμολογημένο"
+
+#. module: point_of_sale
+#: model:ir.model,name:point_of_sale.model_account_move
+#: model:ir.model.fields,field_description:point_of_sale.field_pos_session__move_id
+msgid "Journal Entry"
+msgstr "Λογιστική Εγγραφή"
+
+#. module: point_of_sale
+#. odoo-python
+#: code:addons/point_of_sale/models/pos_session.py:0
+msgid "Journal Items"
+msgstr "Στοιχεία Ημερολογίου"
+
+#. module: point_of_sale
+#: model:ir.model.fields,field_description:point_of_sale.field_pos_order_line__name
+msgid "Line No"
+msgstr "Αρ. Γραμμής"
+
+#. module: point_of_sale
+#: model_terms:ir.ui.view,arch_db:point_of_sale.view_pos_payment
+msgid "Make Payment"
+msgstr "Εκτέλεση Πληρωμής"
+
+#. module: point_of_sale
+#. odoo-python
+#: code:addons/point_of_sale/models/pos_order.py:0
+msgid ""
+"No cash statement found for this session. Unable to record returned cash."
+msgstr ""
+"Δεν βρέθηκε κατάσταση μετρητών για αυτή τη βάρδια. Αδύνατη η καταγραφή των "
+"επιστρεφόμενων μετρητών."
+
+#. module: point_of_sale
+#. odoo-javascript
+#: code:addons/point_of_sale/static/src/app/screens/payment_screen/payment_screen.xml:0
+msgid "Open Cashbox"
+msgstr "Άνοιγμα Ταμείου Μετρητών"
+
+#. module: point_of_sale
+#: model:ir.model.fields,field_description:point_of_sale.field_pos_config__picking_type_id
+#: model:ir.model.fields,field_description:point_of_sale.field_pos_order__picking_type_id
+#: model:ir.model.fields,field_description:point_of_sale.field_res_config_settings__pos_picking_type_id
+#: model_terms:ir.ui.view,arch_db:point_of_sale.res_config_settings_view_form
+msgid "Operation Type"
+msgstr "Τύπος Ενέργειας"
+
+#. module: point_of_sale
+#: model:ir.model.fields,field_description:point_of_sale.field_pos_order__tracking_number
+msgid "Order Number"
+msgstr "Αριθμός Παραγγελίας"
+
+#. module: point_of_sale
+#: model:ir.model.fields,field_description:point_of_sale.field_pos_order__name
+#: model:ir.model.fields,field_description:point_of_sale.field_pos_order_line__order_id
+#: model:ir.model.fields,field_description:point_of_sale.field_pos_pack_operation_lot__order_id
+#: model_terms:ir.ui.view,arch_db:point_of_sale.pos_session_sales_details
+msgid "Order Ref"
+msgstr "Αναφορά Παραγγελίας"
+
+#. module: point_of_sale
+#. odoo-javascript
+#. odoo-python
+#: code:addons/point_of_sale/models/pos_session.py:0
+#: code:addons/point_of_sale/static/src/app/components/navbar/navbar.xml:0
+#: model:ir.actions.act_window,name:point_of_sale.action_pos_order_filtered
+#: model:ir.actions.act_window,name:point_of_sale.action_pos_pos_form
+#: model:ir.actions.act_window,name:point_of_sale.action_pos_sale_graph
+#: model:ir.model.fields,field_description:point_of_sale.field_pos_session__order_ids
+#: model:ir.ui.menu,name:point_of_sale.menu_point_of_sale
+#: model:ir.ui.menu,name:point_of_sale.menu_point_ofsale
+#: model:ir.ui.menu,name:point_of_sale.menu_report_pos_order_all
+#: model_terms:ir.ui.view,arch_db:point_of_sale.res_config_settings_view_form
+#: model_terms:ir.ui.view,arch_db:point_of_sale.view_pos_config_kanban
+#: model_terms:ir.ui.view,arch_db:point_of_sale.view_pos_session_form
+msgid "Orders"
+msgstr "Παραγγελίες"
+
+#. module: point_of_sale
+#: model_terms:ir.ui.view,arch_db:point_of_sale.view_pos_order_line_form
+msgid "POS Order line"
+msgstr "Γραμμή Παραγγελίας POS"
+
+#. module: point_of_sale
+#: model_terms:ir.ui.view,arch_db:point_of_sale.view_pos_order_line
+msgid "POS Order lines"
+msgstr "Γραμμές Παραγγελιών POS"
+
+#. module: point_of_sale
+#: model_terms:ir.ui.view,arch_db:point_of_sale.view_account_journal_pos_user_form
+#: model_terms:ir.ui.view,arch_db:point_of_sale.view_pos_order_tree
+msgid "POS Orders"
+msgstr "Παραγγελίες POS"
+
+#. module: point_of_sale
+#: model_terms:ir.ui.view,arch_db:point_of_sale.view_pos_order_tree_all_sales_lines
+msgid "POS Orders lines"
+msgstr "Γραμμές Παραγγελιών POS"
+
+#. module: point_of_sale
+#: model:ir.model.fields,field_description:point_of_sale.field_digest_digest__kpi_pos_total
+msgid "POS Sales"
+msgstr "Πωλήσεις POS"
+
+#. module: point_of_sale
+#. odoo-javascript
+#: code:addons/point_of_sale/static/src/app/screens/ticket_screen/ticket_screen.js:0
+#: code:addons/point_of_sale/static/src/app/utils/debug/debug_widget.xml:0
+#: model:ir.model.fields,field_description:point_of_sale.field_pos_order__amount_paid
+#: model:ir.model.fields.selection,name:point_of_sale.selection__pos_order__state__paid
+#: model:ir.model.fields.selection,name:point_of_sale.selection__report_pos_order__state__paid
+msgid "Paid"
+msgstr "Πληρώθηκε"
+
+#. module: point_of_sale
+#: model_terms:ir.ui.view,arch_db:point_of_sale.view_pos_payment
+msgid "Pay Order"
+msgstr "Πληρωμή Παραγγελίας"
+
+#. module: point_of_sale
+#. odoo-python
+#: code:addons/point_of_sale/models/pos_session.py:0
+#: model:ir.actions.act_window,name:point_of_sale.action_pos_payment_form
+#: model:ir.model,name:point_of_sale.model_account_payment
+#: model:ir.model.fields,field_description:point_of_sale.field_pos_order__payment_ids
+#: model:ir.ui.menu,name:point_of_sale.menu_pos_payment
+#: model_terms:ir.ui.view,arch_db:point_of_sale.pos_session_sales_details
+#: model_terms:ir.ui.view,arch_db:point_of_sale.view_pos_payment_form
+#: model_terms:ir.ui.view,arch_db:point_of_sale.view_pos_payment_search
+#: model_terms:ir.ui.view,arch_db:point_of_sale.view_pos_payment_tree
+#: model_terms:ir.ui.view,arch_db:point_of_sale.view_pos_pos_form
+#: model_terms:ir.ui.view,arch_db:point_of_sale.view_pos_session_form
+msgid "Payments"
+msgstr "Πληρωμές"
+
+#. module: point_of_sale
+#: model:ir.model,name:point_of_sale.model_stock_picking_type
+msgid "Picking Type"
+msgstr "Τύπος Συλλογής"
+
+#. module: point_of_sale
+#. odoo-javascript
+#: code:addons/point_of_sale/static/src/app/utils/order_payment_validation.js:0
+msgid "Please Confirm Large Amount"
+msgstr "Παρακαλούμε Επιβεβαιώστε το Μεγάλο Ποσό"
+
+#. module: point_of_sale
+#. odoo-python
+#: code:addons/point_of_sale/models/stock_warehouse.py:0
+#: model:ir.model.fields,field_description:point_of_sale.field_stock_reference__pos_order_ids
+#: model_terms:ir.ui.view,arch_db:point_of_sale.view_partner_property_form
+#: model_terms:ir.ui.view,arch_db:point_of_sale.view_pos_order_pivot
+msgid "PoS Orders"
+msgstr "Παραγγελίες POS"
+
+#. module: point_of_sale
+#. odoo-python
+#: code:addons/point_of_sale/models/account_journal.py:0
+#: model:ir.actions.act_window,name:point_of_sale.action_pos_config_kanban
+#: model:ir.model.fields,field_description:point_of_sale.field_pos_config__name
+#: model:ir.model.fields,field_description:point_of_sale.field_pos_order__config_id
+#: model:ir.model.fields,field_description:point_of_sale.field_pos_payment_method__config_ids
+#: model:ir.model.fields,field_description:point_of_sale.field_pos_session__config_id
+#: model:ir.model.fields,field_description:point_of_sale.field_report_pos_order__config_id
+#: model:ir.model.fields,field_description:point_of_sale.field_res_config_settings__pos_config_id
+#: model:ir.model.fields.selection,name:point_of_sale.selection__pos_order__source__pos
+#: model:ir.ui.menu,name:point_of_sale.menu_point_root
+#: model:res.groups.privilege,name:point_of_sale.res_groups_privilege_point_of_sale
+#: model_terms:ir.ui.view,arch_db:point_of_sale.digest_digest_view_form
+#: model_terms:ir.ui.view,arch_db:point_of_sale.pos_payment_method_view_search
+#: model_terms:ir.ui.view,arch_db:point_of_sale.product_tag_form_view_inherit_point_of_sale
+#: model_terms:ir.ui.view,arch_db:point_of_sale.product_template_form_view
+#: model_terms:ir.ui.view,arch_db:point_of_sale.product_template_search_view_pos
+#: model_terms:ir.ui.view,arch_db:point_of_sale.res_config_settings_view_form
+#: model_terms:ir.ui.view,arch_db:point_of_sale.view_pos_order_filter
+#: model_terms:ir.ui.view,arch_db:point_of_sale.view_pos_session_search
+#: model_terms:ir.ui.view,arch_db:point_of_sale.view_report_pos_order_search
+msgid "Point of Sale"
+msgstr "Σημείο Πώλησης"
+
+#. module: point_of_sale
+#: model_terms:ir.ui.view,arch_db:point_of_sale.report_pos_order_view_tree
+#: model_terms:ir.ui.view,arch_db:point_of_sale.view_report_pos_order_graph
+#: model_terms:ir.ui.view,arch_db:point_of_sale.view_report_pos_order_pivot
+#: model_terms:ir.ui.view,arch_db:point_of_sale.view_report_pos_order_search
+msgid "Point of Sale Analysis"
+msgstr "Ανάλυση Σημείου Πώλησης"
+
+#. module: point_of_sale
+#: model:ir.model,name:point_of_sale.model_pos_category
+#: model:ir.model.fields,field_description:point_of_sale.field_product_product__pos_categ_ids
+#: model:ir.model.fields,field_description:point_of_sale.field_product_template__pos_categ_ids
+#: model:ir.model.fields,field_description:point_of_sale.field_report_pos_order__pos_categ_id
+#: model_terms:ir.ui.view,arch_db:point_of_sale.view_report_pos_order_search
+msgid "Point of Sale Category"
+msgstr "Κατηγορία Σημείου Πώλησης"
+
+#. module: point_of_sale
+#: model_terms:ir.ui.view,arch_db:point_of_sale.view_pos_config_search
+msgid "Point of Sale Config"
+msgstr "Διαμόρφωση Σημείου Πώλησης"
+
+#. module: point_of_sale
+#: model:ir.model,name:point_of_sale.model_pos_config
+#: model:ir.model.fields,field_description:point_of_sale.field_pos_make_payment__config_id
+#: model_terms:ir.ui.view,arch_db:point_of_sale.pos_config_view_form
+#: model_terms:ir.ui.view,arch_db:point_of_sale.view_pos_config_tree
+msgid "Point of Sale Configuration"
+msgstr "Διαμόρφωση Σημείου Πώλησης"
+
+#. module: point_of_sale
+#: model:ir.model,name:point_of_sale.model_pos_order
+#: model_terms:ir.ui.view,arch_db:point_of_sale.view_pos_order_search
+#: model_terms:ir.ui.view,arch_db:point_of_sale.view_pos_pos_form
+msgid "Point of Sale Orders"
+msgstr "Παραγγελίες Σημείου Πώλησης"
+
+#. module: point_of_sale
+#: model:ir.model,name:point_of_sale.model_pos_session
+#: model_terms:ir.ui.view,arch_db:point_of_sale.view_pos_session_form
+#: model_terms:ir.ui.view,arch_db:point_of_sale.view_pos_session_search
+#: model_terms:ir.ui.view,arch_db:point_of_sale.view_pos_session_tree
+msgid "Point of Sale Session"
+msgstr "Βάρδια Σημείου Πώλησης"
+
+#. module: point_of_sale
+#: model_terms:ir.ui.view,arch_db:point_of_sale.product_pos_category_form_view
+msgid "Pos Product Categories"
+msgstr "Κατηγορίες Ειδών POS"
+
+#. module: point_of_sale
+#. odoo-javascript
+#: code:addons/point_of_sale/static/src/app/screens/receipt_screen/receipt/order_receipt.xml:0
+#: code:addons/point_of_sale/static/src/customer_display/customer_display.xml:0
+msgid "Powered by"
+msgstr "Με την υποστήριξη του"
+
+#. module: point_of_sale
+#. odoo-javascript
+#: code:addons/point_of_sale/static/src/app/screens/product_screen/product_screen.js:0
+#: code:addons/point_of_sale/static/src/app/screens/ticket_screen/ticket_screen.js:0
+msgid "Price"
+msgstr "Τιμή"
+
+#. module: point_of_sale
+#: model_terms:ir.ui.view,arch_db:point_of_sale.product_template_view_form_normalized_pos
+msgid "Product Name"
+msgstr "Όνομα Είδους"
+
+#. module: point_of_sale
+#: model_terms:ir.ui.view,arch_db:point_of_sale.product_pos_category_tree_view
+msgid "Product Product Categories"
+msgstr "Κατηγορίες Ειδών"
+
+#. module: point_of_sale
+#: model:ir.model,name:point_of_sale.model_product_product
+msgid "Product Variant"
+msgstr "Παραλλαγή Είδους"
+
+#. module: point_of_sale
+#: model:ir.actions.act_window,name:point_of_sale.product_product_action
+#: model:ir.ui.menu,name:point_of_sale.pos_config_menu_action_product_product
+msgid "Product Variants"
+msgstr "Παραλλαγές Είδους"
+
+#. module: point_of_sale
+#. odoo-javascript
+#: code:addons/point_of_sale/static/src/app/screens/product_screen/product_screen.xml:0
+#: model:ir.actions.act_window,name:point_of_sale.product_template_action_pos_product
+#: model:ir.ui.menu,name:point_of_sale.menu_pos_products
+#: model:ir.ui.menu,name:point_of_sale.pos_config_menu_catalog
+#: model:ir.ui.menu,name:point_of_sale.pos_menu_products_configuration
+#: model_terms:ir.ui.view,arch_db:point_of_sale.view_pos_pos_form
+msgid "Products"
+msgstr "Προϊόντα"
+
+#. module: point_of_sale
+#: model:ir.model.fields,field_description:point_of_sale.field_pos_printer__proxy_ip
+msgid "Proxy IP Address"
+msgstr "Διεύθυνση IP του Proxy"
+
+#. module: point_of_sale
+#. odoo-javascript
+#: code:addons/point_of_sale/static/src/app/screens/product_screen/product_screen.js:0
+#: code:addons/point_of_sale/static/src/app/screens/ticket_screen/ticket_screen.js:0
+msgid "Qty"
+msgstr "Ποσ."
+
+#. module: point_of_sale
+#. odoo-javascript
+#: code:addons/point_of_sale/static/src/app/screens/ticket_screen/ticket_screen.js:0
+msgid "Receipt"
+msgstr "Παραλαβή"
+
+#. module: point_of_sale
+#. odoo-javascript
+#: code:addons/point_of_sale/static/src/app/screens/ticket_screen/ticket_screen.js:0
+#: model:ir.model.fields,field_description:point_of_sale.field_pos_order__stock_reference_ids
+msgid "Reference"
+msgstr "Αναφορά"
+
+#. module: point_of_sale
+#. odoo-javascript
+#: code:addons/point_of_sale/static/src/app/screens/payment_screen/payment_status/payment_status.js:0
+msgid "Remaining"
+msgstr "Υπόλοιπο"
+
+#. module: point_of_sale
+#. odoo-javascript
+#: code:addons/point_of_sale/static/src/app/components/popups/product_info_popup/product_info_popup.xml:0
+msgid "Replenishment"
+msgstr "Αναπλήρωση"
+
+#. module: point_of_sale
+#: model:ir.model.fields,field_description:point_of_sale.field_pos_config__restrict_price_control
+#: model:ir.model.fields,field_description:point_of_sale.field_res_config_settings__pos_restrict_price_control
+msgid "Restrict Price Modifications to Managers"
+msgstr "Τροποποίηση Τιμών Μόνο από Διαχειριστές"
+
+#. module: point_of_sale
+#: model_terms:ir.ui.view,arch_db:point_of_sale.res_config_settings_view_form
+msgid "Restrict price modification to managers"
+msgstr "Τροποποίηση τιμών μόνο από διαχειριστές"
+
+#. module: point_of_sale
+#. odoo-python
+#: code:addons/point_of_sale/models/pos_order.py:0
+msgid "Reversal of: %s"
+msgstr "Αντιλογισμός του: %s"
+
+#. module: point_of_sale
+#. odoo-javascript
+#: code:addons/point_of_sale/static/src/app/screens/ticket_screen/ticket_screen.xml:0
+msgid "Review"
+msgstr "Έλεγχος"
+
+#. module: point_of_sale
+#. odoo-javascript
+#: code:addons/point_of_sale/static/src/app/components/navbar/proxy_status/proxy_status.js:0
+msgid "Scale"
+msgstr "Ζυγός"
+
+#. module: point_of_sale
+#. odoo-python
+#: code:addons/point_of_sale/models/pos_config.py:0
+#: model:ir.model.fields,field_description:point_of_sale.field_account_bank_statement_line__pos_session_id
+#: model:ir.model.fields,field_description:point_of_sale.field_pos_order__session_id
+#: model:ir.model.fields,field_description:point_of_sale.field_pos_payment__session_id
+#: model:ir.model.fields,field_description:point_of_sale.field_report_pos_order__session_id
+#: model_terms:ir.ui.view,arch_db:point_of_sale.view_pos_order_filter
+#: model_terms:ir.ui.view,arch_db:point_of_sale.view_pos_payment_search
+msgid "Session"
+msgstr "Βάρδια"
+
+#. module: point_of_sale
+#: model:ir.model.fields,field_description:point_of_sale.field_pos_session__name
+msgid "Session ID"
+msgstr "Κωδικός Βάρδιας"
+
+#. module: point_of_sale
+#: model:ir.model.fields,field_description:point_of_sale.field_pos_config__statistics_for_current_session
+msgid "Session Statistics"
+msgstr "Στατιστικά Βάρδιας"
+
+#. module: point_of_sale
+#: model:ir.actions.act_window,name:point_of_sale.action_pos_session
+#: model:ir.actions.act_window,name:point_of_sale.action_pos_session_filtered
+#: model:ir.model.fields,field_description:point_of_sale.field_pos_config__session_ids
+#: model:ir.ui.menu,name:point_of_sale.menu_pos_session_all
+#: model_terms:ir.ui.view,arch_db:point_of_sale.view_pos_config_kanban
+msgid "Sessions"
+msgstr "Βάρδιες"
+
+#. module: point_of_sale
+#. odoo-javascript
+#: code:addons/point_of_sale/static/src/backend/pos_payment_provider_cards/pos_payment_provider_cards.xml:0
+msgid "Setup"
+msgstr "Ρύθμιση"
+
+#. module: point_of_sale
+#: model:ir.model.fields,field_description:point_of_sale.field_pos_config__picking_policy
+#: model:ir.model.fields,field_description:point_of_sale.field_res_config_settings__pos_picking_policy
+msgid "Shipping Policy"
+msgstr "Πολιτική Αποστολής"
+
+#. module: point_of_sale
+#. odoo-javascript
+#: code:addons/point_of_sale/static/src/app/components/order_display/order_display.xml:0
+#: code:addons/point_of_sale/static/src/app/screens/receipt_screen/receipt/order_receipt.xml:0
+#: code:addons/point_of_sale/static/src/customer_display/customer_display.xml:0
+msgid "Subtotal"
+msgstr "Υποσύνολο"
+
+#. module: point_of_sale
+#: model:ir.model.fields,field_description:point_of_sale.field_product_product__to_weight
+#: model:ir.model.fields,field_description:point_of_sale.field_product_template__to_weight
+msgid "To Weigh With Scale"
+msgstr "Ζυγίζεται με Ζυγαριά"
+
+#. module: point_of_sale
+#: model_terms:ir.ui.view,arch_db:point_of_sale.view_pos_order_line
+msgid "Total qty"
+msgstr "Συνολική Ποσ."
+
+#. module: point_of_sale
+#. odoo-python
+#: code:addons/point_of_sale/models/pos_session.py:0
+msgid "You should assign a Point of Sale to your session."
+msgstr "Πρέπει να αναθέσετε ένα Σημείο Πώλησης στη βάρδιά σας."

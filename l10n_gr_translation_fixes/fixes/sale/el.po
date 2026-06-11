@@ -1,0 +1,399 @@
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo 19.0 el overrides (sale)\n"
+"Language: el\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#. module: sale
+#: model_terms:ir.ui.view,arch_db:sale.sale_order_portal_template
+msgid ""
+", it's 100% free! You'll save time creating beautiful quotations and track "
+"sales."
+msgstr ""
+", είναι 100% δωρεάν! Θα εξοικονομήσετε χρόνο δημιουργώντας όμορφες προσφορές"
+" και παρακολουθώντας τις πωλήσεις."
+
+#. module: sale
+#: model_terms:ir.ui.view,arch_db:sale.sale_order_portal_template
+msgid "<i class=\"fa fa-comment\"/> Feedback"
+msgstr "<i class=\"fa fa-comment\"/> Σχόλια"
+
+#. module: sale
+#: model_terms:ir.ui.view,arch_db:sale.sale_order_portal_content
+msgid "<i class=\"fa fa-fw fa-check\"/> Reversed"
+msgstr "<i class=\"fa fa-fw fa-check\"/> Αντιλογισμένο"
+
+#. module: sale
+#: model_terms:ir.ui.view,arch_db:sale.portal_my_orders
+msgid ""
+"<span class=\"d-none d-md-inline\">Sales Order #</span>\n"
+"                            <span class=\"d-block d-md-none\">Ref.</span>"
+msgstr ""
+"<span class=\"d-none d-md-inline\">Παραγγελία Πώλησης #</span>\n"
+"                            <span class=\"d-block d-md-none\">Αναφ.</span>"
+
+#. module: sale
+#: model_terms:ir.ui.view,arch_db:sale.view_order_form
+msgid "<span>Warning: This quote contains archived product(s)</span>"
+msgstr ""
+"<span>Προειδοποίηση: Αυτή η προσφορά περιέχει αρχειοθετημένα προϊόντα</span>"
+
+#. module: sale
+#: model_terms:ir.ui.view,arch_db:sale.sale_order_portal_template
+msgid "<strong>Thank You!</strong><br/>"
+msgstr "<strong>Σας Ευχαριστούμε!</strong><br/>"
+
+#. module: sale
+#: model:ir.model,name:sale.model_account_chart_template
+msgid "Account Chart Template"
+msgstr "Πρότυπο Λογιστικού Σχεδίου"
+
+#. module: sale
+#: model:ir.model.fields,field_description:sale.field_sale_order__activity_exception_decoration
+msgid "Activity Exception Decoration"
+msgstr "Διακόσμηση Δραστηριότητας Εξαίρεσης"
+
+#. module: sale
+#: model_terms:ir.ui.view,arch_db:sale.res_config_settings_view_form
+msgid "Add several variants to an order from a grid"
+msgstr "Προσθέστε πολλές παραλλαγές σε μια παραγγελία από έναν πίνακα"
+
+#. module: sale
+#: model_terms:ir.ui.view,arch_db:sale.mass_cancel_orders_view_form
+msgid "Are you sure you want to cancel the selected item?"
+msgstr "Είστε βέβαιοι ότι θέλετε να ακυρώσετε το επιλεγμένο είδος;"
+
+#. module: sale
+#. odoo-javascript
+#: code:addons/sale/static/src/js/tours/sale.js:0
+msgid "Build your first quotation right here!"
+msgstr "Δημιουργήστε την πρώτη σας προσφορά ακριβώς εδώ!"
+
+#. module: sale
+#: model_terms:ir.ui.view,arch_db:sale.res_config_settings_view_form
+msgid "Connectors"
+msgstr "Διασυνδέσεις"
+
+#. module: sale
+#: model:ir.model.fields,field_description:sale.field_sale_order_line__service_tracking
+msgid "Create on Order"
+msgstr "Δημιουργία κατά την Παραγγελία"
+
+#. module: sale
+#: model:ir.model.fields,help:sale.field_sale_order__date_order
+msgid ""
+"Creation date of draft/sent orders,\n"
+"Confirmation date of confirmed orders."
+msgstr ""
+"Ημερομηνία δημιουργίας πρόχειρων/απεσταλμένων παραγγελιών,\n"
+"Ημερομηνία επιβεβαίωσης επιβεβαιωμένων παραγγελιών."
+
+#. module: sale
+#: model:ir.model.fields,field_description:sale.field_sale_report__state_id
+msgid "Customer State"
+msgstr "Νομός/Πολιτεία Πελάτη"
+
+#. module: sale
+#: model_terms:ir.ui.view,arch_db:sale.res_config_settings_view_form
+msgid "DHL Connector"
+msgstr "Διασύνδεση DHL"
+
+#. module: sale
+#: model:ir.model.fields,field_description:sale.field_sale_advance_payment_inv__deduct_down_payments
+msgid "Deduct down payments"
+msgstr "Αφαίρεση προκαταβολών"
+
+#. module: sale
+#: model:ir.model.fields.selection,name:sale.selection__product_template__invoice_policy__delivery
+msgid "Delivered quantities"
+msgstr "Παραδοθείσες ποσότητες"
+
+#. module: sale
+#: model:product.template,name:sale.advance_product_0_product_template
+msgid "Deposit"
+msgstr "Προκαταβολή"
+
+#. module: sale
+#: model:ir.model.fields,field_description:sale.field_res_company__sale_discount_product_id
+msgid "Discount Product"
+msgstr "Είδος Έκπτωσης"
+
+#. module: sale
+#: model:ir.model.fields,field_description:sale.field_res_config_settings__group_discount_per_so_line
+#: model_terms:ir.ui.view,arch_db:sale.view_order_form
+msgid "Discounts"
+msgstr "Εκπτώσεις"
+
+#. module: sale
+#: model:ir.model.fields,field_description:sale.field_account_analytic_applicability__display_name
+#: model:ir.model.fields,field_description:sale.field_account_analytic_line__display_name
+#: model:ir.model.fields,field_description:sale.field_account_chart_template__display_name
+#: model:ir.model.fields,field_description:sale.field_account_invoice_report__display_name
+#: model:ir.model.fields,field_description:sale.field_account_move__display_name
+#: model:ir.model.fields,field_description:sale.field_account_move_line__display_name
+#: model:ir.model.fields,field_description:sale.field_base_document_layout__display_name
+#: model:ir.model.fields,field_description:sale.field_crm_team__display_name
+#: model:ir.model.fields,field_description:sale.field_ir_actions_report__display_name
+#: model:ir.model.fields,field_description:sale.field_ir_config_parameter__display_name
+#: model:ir.model.fields,field_description:sale.field_payment_link_wizard__display_name
+#: model:ir.model.fields,field_description:sale.field_payment_provider__display_name
+#: model:ir.model.fields,field_description:sale.field_payment_transaction__display_name
+#: model:ir.model.fields,field_description:sale.field_product_attribute_custom_value__display_name
+#: model:ir.model.fields,field_description:sale.field_product_document__display_name
+#: model:ir.model.fields,field_description:sale.field_product_pricelist_item__display_name
+#: model:ir.model.fields,field_description:sale.field_product_product__display_name
+#: model:ir.model.fields,field_description:sale.field_product_template__display_name
+#: model:ir.model.fields,field_description:sale.field_res_company__display_name
+#: model:ir.model.fields,field_description:sale.field_res_config_settings__display_name
+#: model:ir.model.fields,field_description:sale.field_res_partner__display_name
+#: model:ir.model.fields,field_description:sale.field_sale_advance_payment_inv__display_name
+#: model:ir.model.fields,field_description:sale.field_sale_mass_cancel_orders__display_name
+#: model:ir.model.fields,field_description:sale.field_sale_order__display_name
+#: model:ir.model.fields,field_description:sale.field_sale_order_discount__display_name
+#: model:ir.model.fields,field_description:sale.field_sale_order_line__display_name
+#: model:ir.model.fields,field_description:sale.field_sale_report__display_name
+#: model:ir.model.fields,field_description:sale.field_utm_campaign__display_name
+msgid "Display Name"
+msgstr "Εμφανιζόμενο Όνομα"
+
+#. module: sale
+#: model:ir.model.fields,field_description:sale.field_sale_order_line__display_type
+msgid "Display Type"
+msgstr "Τύπος Εμφάνισης"
+
+#. module: sale
+#. odoo-python
+#: code:addons/sale/models/sale_order.py:0
+#: code:addons/sale/models/sale_order_line.py:0
+msgid "Down Payments"
+msgstr "Προκαταβολές"
+
+#. module: sale
+#: model:ir.model.fields,field_description:sale.field_res_config_settings__module_delivery_easypost
+msgid "Easypost Connector"
+msgstr "Διασύνδεση Easypost"
+
+#. module: sale
+#: model:ir.model.fields,field_description:sale.field_res_config_settings__module_delivery_fedex_rest
+#: model_terms:ir.ui.view,arch_db:sale.res_config_settings_view_form
+msgid "FedEx Connector"
+msgstr "Διασύνδεση FedEx"
+
+#. module: sale
+#: model:ir.model.fields,help:sale.field_sale_order__activity_type_icon
+msgid "Font awesome icon e.g. fa-tasks"
+msgstr "Εικονίδιο Font Awesome π.χ. fa-tasks"
+
+#. module: sale
+#: model_terms:ir.ui.view,arch_db:sale.view_sale_advance_payment_inv
+msgid "Invoice Sales Order"
+msgstr "Τιμολόγηση Παραγγελίας"
+
+#. module: sale
+#: model:ir.model.fields.selection,name:sale.selection__res_config_settings__default_invoice_policy__delivery
+msgid "Invoice what is delivered"
+msgstr "Τιμολόγηση όσων έχουν παραδοθεί"
+
+#. module: sale
+#: model:ir.model.fields.selection,name:sale.selection__res_config_settings__default_invoice_policy__order
+msgid "Invoice what is ordered"
+msgstr "Τιμολόγηση όσων έχουν παραγγελθεί"
+
+#. module: sale
+#: model:ir.model.fields,field_description:sale.field_sale_order_line__qty_invoiced_at_date
+#: model_terms:ir.ui.view,arch_db:sale.view_order_form
+msgid "Invoiced"
+msgstr "Τιμολογημένο"
+
+#. module: sale
+#: model:ir.model.fields,field_description:sale.field_sale_order_line__amount_invoiced
+msgid "Invoiced Amount"
+msgstr "Τιμολογημένο Ποσό"
+
+#. module: sale
+#: model_terms:ir.ui.view,arch_db:sale.sale_order_portal_content
+msgid "Last Invoices"
+msgstr "Τελευταία Τιμολόγια"
+
+#. module: sale
+#: model:ir.model.fields,field_description:sale.field_sale_order_line__linked_line_id
+msgid "Linked Order Line"
+msgstr "Συνδεδεμένη Γραμμή Παραγγελίας"
+
+#. module: sale
+#: model:ir.model.fields,field_description:sale.field_sale_order__name
+#: model:ir.model.fields,field_description:sale.field_sale_order_line__order_id
+#: model:ir.model.fields,field_description:sale.field_sale_report__name
+msgid "Order Reference"
+msgstr "Αναφορά Παραγγελίας"
+
+#. module: sale
+#: model:ir.model.fields,field_description:sale.field_sale_order_line__state
+msgid "Order Status"
+msgstr "Κατάσταση Παραγγελίας"
+
+#. module: sale
+#: model:ir.model.fields.selection,name:sale.selection__product_template__invoice_policy__order
+msgid "Ordered quantities"
+msgstr "Παραγγελθείσες ποσότητες"
+
+#. module: sale
+#: model:ir.ui.menu,name:sale.menu_sale_order
+#: model:ir.ui.menu,name:sale.sale_order_menu
+msgid "Orders"
+msgstr "Παραγγελίες"
+
+#. module: sale
+#. odoo-javascript
+#: code:addons/sale/static/src/js/product/product.js:0
+msgid "Packaging"
+msgstr "Συσκευασία"
+
+#. module: sale
+#: model_terms:ir.ui.view,arch_db:sale.sale_order_portal_pay_modal
+msgid "Pay Order"
+msgstr "Πληρωμή Παραγγελίας"
+
+#. module: sale
+#: model:res.groups,name:sale.group_proforma_sales
+msgid "Pro-forma Invoices"
+msgstr "Προτιμολόγια"
+
+#. module: sale
+#: model:ir.model,name:sale.model_product_product
+#: model:ir.model.fields,field_description:sale.field_sale_report__product_id
+#: model_terms:ir.ui.view,arch_db:sale.view_order_form
+#: model_terms:ir.ui.view,arch_db:sale.view_order_product_search
+msgid "Product Variant"
+msgstr "Παραλλαγή Είδους"
+
+#. module: sale
+#: model:ir.ui.menu,name:sale.menu_products
+msgid "Product Variants"
+msgstr "Παραλλαγές Είδους"
+
+#. module: sale
+#: model:ir.actions.act_window,name:sale.product_template_action
+#: model:ir.ui.menu,name:sale.menu_product_template_action
+#: model:ir.ui.menu,name:sale.menu_reporting_product
+#: model:ir.ui.menu,name:sale.prod_config_main
+#: model:ir.ui.menu,name:sale.product_menu_catalog
+#: model_terms:ir.ui.view,arch_db:sale.sale_order_portal_content
+msgid "Products"
+msgstr "Προϊόντα"
+
+#. module: sale
+#: model_terms:ir.ui.view,arch_db:sale.view_order_line_tree
+msgid "Qty"
+msgstr "Ποσ."
+
+#. module: sale
+#: model:ir.model.fields,field_description:sale.field_sale_advance_payment_inv__sale_order_ids
+#: model:ir.model.fields,field_description:sale.field_sale_order_discount__sale_order_id
+#: model:ir.model.fields.selection,name:sale.selection__account_analytic_applicability__business_domain__sale_order
+msgid "Sale Order"
+msgstr "Παραγγελία Πώλησης"
+
+#. module: sale
+#. odoo-python
+#: code:addons/sale/models/res_partner.py:0
+#: model_terms:ir.ui.view,arch_db:sale.account_invoice_form
+msgid "Sale Orders"
+msgstr "Παραγγελίες Πώλησης"
+
+#. module: sale
+#: model:ir.model,name:sale.model_sale_advance_payment_inv
+msgid "Sales Advance Payment Invoice"
+msgstr "Τιμολόγιο Προκαταβολής Πώλησης"
+
+#. module: sale
+#: model:ir.model,name:sale.model_crm_team
+#: model:ir.model.fields,field_description:sale.field_account_bank_statement_line__team_id
+#: model:ir.model.fields,field_description:sale.field_account_invoice_report__team_id
+#: model:ir.model.fields,field_description:sale.field_account_move__team_id
+#: model:ir.model.fields,field_description:sale.field_sale_order__team_id
+#: model:ir.model.fields,field_description:sale.field_sale_report__team_id
+#: model_terms:ir.ui.view,arch_db:sale.account_invoice_groupby_inherit
+#: model_terms:ir.ui.view,arch_db:sale.view_account_invoice_report_search_inherit
+#: model_terms:ir.ui.view,arch_db:sale.view_order_product_search
+#: model_terms:ir.ui.view,arch_db:sale.view_sales_order_filter
+msgid "Sales Team"
+msgstr "Ομάδα Πωλήσεων"
+
+#. module: sale
+#: model:ir.model.fields.selection,name:sale.selection__sale_order_line__display_type__line_section
+msgid "Section"
+msgstr "Ενότητα"
+
+#. module: sale
+#: model_terms:ir.ui.view,arch_db:sale.view_order_form
+msgid "Send PRO-FORMA Invoice"
+msgstr "Αποστολή Προτιμολογίου"
+
+#. module: sale
+#: model:ir.model.fields,field_description:sale.field_res_config_settings__module_delivery_shiprocket
+msgid "Shiprocket Connector"
+msgstr "Διασύνδεση Shiprocket"
+
+#. module: sale
+#: model:ir.model.fields,field_description:sale.field_product_product__sales_count
+#: model:ir.model.fields,field_description:sale.field_product_template__sales_count
+msgid "Sold"
+msgstr "Πωλήθηκε"
+
+#. module: sale
+#: model:ir.model.fields,field_description:sale.field_sale_order__origin
+msgid "Source Document"
+msgstr "Έγγραφο Προέλευσης"
+
+#. module: sale
+#: model:ir.model.fields,field_description:sale.field_res_config_settings__module_delivery_starshipit
+msgid "Starshipit Connector"
+msgstr "Διασύνδεση Starshipit"
+
+#. module: sale
+#: model:ir.model.fields,field_description:sale.field_sale_order_line__price_subtotal
+msgid "Subtotal"
+msgstr "Υποσύνολο"
+
+#. module: sale
+#: model_terms:ir.ui.view,arch_db:sale.sale_order_tree
+msgid "Total Tax Included"
+msgstr "Σύνολο με Φόρους"
+
+#. module: sale
+#: model:ir.model.fields,field_description:sale.field_product_product__service_type
+#: model:ir.model.fields,field_description:sale.field_product_template__service_type
+msgid "Track Service"
+msgstr "Παρακολούθηση Υπηρεσίας"
+
+#. module: sale
+#: model:ir.model.fields,field_description:sale.field_res_config_settings__module_delivery_ups_rest
+#: model_terms:ir.ui.view,arch_db:sale.res_config_settings_view_form
+msgid "UPS Connector"
+msgstr "Διασύνδεση UPS"
+
+#. module: sale
+#: model:ir.model.fields,field_description:sale.field_res_config_settings__module_delivery_usps_rest
+#: model_terms:ir.ui.view,arch_db:sale.res_config_settings_view_form
+msgid "USPS Connector"
+msgstr "Διασύνδεση USPS"
+
+#. module: sale
+#: model_terms:ir.ui.view,arch_db:sale.portal_my_quotations
+msgid "Valid Until"
+msgstr "Ισχύει Έως"
+
+#. module: sale
+#: model_terms:ir.ui.view,arch_db:sale.view_order_form
+msgid "Void Transaction"
+msgstr "Ακύρωση Συναλλαγής"
+
+#. module: sale
+#: model:ir.model.fields,field_description:sale.field_res_config_settings__module_delivery_bpost
+msgid "bpost Connector"
+msgstr "Διασύνδεση bpost"

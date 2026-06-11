@@ -1,0 +1,968 @@
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo 19.0 el overrides (stock)\n"
+"Language: el\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#. module: stock
+#: model:ir.actions.report,print_report_name:stock.action_report_lot_label
+msgid "'Lot-Serial - %s' % object.name"
+msgstr "'Παρτίδα-Σειριακός - %s' % object.name"
+
+#. module: stock
+#: model_terms:ir.ui.view,arch_db:stock.report_return_slip
+msgid "<span>OBTRETU</span>"
+msgstr "<span>OBTRETU</span>"
+
+#. module: stock
+#: model_terms:ir.ui.view,arch_db:stock.stock_warn_insufficient_qty_scrap_form_view
+msgid "? This may lead to inconsistencies in your inventory."
+msgstr "? Αυτό ενδέχεται να οδηγήσει σε ασυνέπειες στο απόθεμά σας."
+
+#. module: stock
+#: model:ir.model.constraint,message:stock.constraint_stock_warehouse_orderpoint_product_location_check
+msgid "A replenishment rule already exists for this product on this location."
+msgstr ""
+"Ένας κανόνας αναπλήρωσης υπάρχει ήδη για αυτό το είδος σε αυτήν την "
+"τοποθεσία."
+
+#. module: stock
+#: model:ir.model.fields,help:stock.field_product_product__is_storable
+#: model:ir.model.fields,help:stock.field_product_template__is_storable
+#: model:ir.model.fields,help:stock.field_stock_move__is_storable
+msgid "A storable product is a product for which you manage stock."
+msgstr ""
+"Ένα αποθηκεύσιμο προϊόν είναι ένα προϊόν για το οποίο διαχειρίζεστε απόθεμα."
+
+#. module: stock
+#: model:ir.model.fields,field_description:stock.field_stock_location__active
+#: model:ir.model.fields,field_description:stock.field_stock_picking_type__active
+#: model:ir.model.fields,field_description:stock.field_stock_putaway_rule__active
+#: model:ir.model.fields,field_description:stock.field_stock_route__active
+#: model:ir.model.fields,field_description:stock.field_stock_rule__active
+#: model:ir.model.fields,field_description:stock.field_stock_warehouse__active
+#: model:ir.model.fields,field_description:stock.field_stock_warehouse_orderpoint__active
+msgid "Active"
+msgstr "Ενεργό"
+
+#. module: stock
+#: model:ir.model.fields,field_description:stock.field_stock_lot__activity_exception_decoration
+#: model:ir.model.fields,field_description:stock.field_stock_picking__activity_exception_decoration
+msgid "Activity Exception Decoration"
+msgstr "Διακόσμηση Δραστηριότητας Εξαίρεσης"
+
+#. module: stock
+#: model:ir.model.fields.selection,name:stock.selection__stock_rule__auto__transparent
+msgid "Automatic No Step Added"
+msgstr "Αυτόματη, Χωρίς Πρόσθετο Βήμα"
+
+#. module: stock
+#: model:ir.model.fields,field_description:stock.field_stock_picking__backorder_id
+msgid "Back Order of"
+msgstr "Εκκρεμής Παραγγελία του"
+
+#. module: stock
+#: model:ir.model.fields,field_description:stock.field_stock_picking__backorder_ids
+msgid "Back Orders"
+msgstr "Εκκρεμείς Παραγγελίες"
+
+#. module: stock
+#: model:ir.actions.act_window,name:stock.action_picking_tree_backorder
+#: model_terms:ir.ui.view,arch_db:stock.view_picking_internal_search
+msgid "Backorders"
+msgstr "Εκκρεμείς Παραγγελίες"
+
+#. module: stock
+#: model:ir.model.fields,field_description:stock.field_res_config_settings__module_stock_barcode
+msgid "Barcode Scanner"
+msgstr "Σαρωτής Barcode"
+
+#. module: stock
+#: model_terms:ir.ui.view,arch_db:stock.stock_storage_category_form
+msgid "Capacity by Package"
+msgstr "Χωρητικότητα ανά Συσκευασία"
+
+#. module: stock
+#: model_terms:ir.ui.view,arch_db:stock.stock_storage_category_form
+msgid "Capacity by Product"
+msgstr "Χωρητικότητα ανά Προϊόν"
+
+#. module: stock
+#: model:ir.model.fields.selection,name:stock.selection__product_label_layout__move_quantity__custom
+#: model:ir.model.fields.selection,name:stock.selection__stock_orderpoint_snooze__predefined_date__custom
+msgid "Custom"
+msgstr "Προσαρμοσμένο"
+
+#. module: stock
+#: model:ir.model.fields,field_description:stock.field_stock_move__delay_alert_date
+#: model:ir.model.fields,field_description:stock.field_stock_picking__delay_alert_date
+msgid "Delay Alert Date"
+msgstr "Ημερομηνία Ειδοποίησης Καθυστέρησης"
+
+#. module: stock
+#. odoo-python
+#: code:addons/stock/models/product.py:0
+msgid "Delivered Qty"
+msgstr "Παραδοθείσα Ποσ."
+
+#. module: stock
+#: model:ir.model.fields.selection,name:stock.selection__stock_picking_type__code__outgoing
+#: model:ir.ui.menu,name:stock.menu_delivery
+msgid "Delivery"
+msgstr "Παράδοση"
+
+#. module: stock
+#: model:ir.actions.report,name:stock.action_report_delivery
+#: model_terms:ir.ui.view,arch_db:stock.view_picking_type_form
+msgid "Delivery Slip"
+msgstr "Δελτίο Αποστολής"
+
+#. module: stock
+#: model:ir.model.fields,field_description:stock.field_stock_lot__delivery_count
+msgid "Delivery order count"
+msgstr "Αριθμός εντολών παράδοσης"
+
+#. module: stock
+#. odoo-python
+#: code:addons/stock/models/stock_lot.py:0
+msgid "Delivery orders of %s"
+msgstr "Εντολές παράδοσης για %s"
+
+#. module: stock
+#: model_terms:ir.ui.view,arch_db:stock.report_lot_label
+msgid "Demo Lot/SN"
+msgstr "Demo Παρτίδα/Σειριακός Αριθμός"
+
+#. module: stock
+#: model:ir.model.fields,field_description:stock.field_product_product__description_pickingin
+#: model:ir.model.fields,field_description:stock.field_product_template__description_pickingin
+msgid "Description on Receptions"
+msgstr "Περιγραφή στις Παραλαβές"
+
+#. module: stock
+#: model:ir.model.fields,field_description:stock.field_stock_move_line__result_package_id
+#: model_terms:ir.ui.view,arch_db:stock.stock_move_line_view_search
+#: model_terms:ir.ui.view,arch_db:stock.view_move_line_form
+msgid "Destination Package"
+msgstr "Συσκευασία Προορισμού"
+
+#. module: stock
+#: model:ir.model.fields,field_description:stock.field_barcode_rule__display_name
+#: model:ir.model.fields,field_description:stock.field_ir_actions_report__display_name
+#: model:ir.model.fields,field_description:stock.field_lot_label_layout__display_name
+#: model:ir.model.fields,field_description:stock.field_picking_label_type__display_name
+#: model:ir.model.fields,field_description:stock.field_product_catalog_mixin__display_name
+#: model:ir.model.fields,field_description:stock.field_product_category__display_name
+#: model:ir.model.fields,field_description:stock.field_product_label_layout__display_name
+#: model:ir.model.fields,field_description:stock.field_product_product__display_name
+#: model:ir.model.fields,field_description:stock.field_product_removal__display_name
+#: model:ir.model.fields,field_description:stock.field_product_replenish__display_name
+#: model:ir.model.fields,field_description:stock.field_product_template__display_name
+#: model:ir.model.fields,field_description:stock.field_report_stock_label_lot_template_view__display_name
+#: model:ir.model.fields,field_description:stock.field_report_stock_label_product_product_view__display_name
+#: model:ir.model.fields,field_description:stock.field_report_stock_quantity__display_name
+#: model:ir.model.fields,field_description:stock.field_report_stock_report_reception__display_name
+#: model:ir.model.fields,field_description:stock.field_report_stock_report_stock_rule__display_name
+#: model:ir.model.fields,field_description:stock.field_res_company__display_name
+#: model:ir.model.fields,field_description:stock.field_res_config_settings__display_name
+#: model:ir.model.fields,field_description:stock.field_res_partner__display_name
+#: model:ir.model.fields,field_description:stock.field_res_users__display_name
+#: model:ir.model.fields,field_description:stock.field_stock_backorder_confirmation__display_name
+#: model:ir.model.fields,field_description:stock.field_stock_backorder_confirmation_line__display_name
+#: model:ir.model.fields,field_description:stock.field_stock_forecasted_product_product__display_name
+#: model:ir.model.fields,field_description:stock.field_stock_forecasted_product_template__display_name
+#: model:ir.model.fields,field_description:stock.field_stock_inventory_adjustment_name__display_name
+#: model:ir.model.fields,field_description:stock.field_stock_inventory_conflict__display_name
+#: model:ir.model.fields,field_description:stock.field_stock_inventory_warning__display_name
+#: model:ir.model.fields,field_description:stock.field_stock_location__display_name
+#: model:ir.model.fields,field_description:stock.field_stock_lot__display_name
+#: model:ir.model.fields,field_description:stock.field_stock_move__display_name
+#: model:ir.model.fields,field_description:stock.field_stock_move_line__display_name
+#: model:ir.model.fields,field_description:stock.field_stock_orderpoint_snooze__display_name
+#: model:ir.model.fields,field_description:stock.field_stock_package__display_name
+#: model:ir.model.fields,field_description:stock.field_stock_package_destination__display_name
+#: model:ir.model.fields,field_description:stock.field_stock_package_history__display_name
+#: model:ir.model.fields,field_description:stock.field_stock_package_type__display_name
+#: model:ir.model.fields,field_description:stock.field_stock_picking__display_name
+#: model:ir.model.fields,field_description:stock.field_stock_picking_type__display_name
+#: model:ir.model.fields,field_description:stock.field_stock_put_in_pack__display_name
+#: model:ir.model.fields,field_description:stock.field_stock_putaway_rule__display_name
+#: model:ir.model.fields,field_description:stock.field_stock_quant__display_name
+#: model:ir.model.fields,field_description:stock.field_stock_quant_relocate__display_name
+#: model:ir.model.fields,field_description:stock.field_stock_quantity_history__display_name
+#: model:ir.model.fields,field_description:stock.field_stock_reference__display_name
+#: model:ir.model.fields,field_description:stock.field_stock_replenish_mixin__display_name
+#: model:ir.model.fields,field_description:stock.field_stock_replenishment_info__display_name
+#: model:ir.model.fields,field_description:stock.field_stock_replenishment_option__display_name
+#: model:ir.model.fields,field_description:stock.field_stock_request_count__display_name
+#: model:ir.model.fields,field_description:stock.field_stock_return_picking__display_name
+#: model:ir.model.fields,field_description:stock.field_stock_return_picking_line__display_name
+#: model:ir.model.fields,field_description:stock.field_stock_route__display_name
+#: model:ir.model.fields,field_description:stock.field_stock_rule__display_name
+#: model:ir.model.fields,field_description:stock.field_stock_rules_report__display_name
+#: model:ir.model.fields,field_description:stock.field_stock_scrap__display_name
+#: model:ir.model.fields,field_description:stock.field_stock_scrap_reason_tag__display_name
+#: model:ir.model.fields,field_description:stock.field_stock_storage_category__display_name
+#: model:ir.model.fields,field_description:stock.field_stock_storage_category_capacity__display_name
+#: model:ir.model.fields,field_description:stock.field_stock_traceability_report__display_name
+#: model:ir.model.fields,field_description:stock.field_stock_warehouse__display_name
+#: model:ir.model.fields,field_description:stock.field_stock_warehouse_orderpoint__display_name
+#: model:ir.model.fields,field_description:stock.field_stock_warn_insufficient_qty__display_name
+#: model:ir.model.fields,field_description:stock.field_stock_warn_insufficient_qty_scrap__display_name
+#: model:ir.model.fields,field_description:stock.field_uom_uom__display_name
+#: model_terms:ir.ui.view,arch_db:stock.report_reception_body
+msgid "Display Name"
+msgstr "Εμφανιζόμενο Όνομα"
+
+#. module: stock
+#: model_terms:ir.ui.view,arch_db:stock.view_warehouse_orderpoint_tree_editable
+msgid ""
+"Due to receipts scheduled in the future, you might end up with "
+"excessive stock . Check the Forecasted Report  before reordering"
+msgstr ""
+"Λόγω προγραμματισμένων παραλαβών στο μέλλον, ενδέχεται να καταλήξετε με "
+"υπερβολικό απόθεμα. Ελέγξτε την Αναφορά Πρόβλεψης πριν δημιουργήσετε νέα "
+"παραγγελία"
+
+#. module: stock
+#: model:ir.model.fields,field_description:stock.field_stock_quant__sn_duplicated
+msgid "Duplicated Serial Number"
+msgstr "Διπλότυπος Σειριακός Αριθμός"
+
+#. module: stock
+#: model:ir.model.fields,field_description:stock.field_res_company__stock_mail_confirmation_template_id
+msgid "Email Template confirmation picking"
+msgstr "Πρότυπο Email επιβεβαίωσης συλλογής"
+
+#. module: stock
+#: model_terms:ir.ui.view,arch_db:stock.exception_on_picking
+msgid "Exception(s) occurred on the picking"
+msgstr "Παρουσιάστηκαν εξαιρέσεις στη συλλογή"
+
+#. module: stock
+#: model:ir.model.fields,help:stock.field_stock_lot__activity_type_icon
+#: model:ir.model.fields,help:stock.field_stock_picking__activity_type_icon
+msgid "Font awesome icon e.g. fa-tasks"
+msgstr "Εικονίδιο Font Awesome π.χ. fa-tasks"
+
+#. module: stock
+#: model:ir.model.fields,field_description:stock.field_lot_label_layout__print_format
+#: model:ir.model.fields,field_description:stock.field_product_label_layout__print_format
+msgid "Format"
+msgstr "Μορφή"
+
+#. module: stock
+#: model_terms:ir.ui.view,arch_db:stock.product_product_stock_tree
+msgid "Free to Use"
+msgstr "Ελεύθερο προς χρήση"
+
+#. module: stock
+#. odoo-python
+#: code:addons/stock/models/product.py:0
+msgid "Future Deliveries"
+msgstr "Μελλοντικές Παραδόσεις"
+
+#. module: stock
+#. odoo-python
+#: code:addons/stock/models/product.py:0
+msgid "Future Receipts"
+msgstr "Μελλοντικές Παραλαβές"
+
+#. module: stock
+#: model:ir.model.fields,help:stock.field_stock_move__propagate_cancel
+msgid "If checked, when this move is cancelled, cancel the linked move too"
+msgstr ""
+"Εάν είναι επιλεγμένο, όταν αυτή η κίνηση ακυρωθεί, θα ακυρωθεί και η "
+"συνδεδεμένη κίνηση"
+
+#. module: stock
+#. odoo-javascript
+#: code:addons/stock/static/src/widgets/lots_dialog.xml:0
+msgid "Import Serials/Lots"
+msgstr "Εισαγωγή Παρτίδων / Σειριακών"
+
+#. module: stock
+#: model:ir.model.fields,field_description:stock.field_stock_warehouse__in_type_id
+msgid "In Type"
+msgstr "Τύπος Εισερχομένων"
+
+#. module: stock
+#. odoo-python
+#: code:addons/stock/models/stock_quant.py:0
+msgid "Inventory Adjustment"
+msgstr "Απογραφή Αποθέματος"
+
+#. module: stock
+#: model_terms:ir.ui.view,arch_db:stock.stock_move_line_view_search
+msgid "Inventory Adjustments"
+msgstr "Απογραφές Αποθεμάτων"
+
+#. module: stock
+#: model:ir.model.fields,field_description:stock.field_product_product__property_stock_inventory
+#: model:ir.model.fields,field_description:stock.field_product_template__property_stock_inventory
+msgid "Inventory Location"
+msgstr "Τοποθεσία Απογραφής"
+
+#. module: stock
+#: model:ir.model,name:stock.model_stock_location
+msgid "Inventory Locations"
+msgstr "Τοποθεσίες Απογραφής"
+
+#. module: stock
+#: model_terms:ir.ui.view,arch_db:stock.view_picking_internal_search
+msgid "Late Availability"
+msgstr "Καθυστερημένη Διαθεσιμότητα"
+
+#. module: stock
+#: model:ir.model.fields,field_description:stock.field_stock_warehouse__mto_pull_id
+msgid "MTO rule"
+msgstr "Κανόνας MTO"
+
+#. module: stock
+#: model:res.groups,name:stock.group_adv_location
+msgid "Manage Push and Pull inventory flows"
+msgstr "Διαχείριση ροών αποθέματος Ώθησης και Έλξης"
+
+#. module: stock
+#: model:ir.model.fields.selection,name:stock.selection__stock_rule__auto__manual
+msgid "Manual Operation"
+msgstr "Χειροκίνητη Ενέργεια"
+
+#. module: stock
+#. odoo-python
+#: code:addons/stock/wizard/product_replenish.py:0
+msgid "Manual Replenishment"
+msgstr "Χειροκίνητη Αναπλήρωση"
+
+#. module: stock
+#: model:ir.model.fields,field_description:stock.field_stock_warehouse_orderpoint__product_min_qty
+msgid "Min Quantity"
+msgstr "Ελάχιστη Ποσότητα"
+
+#. module: stock
+#: model:ir.model.fields,field_description:stock.field_product_label_layout__move_ids
+#: model:ir.model.fields,field_description:stock.field_stock_return_picking_line__move_id
+#: model:ir.model.fields,field_description:stock.field_stock_scrap__move_ids
+msgid "Move"
+msgstr "Κίνηση"
+
+#. module: stock
+#: model:ir.model.fields,field_description:stock.field_lot_label_layout__move_line_ids
+#: model:ir.model.fields,field_description:stock.field_stock_move__move_line_ids
+#: model:ir.model.fields,field_description:stock.field_stock_package__move_line_ids
+#: model:ir.model.fields,field_description:stock.field_stock_package_destination__move_line_ids
+msgid "Move Line"
+msgstr "Γραμμή Κίνησης"
+
+#. module: stock
+#: model:ir.model.fields,field_description:stock.field_product_removal__name
+#: model:ir.model.fields,field_description:stock.field_stock_rule__name
+#: model:ir.model.fields,field_description:stock.field_stock_scrap_reason_tag__name
+#: model:ir.model.fields,field_description:stock.field_stock_warehouse_orderpoint__name
+#: model_terms:ir.ui.view,arch_db:stock.stock_reference_search_view
+msgid "Name"
+msgstr "Όνομα"
+
+#. module: stock
+#. odoo-python
+#: code:addons/stock/report/report_stock_reception.py:0
+msgid "No %s selected or a delivery order selected"
+msgstr "Δεν επιλέχθηκε %s ή επιλέχθηκε εντολή παράδοσης"
+
+#. module: stock
+#. odoo-python
+#: code:addons/stock/models/stock_rule.py:0
+msgid ""
+"No rule has been found to replenish \"%(product)s\" in \"%(location)s\".\n"
+"Verify the routes configuration on the product."
+msgstr ""
+"Δεν βρέθηκε κανόνας αναπλήρωσης για το \"%(product)s\" στην τοποθεσία \"%(location)s\".\n"
+"Ελέγξτε τη ρύθμιση των διαδρομών στο προϊόν."
+
+#. module: stock
+#. odoo-javascript
+#: code:addons/stock/static/src/widgets/lots_dialog.xml:0
+msgid "Number of SN"
+msgstr "Αριθμός Σειριακών Αριθμών"
+
+#. module: stock
+#: model:ir.model.fields,field_description:stock.field_stock_warehouse__out_type_id
+msgid "Out Type"
+msgstr "Τύπος Εξερχομένων"
+
+#. module: stock
+#: model:ir.model.fields,field_description:stock.field_stock_warehouse__wh_output_stock_loc_id
+msgid "Output Location"
+msgstr "Τοποθεσία Εξόδου"
+
+#. module: stock
+#: model:ir.model,name:stock.model_stock_package
+#: model:ir.model.fields,field_description:stock.field_stock_package_history__package_id
+#: model:ir.model.fields,field_description:stock.field_stock_put_in_pack__result_package_id
+#: model:ir.model.fields,field_description:stock.field_stock_quant__package_id
+#: model:ir.model.fields,field_description:stock.field_stock_scrap__package_id
+#: model:ir.model.fields.selection,name:stock.selection__barcode_rule__type__package
+#: model_terms:ir.ui.view,arch_db:stock.package_history_search_view
+#: model_terms:ir.ui.view,arch_db:stock.quant_search_view
+#: model_terms:ir.ui.view,arch_db:stock.report_delivery_document
+#: model_terms:ir.ui.view,arch_db:stock.report_inventory
+#: model_terms:ir.ui.view,arch_db:stock.report_picking
+#: model_terms:ir.ui.view,arch_db:stock.stock_package_view_add_list
+#: model_terms:ir.ui.view,arch_db:stock.stock_package_view_form
+#: model_terms:ir.ui.view,arch_db:stock.stock_package_view_list
+#: model_terms:ir.ui.view,arch_db:stock.stock_package_view_list_editable
+#: model_terms:ir.ui.view,arch_db:stock.stock_package_view_search
+#: model_terms:ir.ui.view,arch_db:stock.view_picking_internal_search
+#: model_terms:ir.ui.view,arch_db:stock.view_stock_package_history_list
+msgid "Package"
+msgstr "Συσκευασία"
+
+#. module: stock
+#: model:ir.model.fields,field_description:stock.field_stock_package__name
+#: model_terms:ir.ui.view,arch_db:stock.report_package_barcode
+#: model_terms:ir.ui.view,arch_db:stock.stock_package_view_form
+msgid "Package Reference"
+msgstr "Αναφορά Συσκευασίας"
+
+#. module: stock
+#. odoo-python
+#: code:addons/stock/models/stock_warehouse.py:0
+#: model:ir.model.fields,field_description:stock.field_stock_backorder_confirmation__pick_ids
+msgid "Pick"
+msgstr "Συλλογή"
+
+#. module: stock
+#: model:ir.model.fields,field_description:stock.field_stock_warehouse__pick_type_id
+msgid "Pick Type"
+msgstr "Τύπος Συλλογής"
+
+#. module: stock
+#: model_terms:ir.ui.view,arch_db:stock.view_picking_internal_search
+msgid "Picking Lists"
+msgstr "Λίστες Συλλογής"
+
+#. module: stock
+#: model:ir.model,name:stock.model_stock_picking_type
+msgid "Picking Type"
+msgstr "Τύπος Συλλογής"
+
+#. module: stock
+#: model_terms:ir.ui.view,arch_db:stock.vpicktree
+msgid "Picking list"
+msgstr "Λίστα Συλλογής"
+
+#. module: stock
+#: model_terms:ir.ui.view,arch_db:stock.view_picking_type_form
+msgid "Print on \"Put in Pack\""
+msgstr "Εκτύπωση κατά την «Τοποθέτηση σε Συσκευασία»"
+
+#. module: stock
+#. odoo-javascript
+#: code:addons/stock/static/src/stock_forecasted/forecasted_buttons.js:0
+#: model:ir.model,name:stock.model_product_replenish
+msgid "Product Replenish"
+msgstr "Αναπλήρωση Προϊόντος"
+
+#. module: stock
+#: model:ir.model.fields,field_description:stock.field_report_stock_quantity__product_tmpl_id
+msgid "Product Tmpl"
+msgstr "Πρότυπο Είδους"
+
+#. module: stock
+#: model:ir.model,name:stock.model_product_product
+msgid "Product Variant"
+msgstr "Παραλλαγή Είδους"
+
+#. module: stock
+#: model:ir.actions.act_window,name:stock.stock_product_normal_action
+#: model:ir.ui.menu,name:stock.product_product_menu
+msgid "Product Variants"
+msgstr "Παραλλαγές Είδους"
+
+#. module: stock
+#. odoo-python
+#: code:addons/stock/wizard/stock_quantity_history.py:0
+#: model:ir.actions.act_window,name:stock.act_product_location_open
+#: model:ir.actions.act_window,name:stock.product_template_action_product
+#: model:ir.model.fields,field_description:stock.field_stock_route__product_ids
+#: model:ir.ui.menu,name:stock.menu_product_in_config_stock
+#: model:ir.ui.menu,name:stock.menu_product_variant_config_stock
+#: model:ir.ui.menu,name:stock.menu_stock_inventory_control
+#: model_terms:ir.ui.view,arch_db:stock.res_config_settings_view_form
+#: model_terms:ir.ui.view,arch_db:stock.stock_location_route_form_view
+#: model_terms:ir.ui.view,arch_db:stock.view_location_form
+msgid "Products"
+msgstr "Προϊόντα"
+
+#. module: stock
+#: model:ir.model.fields,field_description:stock.field_stock_move__propagate_cancel
+msgid "Propagate cancel and split"
+msgstr "Διάδοση ακύρωσης και διαχωρισμού"
+
+#. module: stock
+#: model:ir.actions.act_window,name:stock.action_put_in_pack_wizard
+#: model_terms:ir.ui.view,arch_db:stock.stock_package_view_list_editable
+#: model_terms:ir.ui.view,arch_db:stock.stock_put_in_pack_form
+#: model_terms:ir.ui.view,arch_db:stock.view_picking_form
+#: model_terms:ir.ui.view,arch_db:stock.view_stock_move_line_detailed_operation_tree
+msgid "Put in Pack"
+msgstr "Τοποθέτηση σε Συσκευασία"
+
+#. module: stock
+#: model:ir.model.fields,field_description:stock.field_stock_warehouse__wh_qc_stock_loc_id
+msgid "Quality Control Location"
+msgstr "Τοποθεσία Ποιοτικού Ελέγχου"
+
+#. module: stock
+#. odoo-python
+#: code:addons/stock/models/stock_quant.py:0
+msgid "Quant's creation is restricted, you can't do this operation."
+msgstr ""
+"Η δημιουργία quant είναι περιορισμένη, δεν μπορείτε να εκτελέσετε αυτήν την "
+"ενέργεια."
+
+#. module: stock
+#. odoo-python
+#: code:addons/stock/models/stock_quant.py:0
+msgid "Quant's editing is restricted, you can't do this operation."
+msgstr ""
+"Η επεξεργασία quant είναι περιορισμένη, δεν μπορείτε να εκτελέσετε αυτήν την"
+" ενέργεια."
+
+#. module: stock
+#. odoo-python
+#: code:addons/stock/models/stock_quant.py:0
+msgid ""
+"Quants are auto-deleted when appropriate. If you must manually delete them, "
+"please ask a stock manager to do it."
+msgstr ""
+"Τα quants διαγράφονται αυτόματα όταν χρειάζεται. Αν πρέπει να τα διαγράψετε "
+"χειροκίνητα, ζητήστε το από έναν υπεύθυνο αποθήκης."
+
+#. module: stock
+#: model:ir.model.fields.selection,name:stock.selection__stock_picking_type__code__incoming
+msgid "Receipt"
+msgstr "Παραλαβή"
+
+#. module: stock
+#: model:ir.model.fields,field_description:stock.field_stock_warehouse__reception_route_id
+msgid "Receipt Route"
+msgstr "Διαδρομή Παραλαβής"
+
+#. module: stock
+#. odoo-python
+#: code:addons/stock/models/product.py:0
+msgid "Received Qty"
+msgstr "Παραληφθείσα Ποσ."
+
+#. module: stock
+#. odoo-javascript
+#: code:addons/stock/static/src/client_actions/stock_traceability_report_backend.xml:0
+#: model:ir.model.fields,field_description:stock.field_stock_move__reference
+#: model:ir.model.fields,field_description:stock.field_stock_move_line__reference
+#: model:ir.model.fields,field_description:stock.field_stock_picking__name
+#: model:ir.model.fields,field_description:stock.field_stock_reference__name
+#: model:ir.model.fields,field_description:stock.field_stock_scrap__name
+#: model_terms:ir.ui.view,arch_db:stock.report_stock_body_print
+#: model_terms:ir.ui.view,arch_db:stock.stock_move_line_view_search
+#: model_terms:ir.ui.view,arch_db:stock.stock_scrap_search_view
+#: model_terms:ir.ui.view,arch_db:stock.view_move_line_form
+#: model_terms:ir.ui.view,arch_db:stock.view_move_line_tree
+#: model_terms:ir.ui.view,arch_db:stock.view_move_search
+#: model_terms:ir.ui.view,arch_db:stock.view_move_tree_receipt_picking
+#: model_terms:ir.ui.view,arch_db:stock.view_production_lot_form
+msgid "Reference"
+msgstr "Αναφορά"
+
+#. module: stock
+#: model_terms:ir.ui.view,arch_db:stock.view_removal
+msgid "Removal"
+msgstr "Απομάκρυνση"
+
+#. module: stock
+#: model:ir.model,name:stock.model_product_removal
+#: model:ir.model.fields,field_description:stock.field_stock_location__removal_strategy_id
+msgid "Removal Strategy"
+msgstr "Στρατηγική Απομάκρυνσης"
+
+#. module: stock
+#. odoo-python
+#: code:addons/stock/models/stock_quant.py:0
+msgid "Removal strategy %s not implemented."
+msgstr "Η στρατηγική απομάκρυνσης %s δεν έχει υλοποιηθεί."
+
+#. module: stock
+#: model:ir.model.fields,field_description:stock.field_product_product__reordering_max_qty
+#: model:ir.model.fields,field_description:stock.field_product_template__reordering_max_qty
+msgid "Reordering Max Qty"
+msgstr "Μέγιστη Ποσότητα Αναπαραγγελίας"
+
+#. module: stock
+#: model:ir.model.fields,field_description:stock.field_product_product__reordering_min_qty
+#: model:ir.model.fields,field_description:stock.field_product_template__reordering_min_qty
+msgid "Reordering Min Qty"
+msgstr "Ελάχιστη Ποσότητα Αναπαραγγελίας"
+
+#. module: stock
+#: model:ir.actions.act_window,name:stock.action_orderpoint
+#: model:ir.model.fields,field_description:stock.field_product_product__nbr_reordering_rules
+#: model:ir.model.fields,field_description:stock.field_product_template__nbr_reordering_rules
+#: model_terms:ir.ui.view,arch_db:stock.view_warehouse_orderpoint_form
+#: model_terms:ir.ui.view,arch_db:stock.view_warehouse_orderpoint_tree_editable
+msgid "Reordering Rules"
+msgstr "Κανόνες Αναπαραγγελίας"
+
+#. module: stock
+#: model_terms:ir.ui.view,arch_db:stock.warehouse_orderpoint_search
+msgid "Reordering Rules Search"
+msgstr "Αναζήτηση Κανόνων Αναπαραγγελίας"
+
+#. module: stock
+#. odoo-javascript
+#: code:addons/stock/static/src/stock_forecasted/forecasted_buttons.xml:0
+#: model:ir.actions.server,name:stock.action_product_replenishment
+#: model:ir.actions.server,name:stock.action_product_template_replenishment
+msgid "Replenish"
+msgstr "Αναπλήρωση"
+
+#. module: stock
+#: model:ir.model.fields,field_description:stock.field_stock_scrap__should_replenish
+msgid "Replenish Quantities"
+msgstr "Ποσότητες Αναπλήρωσης"
+
+#. module: stock
+#: model_terms:ir.ui.view,arch_db:stock.view_product_replenish
+msgid "Replenish wizard"
+msgstr "Οδηγός Αναπλήρωσης"
+
+#. module: stock
+#: model:ir.actions.act_window,name:stock.action_orderpoint_replenish
+#: model:ir.actions.server,name:stock.action_replenishment
+#: model:ir.ui.menu,name:stock.menu_reordering_rules_replenish
+#: model_terms:ir.ui.view,arch_db:stock.product_product_stock_tree
+#: model_terms:ir.ui.view,arch_db:stock.view_stock_quant_tree_editable
+msgid "Replenishment"
+msgstr "Αναπλήρωση"
+
+#. module: stock
+#: model:ir.model.fields,field_description:stock.field_res_company__horizon_days
+#: model:ir.model.fields,field_description:stock.field_res_config_settings__horizon_days
+msgid "Replenishment Horizon"
+msgstr "Ορίζοντας Αναπλήρωσης"
+
+#. module: stock
+#: model:ir.model.fields,field_description:stock.field_stock_replenishment_option__replenishment_info_id
+msgid "Replenishment Info"
+msgstr "Πληροφορίες Αναπλήρωσης"
+
+#. module: stock
+#: model:ir.actions.act_window,name:stock.action_stock_replenishment_info
+#: model_terms:ir.ui.view,arch_db:stock.view_warehouse_orderpoint_tree_editable
+msgid "Replenishment Information"
+msgstr "Πληροφορίες Αναπλήρωσης"
+
+#. module: stock
+#. odoo-python
+#: code:addons/stock/models/stock_orderpoint.py:0
+msgid "Replenishment Information for %(product)s in %(warehouse)s"
+msgstr "Πληροφορίες Αναπλήρωσης για %(product)s σε %(warehouse)s"
+
+#. module: stock
+#. odoo-python
+#: code:addons/stock/models/stock_orderpoint.py:0
+msgid "Replenishment Report"
+msgstr "Αναφορά Αναπλήρωσης"
+
+#. module: stock
+#: model_terms:ir.ui.view,arch_db:stock.stock_reorder_report_search
+msgid "Replenishment Report Search"
+msgstr "Αναζήτηση Αναφοράς Αναπλήρωσης"
+
+#. module: stock
+#: model:ir.model.fields,field_description:stock.field_stock_location__replenish_location
+msgid "Replenishments"
+msgstr "Αναπληρώσεις"
+
+#. module: stock
+#: model:ir.model.fields.selection,name:stock.selection__product_category__packaging_reserve_method__full
+msgid "Reserve Only Full Packagings"
+msgstr "Δέσμευση Μόνο Πλήρων Συσκευασιών"
+
+#. module: stock
+#: model:ir.model.fields,field_description:stock.field_stock_quant__reserved_quantity
+msgid "Reserved Quantity"
+msgstr "Δεσμευμένη Ποσότητα"
+
+#. module: stock
+#: model:ir.model.fields,field_description:stock.field_product_product__responsible_id
+#: model:ir.model.fields,field_description:stock.field_product_template__responsible_id
+#: model:ir.model.fields,field_description:stock.field_stock_picking__user_id
+msgid "Responsible"
+msgstr "Υπεύθυνος"
+
+#. module: stock
+#. odoo-python
+#: code:addons/stock/wizard/stock_picking_return.py:0
+msgid "Return of %(picking_name)s"
+msgstr "Επιστροφή του %(picking_name)s"
+
+#. module: stock
+#: model:ir.actions.server,name:stock.action_scrap
+#: model:ir.model,name:stock.model_stock_scrap
+#: model:ir.model.fields,field_description:stock.field_stock_warn_insufficient_qty_scrap__scrap_id
+#: model:ir.ui.menu,name:stock.menu_stock_scrap
+#: model_terms:ir.ui.view,arch_db:stock.stock_reference_form_view
+#: model_terms:ir.ui.view,arch_db:stock.stock_scrap_form_view
+#: model_terms:ir.ui.view,arch_db:stock.stock_scrap_form_view2
+msgid "Scrap"
+msgstr "Απόρριψη"
+
+#. module: stock
+#: model:ir.model.fields,field_description:stock.field_stock_scrap__scrap_location_id
+#: model_terms:ir.ui.view,arch_db:stock.stock_scrap_search_view
+msgid "Scrap Location"
+msgstr "Τοποθεσία Απορριμμάτων"
+
+#. module: stock
+#: model:ir.actions.act_window,name:stock.action_stock_scrap
+msgid "Scrap Orders"
+msgstr "Εντολές Απόρριψης"
+
+#. module: stock
+#: model_terms:ir.actions.act_window,help:stock.action_stock_scrap
+msgid ""
+"Scrapping a product will remove it from your stock. The product will\n"
+"                end up in a scrap location that can be used for reporting purpose."
+msgstr ""
+"Η απόρριψη ενός προϊόντος θα το αφαιρέσει από το απόθεμά σας. Το προϊόν θα\n"
+"                καταλήξει σε τοποθεσία απορριμμάτων που μπορεί να χρησιμοποιηθεί για σκοπούς αναφορών."
+
+#. module: stock
+#: model_terms:ir.ui.view,arch_db:stock.view_picking_form
+msgid "Scraps"
+msgstr "Απορρίμματα"
+
+#. module: stock
+#: model_terms:ir.ui.view,arch_db:stock.stock_scrap_search_view
+msgid "Search Scrap"
+msgstr "Αναζήτηση Απορρίψεων"
+
+#. module: stock
+#: model_terms:ir.ui.view,arch_db:stock.res_config_settings_view_form
+msgid "Shipping Connectors"
+msgstr "Διασυνδέσεις Μεταφορικών"
+
+#. module: stock
+#: model:ir.model.fields,field_description:stock.field_stock_move__origin
+#: model:ir.model.fields,field_description:stock.field_stock_picking__origin
+#: model:ir.model.fields,field_description:stock.field_stock_scrap__origin
+#: model_terms:ir.ui.view,arch_db:stock.view_picking_internal_search
+msgid "Source Document"
+msgstr "Έγγραφο Προέλευσης"
+
+#. module: stock
+#: model:ir.model.fields,field_description:stock.field_stock_move_line__package_id
+#: model_terms:ir.ui.view,arch_db:stock.stock_move_line_view_search
+#: model_terms:ir.ui.view,arch_db:stock.view_move_line_form
+msgid "Source Package"
+msgstr "Συσκευασία Προέλευσης"
+
+#. module: stock
+#: model_terms:ir.ui.view,arch_db:stock.message_body
+msgid "Source Package:"
+msgstr "Συσκευασία Προέλευσης:"
+
+#. module: stock
+#: model_terms:ir.ui.view,arch_db:stock.view_location_form
+#: model_terms:ir.ui.view,arch_db:stock.view_location_tree2
+msgid "Stock Location"
+msgstr "Τοποθεσία Αποθέματος"
+
+#. module: stock
+#: model_terms:ir.ui.view,arch_db:stock.view_location_search
+msgid "Stock Locations"
+msgstr "Τοποθεσίες Αποθέματος"
+
+#. module: stock
+#: model:ir.model.fields,field_description:stock.field_stock_picking__move_ids
+#: model:ir.model.fields,field_description:stock.field_stock_reference__move_ids
+#: model_terms:ir.ui.view,arch_db:stock.stock_move_line_view_search
+#: model_terms:ir.ui.view,arch_db:stock.view_move_form
+#: model_terms:ir.ui.view,arch_db:stock.view_move_search
+#: model_terms:ir.ui.view,arch_db:stock.view_picking_form
+#: model_terms:ir.ui.view,arch_db:stock.view_picking_move_tree
+msgid "Stock Moves"
+msgstr "Κινήσεις Αποθήκης"
+
+#. module: stock
+#: model:ir.model.fields,field_description:stock.field_product_product__stock_quant_ids
+#: model_terms:ir.ui.view,arch_db:stock.stock_quant_view_graph
+msgid "Stock Quant"
+msgstr "Quant Αποθέματος"
+
+#. module: stock
+#: model:ir.model,name:stock.model_stock_forecasted_product_product
+#: model:ir.model,name:stock.model_stock_forecasted_product_template
+msgid "Stock Replenishment Report"
+msgstr "Αναφορά Αναπλήρωσης Αποθέματος"
+
+#. module: stock
+#: model_terms:ir.ui.view,arch_db:stock.view_move_search
+msgid "Stock moves that have been processed"
+msgstr "Κινήσεις αποθέματος που έχουν επεξεργαστεί"
+
+#. module: stock
+#: model:ir.model.fields,field_description:stock.field_stock_route__supplied_wh_id
+msgid "Supplied Warehouse"
+msgstr "Εφοδιαζόμενη Αποθήκη"
+
+#. module: stock
+#: model:ir.model.fields.selection,name:stock.selection__stock_rule__procure_method__mts_else_mto
+msgid "Take From Stock, if unavailable, Trigger Another Rule"
+msgstr "Λήψη Από το Απόθεμα, αν δεν υπάρχει, Ενεργοποίηση Άλλου Κανόνα"
+
+#. module: stock
+#: model:ir.model.constraint,message:stock.constraint_stock_location_barcode_company_uniq
+msgid "The barcode for a location must be unique per company!"
+msgstr "Το barcode για μια τοποθεσία πρέπει να είναι μοναδικό ανά εταιρεία!"
+
+#. module: stock
+#. odoo-python
+#: code:addons/stock/wizard/product_replenish.py:0
+msgid "The following replenishment order have been generated"
+msgstr "Η ακόλουθη εντολή αναπλήρωσης δημιουργήθηκε"
+
+#. module: stock
+#. odoo-python
+#: code:addons/stock/models/stock_move_line.py:0
+msgid ""
+"This lot %(lot_name)s is incompatible with this product %(product_name)s"
+msgstr ""
+"Αυτή η παρτίδα %(lot_name)s είναι ασύμβατη με το προϊόν %(product_name)s"
+
+#. module: stock
+#. odoo-python
+#: code:addons/stock/report/report_stock_reception.py:0
+msgid "This report cannot be used for done and not done %s at the same time"
+msgstr ""
+"Αυτή η αναφορά δεν μπορεί να χρησιμοποιηθεί για ολοκληρωμένα και μη "
+"ολοκληρωμένα %s ταυτόχρονα"
+
+#. module: stock
+#: model_terms:ir.ui.view,arch_db:stock.inventory_warning_reset_view
+msgid "This will discard all unapplied counts, do you want to proceed?"
+msgstr ""
+"Αυτό θα απορρίψει όλες τις μη εφαρμοσμένες καταμετρήσεις, θέλετε να "
+"συνεχίσετε;"
+
+#. module: stock
+#: model:ir.model.fields,field_description:stock.field_stock_replenishment_info__qty_to_order
+#: model:ir.model.fields,field_description:stock.field_stock_replenishment_option__qty_to_order
+#: model:ir.model.fields,field_description:stock.field_stock_warehouse_orderpoint__qty_to_order
+msgid "To Order"
+msgstr "Προς Παραγγελία"
+
+#. module: stock
+#: model_terms:ir.ui.view,arch_db:stock.stock_reorder_report_search
+msgid "To Reorder"
+msgstr "Προς Αναπαραγγελία"
+
+#. module: stock
+#: model:ir.model.fields,field_description:stock.field_stock_picking__package_history_ids
+msgid "Transfered Packages"
+msgstr "Μεταφερμένες Συσκευασίες"
+
+#. module: stock
+#. odoo-python
+#: code:addons/stock/models/stock_move.py:0
+msgid ""
+"Unavailable Serial numbers. Please correct the serial numbers encoded: "
+"%(serial_numbers_to_locations)s"
+msgstr ""
+"Μη διαθέσιμοι σειριακοί αριθμοί. Παρακαλώ διορθώστε τους καταχωρισμένους "
+"σειριακούς αριθμούς: %(serial_numbers_to_locations)s"
+
+#. module: stock
+#: model:ir.model.fields,field_description:stock.field_stock_replenishment_option__uom
+msgid "Unit Name"
+msgstr "Όνομα Μονάδας"
+
+#. module: stock
+#: model:ir.model.fields,field_description:stock.field_stock_warehouse_orderpoint__unwanted_replenish
+msgid "Unwanted Replenish"
+msgstr "Ανεπιθύμητη Αναπλήρωση"
+
+#. module: stock
+#. odoo-python
+#: code:addons/stock/models/stock_warehouse.py:0
+msgid "Warehouse's Routes"
+msgstr "Διαδρομές της Αποθήκης"
+
+#. module: stock
+#. odoo-javascript
+#: code:addons/stock/static/src/views/search/stock_report_search_panel.xml:0
+#: model:ir.actions.act_window,name:stock.action_warehouse_form
+#: model:ir.model.fields,field_description:stock.field_stock_route__warehouse_ids
+#: model:ir.model.fields,field_description:stock.field_stock_rules_report__warehouse_ids
+#: model:ir.ui.menu,name:stock.menu_action_warehouse_form
+#: model_terms:ir.ui.view,arch_db:stock.stock_location_route_form_view
+#: model_terms:ir.ui.view,arch_db:stock.view_stock_replenishment_info
+msgid "Warehouses"
+msgstr "Αποθήκες"
+
+#. module: stock
+#: model:ir.model.fields,field_description:stock.field_res_config_settings__group_warning_stock
+msgid "Warnings for Stock"
+msgstr "Προειδοποιήσεις Αποθέματος"
+
+#. module: stock
+#: model:ir.model.fields,field_description:stock.field_stock_picking__shipping_weight
+msgid "Weight for Shipping"
+msgstr "Βάρος για Αποστολή"
+
+#. module: stock
+#. odoo-python
+#: code:addons/stock/models/stock_move_line.py:0
+msgid "You can only process 1.0 %s of products with unique serial number."
+msgstr ""
+"Μπορείτε να επεξεργαστείτε μόνο 1.0 %s προϊόντων με μοναδικό σειριακό "
+"αριθμό."
+
+#. module: stock
+#. odoo-python
+#: code:addons/stock/models/stock_location.py:0
+msgid ""
+"You cannot archive location %(location)s because it is used by warehouse "
+"%(warehouse)s"
+msgstr ""
+"Δεν μπορείτε να αρχειοθετήσετε την τοποθεσία %(location)s επειδή "
+"χρησιμοποιείται από την αποθήκη %(warehouse)s"
+
+#. module: stock
+#. odoo-python
+#: code:addons/stock/wizard/stock_picking_return.py:0
+msgid "You may only return Done pickings."
+msgstr "Μπορείτε να επιστρέψετε μόνο συλλογές σε κατάσταση Ολοκληρώθηκε."
+
+#. module: stock
+#. odoo-python
+#: code:addons/stock/wizard/stock_picking_return.py:0
+msgid "You may only return one picking at a time."
+msgstr "Μπορείτε να επιστρέψετε μόνο μία συλλογή κάθε φορά."
+
+#. module: stock
+#. odoo-python
+#: code:addons/stock/models/stock_picking.py:0
+msgid "You need to supply a Lot/Serial number for products %s."
+msgstr ""
+"Πρέπει να καταχωρίσετε έναν Αριθμό Παρτίδας/Σειριακό Αριθμό για τα προϊόντα "
+"%s."
+
+#. module: stock
+#: model_terms:ir.ui.view,arch_db:stock.view_warehouse
+msgid "e.g. CW"
+msgstr "π.χ. ΚΑ"

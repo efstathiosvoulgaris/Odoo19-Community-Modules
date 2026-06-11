@@ -1,0 +1,1264 @@
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo 19.0 el overrides (account)\n"
+"Language: el\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#. module: account
+#: model:ir.model.fields,field_description:account.field_account_payment__reconciled_bills_count
+msgid "# Reconciled Bills"
+msgstr "# Συμφωνημένοι Λογαριασμοί"
+
+#. module: account
+#: model:ir.model.fields,field_description:account.field_account_payment__reconciled_statement_lines_count
+msgid "# Reconciled Statement Lines"
+msgstr "# Συμφωνημένες Γραμμές Κατάστασης"
+
+#. module: account
+#: model:ir.model.fields,field_description:account.field_res_partner__supplier_invoice_count
+#: model:ir.model.fields,field_description:account.field_res_users__supplier_invoice_count
+msgid "# Vendor Bills"
+msgstr "# Λογαριασμοί Προμηθευτών"
+
+#. module: account
+#. odoo-python
+#: code:addons/account/models/account_journal_dashboard.py:0
+msgid "%(action)s for journal %(journal)s"
+msgstr "%(action)s για το ημερολόγιο %(journal)s"
+
+#. module: account
+#. odoo-python
+#: code:addons/account/models/account_move.py:0
+msgid "%(amount)s due %(date)s"
+msgstr "%(amount)s ληξιπρόθεσμο στις %(date)s"
+
+#. module: account
+#. odoo-python
+#: code:addons/account/models/account_move.py:0
+#: code:addons/account/models/ir_attachment.py:0
+msgid ""
+"%(attachment_name)s (detached by %(user)s on "
+"%(date)s)%(attachment_extension)s"
+msgstr ""
+"%(attachment_name)s (αποσυνδέθηκε από %(user)s στις "
+"%(date)s)%(attachment_extension)s"
+
+#. module: account
+#. odoo-python
+#: code:addons/account/models/account_move_line.py:0
+msgid "%(name)s installment #%(number)s"
+msgstr "%(name)s δόση #%(number)s"
+
+#. module: account
+#. odoo-python
+#: code:addons/account/models/account_move.py:0
+msgid "%(partner_name)s has reached its credit limit of: %(credit_limit)s"
+msgstr "%(partner_name)s έφτασε το πιστωτικό όριο: %(credit_limit)s"
+
+#. module: account
+#: model_terms:ir.ui.view,arch_db:account.res_config_settings_view_form
+msgid ""
+"- A new field « Total (tax inc.) » to speed up and control the encoding by "
+"automating line creation with the right account &amp; tax."
+msgstr ""
+"- Ένα νέο πεδίο «Σύνολο (συμπ. φόρων)» για την επιτάχυνση και τον έλεγχο της"
+" καταχώρισης, με αυτόματη δημιουργία γραμμής με τον σωστό λογαριασμό &amp; "
+"φόρο."
+
+#. module: account
+#: model:account.payment.term,name:account.account_payment_term_30_days_end_month_the_10
+msgid "10 Days after End of Next Month"
+msgstr "10 μέρες μετά το τέλος του επόμενου μήνα"
+
+#. module: account
+#. odoo-python
+#: code:addons/account/models/account_payment_term.py:0
+msgid ""
+"<b>%(count)s#</b> Installment of <b>%(amount)s</b> due on <b style='color: "
+"#704A66;'>%(date)s</b>"
+msgstr ""
+"<b>%(count)s#</b> Δόση των <b>%(amount)s</b> με λήξη στις <b style='color: "
+"#704A66;'>%(date)s</b>"
+
+#. module: account
+#: model_terms:ir.ui.view,arch_db:account.res_config_settings_view_form
+msgid ""
+"<i class=\"oi oi-arrow-right\"/>\n"
+"                                                Preview"
+msgstr ""
+"<i class=\"oi oi-arrow-right\"/>\n"
+"                                                Προεπισκόπηση"
+
+#. module: account
+#: model_terms:ir.ui.view,arch_db:account.view_account_journal_form
+msgid ""
+"<i class=\"oi oi-fw o_button_icon oi-arrow-right\"/> Configure Alias Domain"
+msgstr "<i class=\"oi oi-fw o_button_icon oi-arrow-right\"/> Ρύθμιση Alias Domain"
+
+#. module: account
+#: model_terms:ir.ui.view,arch_db:account.view_move_form
+msgid "<span class=\"o_stat_text\">1 Payment</span>"
+msgstr "<span class=\"o_stat_text\">1 Πληρωμή</span>"
+
+#. module: account
+#: model_terms:ir.ui.view,arch_db:account.view_account_payment_form
+msgid "<span class=\"o_stat_text\">Transaction</span>"
+msgstr "<span class=\"o_stat_text\">Συναλλαγή</span>"
+
+#. module: account
+#: model_terms:ir.ui.view,arch_db:account.view_account_payment_form
+msgid "<span> Bill</span>"
+msgstr "<span> Λογαριασμός</span>"
+
+#. module: account
+#: model_terms:ir.ui.view,arch_db:account.report_invoice_document
+msgid "<span> due on </span>"
+msgstr "<span> με λήξη στις </span>"
+
+#. module: account
+#: model_terms:web_tour.tour,rainbow_man_message:account.account_tour
+msgid "<span><b>Good job!</b> You went through all steps of this tour.</span>"
+msgstr ""
+"<span><b>Εξαιρετικά!</b> Ολοκληρώσατε όλα τα βήματα αυτής της "
+"περιήγησης.</span>"
+
+#. module: account
+#: model_terms:ir.ui.view,arch_db:account.view_account_payment_form
+msgid "<span>Draft</span>"
+msgstr "<span>Πρόχειρο</span>"
+
+#. module: account
+#: model_terms:ir.ui.view,arch_db:account.account_journal_dashboard_kanban_view
+msgid "<span>New</span>"
+msgstr "<span>Νέο</span>"
+
+#. module: account
+#: model_terms:ir.ui.view,arch_db:account.account_journal_dashboard_kanban_view
+msgid "<span>Reporting</span>"
+msgstr "<span>Αναφορές</span>"
+
+#. module: account
+#: model_terms:ir.ui.view,arch_db:account.account_terms_conditions_setting_banner
+msgid "<span>This is a preview of your Terms &amp; Conditions.</span>"
+msgstr ""
+"<span>Αυτή είναι μια προεπισκόπηση των Όρων &amp; Προϋποθέσεών σας.</span>"
+
+#. module: account
+#. odoo-python
+#: code:addons/account/models/account_report.py:0
+msgid "A line cannot have both children and a groupby value (line '%s')."
+msgstr ""
+"Μια γραμμή δεν μπορεί να έχει ταυτόχρονα θυγατρικές και τιμή groupby (γραμμή"
+" '%s')."
+
+#. module: account
+#. odoo-python
+#: code:addons/account/models/account_bank_statement.py:0
+msgid "A statement should only contain lines from the same journal."
+msgstr "Μια κατάσταση πρέπει να περιέχει μόνο γραμμές από το ίδιο ημερολόγιο."
+
+#. module: account
+#. odoo-python
+#: code:addons/account/models/account_move_line.py:0
+msgid ""
+"Account %s does not allow reconciliation. First change the configuration of "
+"this account to allow it."
+msgstr ""
+"Ο λογαριασμός %s δεν επιτρέπει συμφωνία. Αλλάξτε πρώτα τη διαμόρφωση του "
+"λογαριασμού για να το επιτρέψετε."
+
+#. module: account
+#: model:ir.model,name:account.model_account_chart_template
+msgid "Account Chart Template"
+msgstr "Πρότυπο Λογιστικού Σχεδίου"
+
+#. module: account
+#: model:ir.model.fields,field_description:account.field_account_report_line__account_codes_formula
+msgid "Account Codes Formula Shortcut"
+msgstr "Συντόμευση Τύπου Κωδικών Λογαριασμών"
+
+#. module: account
+#: model:ir.model.fields,field_description:account.field_account_fiscal_position__account_ids
+#: model_terms:ir.ui.view,arch_db:account.view_account_position_form
+msgid "Account Mapping"
+msgstr "Αντιστοίχιση Λογαριασμών"
+
+#. module: account
+#: model:account.account,name:account.1_pos_receivable
+msgid "Account Receivable (PoS)"
+msgstr "Λογαριασμός Εισπρακτέος (PoS)"
+
+#. module: account
+#: model:ir.model.fields,field_description:account.field_account_move_line__is_account_reconcile
+msgid "Account Reconcile"
+msgstr "Συμφωνία Λογαριασμού"
+
+#. module: account
+#: model:ir.model.fields,field_description:account.field_account_move_line__account_root_id
+msgid "Account Root"
+msgstr "Ρίζα Λογαριασμού"
+
+#. module: account
+#: model:ir.model.fields,help:account.field_res_config_settings__account_journal_early_pay_discount_loss_account_id
+msgid ""
+"Account for the difference amount after the expense discount has been "
+"granted"
+msgstr "Λογαριασμός για τη διαφορά ποσού μετά την παραχώρηση έκπτωσης εξόδων"
+
+#. module: account
+#: model:ir.model.fields,help:account.field_account_automatic_entry_wizard__destination_account_id
+msgid "Account to transfer to."
+msgstr "Λογαριασμός προς τον οποίο θα γίνει η μεταφορά."
+
+#. module: account
+#: model:ir.model,name:account.model_account_report_external_value
+msgid "Accounting Report External Value"
+msgstr "Εξωτερική Τιμή Λογιστικής Αναφοράς"
+
+#. module: account
+#: model:ir.model,name:account.model_account_fiscal_position_account
+msgid "Accounts Mapping of Fiscal Position"
+msgstr "Αντιστοίχιση Λογαριασμών Φορολογικής Θέσης"
+
+#. module: account
+#: model:ir.model.fields,field_description:account.field_account_account__active
+#: model:ir.model.fields,field_description:account.field_account_account_tag__active
+#: model:ir.model.fields,field_description:account.field_account_fiscal_position__active
+#: model:ir.model.fields,field_description:account.field_account_incoterms__active
+#: model:ir.model.fields,field_description:account.field_account_journal__active
+#: model:ir.model.fields,field_description:account.field_account_lock_exception__active
+#: model:ir.model.fields,field_description:account.field_account_payment_term__active
+#: model:ir.model.fields,field_description:account.field_account_reconcile_model__active
+#: model:ir.model.fields,field_description:account.field_account_report__active
+#: model:ir.model.fields,field_description:account.field_account_setup_bank_manual_config__active
+#: model:ir.model.fields,field_description:account.field_account_tax__active
+#: model:ir.model.fields,field_description:account.field_res_partner_bank__active
+#: model:ir.model.fields.selection,name:account.selection__account_lock_exception__state__active
+#: model_terms:ir.ui.view,arch_db:account.view_account_tax_search
+msgid "Active"
+msgstr "Ενεργό"
+
+#. module: account
+#: model:ir.model.fields,field_description:account.field_account_account__activity_exception_decoration
+#: model:ir.model.fields,field_description:account.field_account_bank_statement_line__activity_exception_decoration
+#: model:ir.model.fields,field_description:account.field_account_journal__activity_exception_decoration
+#: model:ir.model.fields,field_description:account.field_account_move__activity_exception_decoration
+#: model:ir.model.fields,field_description:account.field_account_payment__activity_exception_decoration
+#: model:ir.model.fields,field_description:account.field_account_setup_bank_manual_config__activity_exception_decoration
+#: model:ir.model.fields,field_description:account.field_res_partner_bank__activity_exception_decoration
+msgid "Activity Exception Decoration"
+msgstr "Διακόσμηση Δραστηριότητας Εξαίρεσης"
+
+#. module: account
+#. odoo-python
+#: code:addons/account/wizard/account_automatic_entry_wizard.py:0
+msgid "Adjusting Entry {link} {percent}%% of {amount} recognized from {date}"
+msgstr ""
+"Προσαρμοστική εγγραφή {link} {percent}%% του {amount} που αναγνωρίστηκε από "
+"την {date}"
+
+#. module: account
+#. odoo-python
+#: code:addons/account/wizard/account_automatic_entry_wizard.py:0
+msgid ""
+"Adjusting Entry {link} {percent}%% of {amount} recognized on {new_date}"
+msgstr ""
+"Προσαρμοστική εγγραφή {link} {percent}%% του {amount} που αναγνωρίστηκε την "
+"{new_date}"
+
+#. module: account
+#: model:ir.model.fields,field_description:account.field_account_tax__include_base_amount
+msgid "Affect Base of Subsequent Taxes"
+msgstr "Επηρεάζει τη Βάση των Επόμενων Φόρων"
+
+#. module: account
+#: model:ir.model.fields,field_description:account.field_account_journal__alias_domain_id
+msgid "Alias Domain"
+msgstr "Τομέας Ψευδωνύμου"
+
+#. module: account
+#: model:ir.model.fields,field_description:account.field_account_journal__alias_domain
+msgid "Alias Domain Name"
+msgstr "Όνομα Τομέα Ψευδωνύμου"
+
+#. module: account
+#: model:ir.model.fields,field_description:account.field_account_journal__alias_name
+msgid "Alias Name"
+msgstr "Όνομα Ψευδωνύμου"
+
+#. module: account
+#: model:ir.model.fields.selection,name:account.selection__account_payment_term__early_pay_discount_computation__mixed
+msgid "Always (upon invoice)"
+msgstr "Πάντα (κατά την τιμολόγηση)"
+
+#. module: account
+#: model:ir.model.fields,field_description:account.field_account_bank_statement_line__always_tax_exigible
+#: model:ir.model.fields,field_description:account.field_account_move__always_tax_exigible
+msgid "Always Tax Exigible"
+msgstr "Φόρος Πάντα Απαιτητός"
+
+#. module: account
+#: model:ir.model.fields,help:account.field_account_partial_reconcile__amount
+msgid ""
+"Always positive amount concerned by this matching expressed in the company "
+"currency."
+msgstr ""
+"Πάντα θετικό ποσό που αφορά αυτή την αντιστοίχιση, εκφρασμένο στο νόμισμα "
+"της εταιρείας."
+
+#. module: account
+#: model:ir.model.fields,help:account.field_account_partial_reconcile__credit_amount_currency
+msgid ""
+"Always positive amount concerned by this matching expressed in the credit "
+"line foreign currency."
+msgstr ""
+"Πάντα θετικό ποσό που αφορά αυτή την αντιστοίχιση, εκφρασμένο στο ξένο "
+"νόμισμα της πιστωτικής γραμμής."
+
+#. module: account
+#: model:ir.model.fields,help:account.field_account_partial_reconcile__debit_amount_currency
+msgid ""
+"Always positive amount concerned by this matching expressed in the debit "
+"line foreign currency."
+msgstr ""
+"Πάντα θετικό ποσό που αφορά αυτή την αντιστοίχιση, εκφρασμένο στο ξένο "
+"νόμισμα της χρεωστικής γραμμής."
+
+#. module: account
+#: model:ir.model.fields,field_description:account.field_account_bank_statement_line__amount_residual_signed
+#: model:ir.model.fields,field_description:account.field_account_move__amount_residual_signed
+msgid "Amount Due Signed"
+msgstr "Οφειλόμενο Ποσό με Πρόσημο"
+
+#. module: account
+#: model:ir.model.fields,field_description:account.field_account_payment__amount_signed
+msgid "Amount Signed"
+msgstr "Ποσό με Πρόσημο"
+
+#. module: account
+#: model:ir.model.fields,field_description:account.field_account_payment_register__source_amount
+msgid "Amount to Pay (company currency)"
+msgstr "Ποσό προς Πληρωμή (νόμισμα εταιρείας)"
+
+#. module: account
+#: model:ir.model.fields,field_description:account.field_account_payment_register__source_amount_currency
+msgid "Amount to Pay (foreign currency)"
+msgstr "Ποσό προς Πληρωμή (ξένο νόμισμα)"
+
+#. module: account
+#: model_terms:ir.ui.view,arch_db:account.view_move_form
+msgid "Auto-Complete"
+msgstr "Αυτόματη Συμπλήρωση"
+
+#. module: account
+#: model:ir.model.fields.selection,name:account.selection__res_partner__trust__bad
+msgid "Bad Debtor"
+msgstr "Επισφαλής Οφειλέτης"
+
+#. module: account
+#. odoo-python
+#: code:addons/account/models/res_partner_bank.py:0
+msgid "Bank Account %s created"
+msgstr "Ο τραπεζικός λογαριασμός %s δημιουργήθηκε"
+
+#. module: account
+#. odoo-python
+#: code:addons/account/models/res_partner_bank.py:0
+msgid "Bank Account %s updated"
+msgstr "Ο τραπεζικός λογαριασμός %s ενημερώθηκε"
+
+#. module: account
+#: model:ir.model.fields,field_description:account.field_account_journal__bank_statements_source
+msgid "Bank Feeds"
+msgstr "Τραπεζικές Ροές"
+
+#. module: account
+#: model_terms:ir.ui.view,arch_db:account.view_account_reconcile_model_tree
+msgid "Bank Reconciliation Move Presets"
+msgstr "Προεπιλογές Κινήσεων Τραπεζικής Συμφωνίας"
+
+#. module: account
+#: model_terms:ir.ui.view,arch_db:account.view_account_reconcile_model_search
+msgid "Bank Reconciliation Move preset"
+msgstr "Προεπιλογή Κινήσεων Τραπεζικής Συμφωνίας"
+
+#. module: account
+#. odoo-javascript
+#: code:addons/account/static/src/components/receipt_selector/receipt_selector.js:0
+#: model_terms:ir.ui.view,arch_db:account.account_journal_dashboard_kanban_view
+#: model_terms:ir.ui.view,arch_db:account.view_account_bill_filter
+msgid "Bill"
+msgstr "Λογαριασμός"
+
+#. module: account
+#: model_terms:ir.ui.view,arch_db:account.view_account_bill_filter
+#: model_terms:ir.ui.view,arch_db:account.view_invoice_tree
+#: model_terms:ir.ui.view,arch_db:account.view_move_form
+#: model_terms:ir.ui.view,arch_db:account.view_move_line_payment_tree
+msgid "Bill Date"
+msgstr "Ημερ. Λογαριασμού"
+
+#. module: account
+#: model_terms:ir.ui.view,arch_db:account.view_move_form
+msgid "Bill Reference"
+msgstr "Αναφορά Λογαριασμού"
+
+#. module: account
+#: model:ir.model.fields,field_description:account.field_account_account__include_initial_balance
+msgid "Bring Accounts Balance Forward"
+msgstr "Μεταφορά Υπολοίπων Λογαριασμών"
+
+#. module: account
+#. odoo-python
+#: code:addons/account/models/account_move.py:0
+msgid ""
+"Cannot find a chart of accounts for this company, You should configure it. \n"
+"Please go to Account Configuration."
+msgstr ""
+"Δεν βρέθηκε λογιστικό σχέδιο για αυτήν την εταιρεία. Πρέπει να το ρυθμίσετε.\n"
+"Παρακαλώ μεταβείτε στις Ρυθμίσεις Λογιστικής."
+
+#. module: account
+#. odoo-python
+#: code:addons/account/models/account_account.py:0
+msgid "Cannot generate an unused account code."
+msgstr "Αδύνατη η δημιουργία ενός αχρησιμοποίητου κωδικού λογαριασμού."
+
+#. module: account
+#: model:ir.model.fields,help:account.field_account_payment_register__writeoff_label
+msgid "Change label of the counterpart that will hold the payment difference"
+msgstr ""
+"Αλλάξτε την ετικέτα της αντισταθμιστικής γραμμής που θα κρατήσει τη διαφορά "
+"πληρωμής"
+
+#. module: account
+#: model:ir.model.fields,field_description:account.field_res_company__chart_template
+#: model:ir.model.fields,field_description:account.field_res_config_settings__chart_template
+msgid "Chart Template"
+msgstr "Πρότυπο Λογιστικού Σχεδίου"
+
+#. module: account
+#: model:ir.actions.act_window,name:account.open_account_charts_modules
+msgid "Chart Templates"
+msgstr "Πρότυπα Λογιστικού Σχεδίου"
+
+#. module: account
+#: model:ir.model.fields,help:account.field_account_journal__refund_sequence
+msgid ""
+"Check this box if you don't want to share the same sequence for invoices and"
+" credit notes made from this journal"
+msgstr ""
+"Επιλέξτε αυτό το πλαίσιο αν δεν θέλετε κοινή ακολουθία για τιμολόγια και "
+"πιστωτικά τιμολόγια αυτού του ημερολογίου"
+
+#. module: account
+#: model_terms:ir.ui.view,arch_db:account.res_config_settings_view_form
+msgid "Checks"
+msgstr "Επιταγές"
+
+#. module: account
+#: model:ir.model.fields,field_description:account.field_account_account_tag__color
+#: model:ir.model.fields,field_description:account.field_account_journal__color
+msgid "Color Index"
+msgstr "Δείκτης Χρώματος"
+
+#. module: account
+#: model:ir.model.fields,field_description:account.field_account_bank_statement_line__commercial_partner_id
+#: model:ir.model.fields,field_description:account.field_account_move__commercial_partner_id
+#: model_terms:ir.ui.view,arch_db:account.account_move_view_activity
+msgid "Commercial Entity"
+msgstr "Εμπορική Οντότητα"
+
+#. module: account
+#: model:ir.model.fields,field_description:account.field_res_config_settings__has_chart_of_accounts
+msgid "Company has a chart of accounts"
+msgstr "Η εταιρεία έχει λογιστικό σχέδιο"
+
+#. module: account
+#: model:ir.model,name:account.model_res_country_group
+#: model:ir.model.fields,field_description:account.field_account_fiscal_position__country_group_id
+msgid "Country Group"
+msgstr "Ομάδα Χωρών"
+
+#. module: account
+#: model_terms:ir.actions.act_window,help:account.action_account_reconcile_model
+msgid "Create a new reconciliation model"
+msgstr "Δημιουργία νέου μοντέλου συμφωνίας"
+
+#. module: account
+#: model:ir.actions.act_window,name:account.action_move_out_refund_type
+#: model:ir.actions.act_window,name:account.action_move_out_refund_type_non_legacy
+#: model:ir.ui.menu,name:account.menu_action_move_out_refund_type
+#: model_terms:ir.ui.view,arch_db:account.account_journal_dashboard_kanban_view
+#: model_terms:ir.ui.view,arch_db:account.view_account_invoice_filter
+#: model_terms:ir.ui.view,arch_db:account.view_account_invoice_report_search
+#: model_terms:ir.ui.view,arch_db:account.view_account_move_line_payment_filter
+msgid "Credit Notes"
+msgstr "Πιστωτικά Τιμολόγια"
+
+#. module: account
+#: model:ir.actions.act_window,name:account.action_account_payments
+#: model_terms:ir.ui.view,arch_db:account.res_config_settings_view_form
+#: model_terms:ir.ui.view,arch_db:account.view_account_payment_search
+msgid "Customer Payments"
+msgstr "Πληρωμές Πελατών"
+
+#. module: account
+#: model:ir.model.fields,field_description:account.field_account_journal__refund_sequence
+msgid "Dedicated Credit Note Sequence"
+msgstr "Ειδική Ακολουθία Πιστωτικών Τιμολογίων"
+
+#. module: account
+#. odoo-python
+#: code:addons/account/wizard/account_merge_wizard.py:0
+msgid "Deprecated"
+msgstr "Καταργημένος"
+
+#. module: account
+#: model:ir.model.fields,field_description:account.field_account_account__display_name
+#: model:ir.model.fields,field_description:account.field_account_account_tag__display_name
+#: model:ir.model.fields,field_description:account.field_account_accrued_orders_wizard__display_name
+#: model:ir.model.fields,field_description:account.field_account_analytic_account__display_name
+#: model:ir.model.fields,field_description:account.field_account_analytic_applicability__display_name
+#: model:ir.model.fields,field_description:account.field_account_analytic_distribution_model__display_name
+#: model:ir.model.fields,field_description:account.field_account_analytic_line__display_name
+#: model:ir.model.fields,field_description:account.field_account_automatic_entry_wizard__display_name
+#: model:ir.model.fields,field_description:account.field_account_autopost_bills_wizard__display_name
+#: model:ir.model.fields,field_description:account.field_account_bank_statement__display_name
+#: model:ir.model.fields,field_description:account.field_account_bank_statement_line__display_name
+#: model:ir.model.fields,field_description:account.field_account_cash_rounding__display_name
+#: model:ir.model.fields,field_description:account.field_account_chart_template__display_name
+#: model:ir.model.fields,field_description:account.field_account_code_mapping__display_name
+#: model:ir.model.fields,field_description:account.field_account_document_import_mixin__display_name
+#: model:ir.model.fields,field_description:account.field_account_financial_year_op__display_name
+#: model:ir.model.fields,field_description:account.field_account_fiscal_position__display_name
+#: model:ir.model.fields,field_description:account.field_account_fiscal_position_account__display_name
+#: model:ir.model.fields,field_description:account.field_account_full_reconcile__display_name
+#: model:ir.model.fields,field_description:account.field_account_group__display_name
+#: model:ir.model.fields,field_description:account.field_account_incoterms__display_name
+#: model:ir.model.fields,field_description:account.field_account_invoice_report__display_name
+#: model:ir.model.fields,field_description:account.field_account_journal__display_name
+#: model:ir.model.fields,field_description:account.field_account_journal_group__display_name
+#: model:ir.model.fields,field_description:account.field_account_lock_exception__display_name
+#: model:ir.model.fields,field_description:account.field_account_merge_wizard__display_name
+#: model:ir.model.fields,field_description:account.field_account_merge_wizard_line__display_name
+#: model:ir.model.fields,field_description:account.field_account_move__display_name
+#: model:ir.model.fields,field_description:account.field_account_move_line__display_name
+#: model:ir.model.fields,field_description:account.field_account_move_reversal__display_name
+#: model:ir.model.fields,field_description:account.field_account_move_send__display_name
+#: model:ir.model.fields,field_description:account.field_account_move_send_batch_wizard__display_name
+#: model:ir.model.fields,field_description:account.field_account_move_send_wizard__display_name
+#: model:ir.model.fields,field_description:account.field_account_partial_reconcile__display_name
+#: model:ir.model.fields,field_description:account.field_account_payment__display_name
+#: model:ir.model.fields,field_description:account.field_account_payment_method__display_name
+#: model:ir.model.fields,field_description:account.field_account_payment_method_line__display_name
+#: model:ir.model.fields,field_description:account.field_account_payment_register__display_name
+#: model:ir.model.fields,field_description:account.field_account_payment_term__display_name
+#: model:ir.model.fields,field_description:account.field_account_payment_term_line__display_name
+#: model:ir.model.fields,field_description:account.field_account_reconcile_model__display_name
+#: model:ir.model.fields,field_description:account.field_account_reconcile_model_line__display_name
+#: model:ir.model.fields,field_description:account.field_account_report__display_name
+#: model:ir.model.fields,field_description:account.field_account_report_column__display_name
+#: model:ir.model.fields,field_description:account.field_account_report_expression__display_name
+#: model:ir.model.fields,field_description:account.field_account_report_external_value__display_name
+#: model:ir.model.fields,field_description:account.field_account_report_line__display_name
+#: model:ir.model.fields,field_description:account.field_account_resequence_wizard__display_name
+#: model:ir.model.fields,field_description:account.field_account_root__display_name
+#: model:ir.model.fields,field_description:account.field_account_secure_entries_wizard__display_name
+#: model:ir.model.fields,field_description:account.field_account_setup_bank_manual_config__display_name
+#: model:ir.model.fields,field_description:account.field_account_tax__display_name
+#: model:ir.model.fields,field_description:account.field_account_tax_group__display_name
+#: model:ir.model.fields,field_description:account.field_account_tax_repartition_line__display_name
+#: model:ir.model.fields,field_description:account.field_base_document_layout__display_name
+#: model:ir.model.fields,field_description:account.field_base_partner_merge_automatic_wizard__display_name
+#: model:ir.model.fields,field_description:account.field_decimal_precision__display_name
+#: model:ir.model.fields,field_description:account.field_digest_digest__display_name
+#: model:ir.model.fields,field_description:account.field_ir_actions_report__display_name
+#: model:ir.model.fields,field_description:account.field_ir_attachment__display_name
+#: model:ir.model.fields,field_description:account.field_ir_http__display_name
+#: model:ir.model.fields,field_description:account.field_ir_module_module__display_name
+#: model:ir.model.fields,field_description:account.field_kpi_provider__display_name
+#: model:ir.model.fields,field_description:account.field_mail_message__display_name
+#: model:ir.model.fields,field_description:account.field_mail_template__display_name
+#: model:ir.model.fields,field_description:account.field_mail_tracking_value__display_name
+#: model:ir.model.fields,field_description:account.field_onboarding_onboarding_step__display_name
+#: model:ir.model.fields,field_description:account.field_product_catalog_mixin__display_name
+#: model:ir.model.fields,field_description:account.field_product_category__display_name
+#: model:ir.model.fields,field_description:account.field_product_product__display_name
+#: model:ir.model.fields,field_description:account.field_product_template__display_name
+#: model:ir.model.fields,field_description:account.field_report_account_report_hash_integrity__display_name
+#: model:ir.model.fields,field_description:account.field_report_account_report_invoice__display_name
+#: model:ir.model.fields,field_description:account.field_report_account_report_invoice_with_payments__display_name
+#: model:ir.model.fields,field_description:account.field_res_company__display_name
+#: model:ir.model.fields,field_description:account.field_res_config_settings__display_name
+#: model:ir.model.fields,field_description:account.field_res_country_group__display_name
+#: model:ir.model.fields,field_description:account.field_res_currency__display_name
+#: model:ir.model.fields,field_description:account.field_res_groups__display_name
+#: model:ir.model.fields,field_description:account.field_res_partner__display_name
+#: model:ir.model.fields,field_description:account.field_res_partner_bank__display_name
+#: model:ir.model.fields,field_description:account.field_sequence_mixin__display_name
+#: model:ir.model.fields,field_description:account.field_uom_uom__display_name
+#: model:ir.model.fields,field_description:account.field_validate_account_move__display_name
+msgid "Display Name"
+msgstr "Εμφανιζόμενο Όνομα"
+
+#. module: account
+#: model:ir.model.fields,field_description:account.field_account_merge_wizard_line__display_type
+#: model:ir.model.fields,field_description:account.field_account_move_line__display_type
+msgid "Display Type"
+msgstr "Τύπος Εμφάνισης"
+
+#. module: account
+#: model:ir.model.fields.selection,name:account.selection__account_invoice_report__state__draft
+#: model:ir.model.fields.selection,name:account.selection__account_move__state__draft
+#: model:ir.model.fields.selection,name:account.selection__account_move__status_in_payment__draft
+#: model:ir.model.fields.selection,name:account.selection__account_payment__state__draft
+#: model_terms:ir.ui.view,arch_db:account.view_account_invoice_filter
+#: model_terms:ir.ui.view,arch_db:account.view_account_payment_search
+msgid "Draft"
+msgstr "Πρόχειρο"
+
+#. module: account
+#. odoo-python
+#: code:addons/account/models/account_move.py:0
+msgid "Draft Bill"
+msgstr "Πρόχειρος Λογαριασμός"
+
+#. module: account
+#. odoo-python
+#: code:addons/account/models/account_move.py:0
+#: model_terms:ir.ui.view,arch_db:account.report_invoice_document
+msgid "Draft Credit Note"
+msgstr "Πρόχειρο Πιστωτικό Τιμολόγιο"
+
+#. module: account
+#. odoo-python
+#: code:addons/account/models/account_payment.py:0
+msgid "Draft Payment"
+msgstr "Πρόχειρη Πληρωμή"
+
+#. module: account
+#. odoo-javascript
+#: code:addons/account/static/src/components/section_and_note_fields_backend/section_and_note_fields_backend.xml:0
+msgid "Duplicate"
+msgstr "Αντιγραφή"
+
+#. module: account
+#: model:ir.model.fields,field_description:account.field_res_config_settings__module_account_reports
+msgid "Dynamic Reports"
+msgstr "Δυναμικές Αναφορές"
+
+#. module: account
+#: model:ir.model.fields,help:account.field_account_journal__alias_domain
+msgid "Email domain e.g. 'example.com' in 'odoo@example.com'"
+msgstr "Τομέας email π.χ. 'example.com' στο 'odoo@example.com'"
+
+#. module: account
+#. odoo-javascript
+#: code:addons/account/static/src/components/account_type_selection/account_type_selection.js:0
+#: model:ir.model.fields.selection,name:account.selection__account_account__account_type__equity
+#: model:ir.model.fields.selection,name:account.selection__account_account__internal_group__equity
+#: model_terms:ir.ui.view,arch_db:account.view_account_search
+msgid "Equity"
+msgstr "Ίδια Κεφάλαια"
+
+#. module: account
+#. odoo-javascript
+#. odoo-python
+#: code:addons/account/models/chart_template.py:0
+#: code:addons/account/static/src/components/account_payment_field/account_payment.xml:0
+#: model:account.journal,name:account.1_exch
+#: model:account.journal,name:account.2_exch
+msgid "Exchange Difference"
+msgstr "Συναλλαγματική Διαφορά"
+
+#. module: account
+#: model:account.incoterms,name:account.incoterm_FCA
+msgid "FREE CARRIER"
+msgstr "ΕΛΕΥΘΕΡΟ ΣΤΟΝ ΜΕΤΑΦΟΡΕΑ"
+
+#. module: account
+#: model:ir.model.fields,field_description:account.field_account_analytic_line__general_account_id
+#: model_terms:ir.ui.view,arch_db:account.view_account_analytic_line_filter_inherit_account
+msgid "Financial Account"
+msgstr "Χρηματοοικονομικός Λογαριασμός"
+
+#. module: account
+#: model_terms:ir.ui.view,arch_db:account.res_config_settings_view_form
+msgid "Fiscal Localization"
+msgstr "Φορολογική Τοπικοποίηση"
+
+#. module: account
+#: model:ir.model.fields,help:account.field_account_account__activity_type_icon
+#: model:ir.model.fields,help:account.field_account_bank_statement_line__activity_type_icon
+#: model:ir.model.fields,help:account.field_account_journal__activity_type_icon
+#: model:ir.model.fields,help:account.field_account_move__activity_type_icon
+#: model:ir.model.fields,help:account.field_account_payment__activity_type_icon
+#: model:ir.model.fields,help:account.field_account_setup_bank_manual_config__activity_type_icon
+#: model:ir.model.fields,help:account.field_res_partner_bank__activity_type_icon
+msgid "Font awesome icon e.g. fa-tasks"
+msgstr "Εικονίδιο Font Awesome π.χ. fa-tasks"
+
+#. module: account
+#: model:ir.model.fields,field_description:account.field_account_bank_statement_line__foreign_currency_id
+msgid "Foreign Currency"
+msgstr "Ξένο Νόμισμα"
+
+#. module: account
+#: model_terms:ir.ui.view,arch_db:account.view_account_move_line_filter
+msgid "From Trade Payable accounts"
+msgstr "Από λογαριασμούς Εμπορικών Υποχρεώσεων"
+
+#. module: account
+#: model_terms:ir.ui.view,arch_db:account.view_account_move_line_filter
+msgid "From Trade Receivable accounts"
+msgstr "Από λογαριασμούς Εμπορικών Απαιτήσεων"
+
+#. module: account
+#: model:ir.model,name:account.model_account_full_reconcile
+#: model:ir.model.fields,field_description:account.field_account_partial_reconcile__full_reconcile_id
+msgid "Full Reconcile"
+msgstr "Πλήρης Συμφωνία"
+
+#. module: account
+#: model_terms:ir.ui.view,arch_db:account.res_config_settings_view_form
+msgid "Import your bank statements in QIF"
+msgstr "Εισαγάγετε τις τραπεζικές σας καταστάσεις σε QIF"
+
+#. module: account
+#: model:ir.actions.act_window,name:account.action_incoterms_tree
+#: model:ir.model,name:account.model_account_incoterms
+#: model:ir.ui.menu,name:account.menu_action_incoterm_open
+#: model_terms:ir.ui.view,arch_db:account.account_incoterms_form
+#: model_terms:ir.ui.view,arch_db:account.account_incoterms_view_search
+#: model_terms:ir.ui.view,arch_db:account.view_incoterms_tree
+msgid "Incoterms"
+msgstr "Incoterms"
+
+#. module: account
+#: model:ir.model.fields,field_description:account.field_account_account__note
+msgid "Internal Notes"
+msgstr "Εσωτερικές Σημειώσεις"
+
+#. module: account
+#. odoo-python
+#: code:addons/account/models/chart_template.py:0
+#: model:account.reconcile.model,name:account.1_internal_transfer_reco
+#: model:account.reconcile.model,name:account.2_internal_transfer_reco
+#: model:ir.actions.act_window,name:account.action_account_payments_transfer
+msgid "Internal Transfers"
+msgstr "Εσωτερικές Μεταφορές"
+
+#. module: account
+#: model_terms:ir.ui.view,arch_db:account.view_account_invoice_report_search
+msgid "Invoiced"
+msgstr "Τιμολογημένο"
+
+#. module: account
+#. odoo-python
+#: code:addons/account/models/account_journal_dashboard.py:0
+msgid "Invoices owed to you"
+msgstr "Τιμολόγια που σας οφείλονται"
+
+#. module: account
+#: model:ir.model.fields,field_description:account.field_account_bank_statement_line__is_reconciled
+#: model:ir.model.fields,field_description:account.field_account_payment__is_reconciled
+msgid "Is Reconciled"
+msgstr "Είναι Συμφωνημένο"
+
+#. module: account
+#: model:ir.model.fields,field_description:account.field_account_bank_statement_line__currency_id
+msgid "Journal Currency"
+msgstr "Νόμισμα Ημερολογίου"
+
+#. module: account
+#. odoo-python
+#: code:addons/account/models/account_journal_dashboard.py:0
+#: code:addons/account/wizard/account_secure_entries_wizard.py:0
+#: model:ir.actions.act_window,name:account.action_account_moves_email_preview
+#: model:ir.actions.act_window,name:account.action_move_journal_line
+#: model:ir.ui.menu,name:account.menu_action_move_journal_line_form
+#: model_terms:ir.ui.view,arch_db:account.account_journal_dashboard_kanban_view
+#: model_terms:ir.ui.view,arch_db:account.view_account_journal_form
+#: model_terms:ir.ui.view,arch_db:account.view_account_reconcile_model_form
+#: model_terms:ir.ui.view,arch_db:account.view_move_tree
+msgid "Journal Entries"
+msgstr "Λογιστικές Εγγραφές"
+
+#. module: account
+#. odoo-python
+#: code:addons/account/models/account_move.py:0
+#: code:addons/account/models/account_payment.py:0
+#: model:ir.model,name:account.model_account_move
+#: model:ir.model.fields,field_description:account.field_account_bank_statement_line__move_id
+#: model:ir.model.fields,field_description:account.field_account_move_line__move_id
+#: model:ir.model.fields,field_description:account.field_account_payment__move_id
+#: model:ir.model.fields,field_description:account.field_mail_mail__account_audit_log_move_id
+#: model:ir.model.fields,field_description:account.field_mail_message__account_audit_log_move_id
+#: model:ir.model.fields.selection,name:account.selection__account_move__move_type__entry
+#: model_terms:ir.ui.view,arch_db:account.account_journal_dashboard_kanban_view
+#: model_terms:ir.ui.view,arch_db:account.view_account_move_filter
+#: model_terms:ir.ui.view,arch_db:account.view_account_move_line_filter
+#: model_terms:ir.ui.view,arch_db:account.view_message_tree_audit_log_search
+#: model_terms:ir.ui.view,arch_db:account.view_move_line_form
+#: model_terms:ir.ui.view,arch_db:account.view_move_line_payment_tree
+#: model_terms:ir.ui.view,arch_db:account.view_move_line_tree
+msgid "Journal Entry"
+msgstr "Λογιστική Εγγραφή"
+
+#. module: account
+#: model:ir.model.fields,field_description:account.field_account_payment_register__writeoff_label
+msgid "Journal Item Label"
+msgstr "Ετικέτα Στοιχείου Ημερολογίου"
+
+#. module: account
+#. odoo-python
+#: code:addons/account/models/account_lock_exception.py:0
+#: model:ir.actions.act_window,name:account.action_account_moves_all
+#: model:ir.actions.act_window,name:account.action_account_moves_all_a
+#: model:ir.actions.act_window,name:account.action_account_moves_all_grouped_matching
+#: model:ir.actions.act_window,name:account.action_account_moves_all_tree
+#: model:ir.actions.act_window,name:account.action_move_line_select
+#: model:ir.model.fields,field_description:account.field_account_bank_statement_line__line_ids
+#: model:ir.model.fields,field_description:account.field_account_move__line_ids
+#: model:ir.ui.menu,name:account.menu_action_account_moves_all
+#: model_terms:ir.ui.view,arch_db:account.account_journal_dashboard_kanban_view
+#: model_terms:ir.ui.view,arch_db:account.view_move_form
+#: model_terms:ir.ui.view,arch_db:account.view_move_line_pivot
+#: model_terms:ir.ui.view,arch_db:account.view_move_line_tree
+msgid "Journal Items"
+msgstr "Στοιχεία Ημερολογίου"
+
+#. module: account
+#: model:ir.model.fields.selection,name:account.selection__account_payment_register__payment_difference_handling__open
+msgid "Keep open"
+msgstr "Διατήρηση ανοιχτού"
+
+#. module: account
+#: model:ir.model.fields,field_description:account.field_account_tax__invoice_label
+msgid "Label on Invoices"
+msgstr "Ετικέτα στα Τιμολόγια"
+
+#. module: account
+#. odoo-python
+#: code:addons/account/models/account_move.py:0
+msgid "Less Payment"
+msgstr "Μείον Πληρωμή"
+
+#. module: account
+#: model:ir.model.fields,field_description:account.field_account_move_line__full_reconcile_id
+#: model_terms:ir.ui.view,arch_db:account.view_account_move_line_filter
+#: model_terms:ir.ui.view,arch_db:account.view_full_reconcile_form
+#: model_terms:ir.ui.view,arch_db:account.view_move_line_form
+#: model_terms:ir.ui.view,arch_db:account.view_move_line_tree
+msgid "Matching"
+msgstr "Αντιστοίχιση"
+
+#. module: account
+#: model:ir.model.fields,field_description:account.field_account_partial_reconcile__max_date
+msgid "Max Date of Matched Lines"
+msgstr "Μέγιστη Ημερομηνία Αντιστοιχισμένων Γραμμών"
+
+#. module: account
+#: model:ir.model.fields,field_description:account.field_account_payment__memo
+#: model:ir.model.fields,field_description:account.field_account_payment_register__communication
+#: model_terms:ir.ui.view,arch_db:account.view_account_payment_form
+msgid "Memo"
+msgstr "Αιτιολογία"
+
+#. module: account
+#. odoo-javascript
+#: code:addons/account/static/src/components/account_payment_field/account_payment.xml:0
+#: model_terms:ir.ui.view,arch_db:account.report_payment_receipt_document
+msgid "Memo:"
+msgstr "Αιτιολογία:"
+
+#. module: account
+#. odoo-python
+#: code:addons/account/models/account_journal.py:0
+#: code:addons/account/models/chart_template.py:0
+#: model:account.journal,name:account.1_general
+#: model:account.journal,name:account.2_general
+msgid "Miscellaneous Operations"
+msgstr "Διάφορες Ενέργειες"
+
+#. module: account
+#: model_terms:ir.ui.view,arch_db:account.view_account_reconcile_model_form
+msgid "Model Name"
+msgstr "Όνομα Μοντέλου"
+
+#. module: account
+#: model:ir.model.fields,field_description:account.field_account_invoice_report__move_id
+#: model:ir.model.fields,field_description:account.field_account_move_reversal__move_ids
+#: model:ir.model.fields,field_description:account.field_account_move_send_batch_wizard__move_ids
+#: model:ir.model.fields,field_description:account.field_account_move_send_wizard__move_id
+#: model:ir.model.fields,field_description:account.field_account_resequence_wizard__move_ids
+#: model:ir.model.fields,field_description:account.field_validate_account_move__move_ids
+msgid "Move"
+msgstr "Κίνηση"
+
+#. module: account
+#: model:ir.model.fields,field_description:account.field_account_automatic_entry_wizard__move_line_ids
+msgid "Move Line"
+msgstr "Γραμμή Κίνησης"
+
+#. module: account
+#: model:ir.model.fields,field_description:account.field_account_autopost_bills_wizard__partner_name
+#: model:ir.model.fields,field_description:account.field_account_cash_rounding__name
+#: model:ir.model.fields,field_description:account.field_account_group__name
+#: model:ir.model.fields,field_description:account.field_account_incoterms__name
+#: model:ir.model.fields,field_description:account.field_account_payment_method__name
+#: model:ir.model.fields,field_description:account.field_account_payment_method_line__name
+#: model:ir.model.fields,field_description:account.field_account_reconcile_model__name
+#: model:ir.model.fields,field_description:account.field_account_report__name
+#: model:ir.model.fields,field_description:account.field_account_report_column__name
+#: model:ir.model.fields,field_description:account.field_account_report_external_value__name
+#: model:ir.model.fields,field_description:account.field_account_report_line__name
+#: model:ir.model.fields,field_description:account.field_account_root__name
+#: model:ir.model.fields,field_description:account.field_account_setup_bank_manual_config__bank_name
+#: model:ir.model.fields,field_description:account.field_account_tax_group__name
+#: model:ir.model.fields,field_description:account.field_res_partner__name
+#: model:ir.model.fields,field_description:account.field_res_users__name
+#: model_terms:ir.ui.view,arch_db:account.account_tax_view_tree
+#: model_terms:ir.ui.view,arch_db:account.view_account_tax_search
+#: model_terms:ir.ui.view,arch_db:account.view_message_tree_audit_log
+msgid "Name"
+msgstr "Όνομα"
+
+#. module: account
+#: model_terms:ir.ui.view,arch_db:account.res_config_settings_view_form
+msgid "Navigate easily through reports and see what is behind the numbers"
+msgstr ""
+"Περιηγηθείτε εύκολα στις αναφορές και δείτε τι κρύβεται πίσω από τους "
+"αριθμούς"
+
+#. module: account
+#: model:ir.model.fields,field_description:account.field_account_account__activity_calendar_event_id
+#: model:ir.model.fields,field_description:account.field_account_bank_statement_line__activity_calendar_event_id
+#: model:ir.model.fields,field_description:account.field_account_journal__activity_calendar_event_id
+#: model:ir.model.fields,field_description:account.field_account_move__activity_calendar_event_id
+#: model:ir.model.fields,field_description:account.field_account_payment__activity_calendar_event_id
+#: model:ir.model.fields,field_description:account.field_account_setup_bank_manual_config__activity_calendar_event_id
+#: model:ir.model.fields,field_description:account.field_res_partner_bank__activity_calendar_event_id
+msgid "Next Activity Calendar Event"
+msgstr "Επόμενο Γεγονός Δραστηριότητας στο Ημερολόγιο"
+
+#. module: account
+#: model:ir.model,name:account.model_onboarding_onboarding_step
+msgid "Onboarding Step"
+msgstr "Βήμα Εκκίνησης"
+
+#. module: account
+#. odoo-python
+#: code:addons/account/models/account_move_line.py:0
+msgid "One or more lines require a 100% analytic distribution."
+msgstr "Μία ή περισσότερες γραμμές απαιτούν 100% αναλυτική κατανομή."
+
+#. module: account
+#: model:ir.model.fields,field_description:account.field_account_account__opening_balance
+msgid "Opening Balance"
+msgstr "Υπόλοιπο Έναρξης"
+
+#. module: account
+#: model:ir.model,name:account.model_account_financial_year_op
+msgid "Opening Balance of Financial Year"
+msgstr "Υπόλοιπο έναρξης οικονομικού έτους"
+
+#. module: account
+#: model:account.group,name:account.2_us_group_6
+msgid "Operating Expenses"
+msgstr "Έξοδα Λειτουργίας"
+
+#. module: account
+#: model:ir.model.fields,field_description:account.field_account_move_line__tax_line_id
+#: model_terms:ir.ui.view,arch_db:account.view_account_move_line_filter
+#: model_terms:ir.ui.view,arch_db:account.view_move_line_tree
+msgid "Originator Tax"
+msgstr "Φόρος Προέλευσης"
+
+#. module: account
+#: model:account.group,name:account.2_us_group_7
+#: model:ir.model.fields.selection,name:account.selection__account_account__account_type__expense_other
+msgid "Other Expenses"
+msgstr "Άλλα Έξοδα"
+
+#. module: account
+#: model:account.account,name:account.1_other_income
+#: model:account.account,name:account.2_account_account_us_other_income
+#: model:ir.model.fields.selection,name:account.selection__account_account__account_type__income_other
+msgid "Other Income"
+msgstr "Άλλα Έσοδα"
+
+#. module: account
+#: model:ir.model.fields.selection,name:account.selection__account_payment_method__payment_type__outbound
+msgid "Outbound"
+msgstr "Εξερχόμενη"
+
+#. module: account
+#: model_terms:ir.ui.view,arch_db:account.res_config_settings_view_form
+msgid "Package"
+msgstr "Συσκευασία"
+
+#. module: account
+#: model:ir.model,name:account.model_account_partial_reconcile
+msgid "Partial Reconcile"
+msgstr "Μερική Συμφωνία"
+
+#. module: account
+#: model:ir.model.fields,field_description:account.field_account_payment__payment_type
+#: model:ir.model.fields,field_description:account.field_account_payment_method__payment_type
+#: model:ir.model.fields,field_description:account.field_account_payment_method_line__payment_type
+#: model:ir.model.fields,field_description:account.field_account_payment_register__payment_type
+msgid "Payment Type"
+msgstr "Τύπος Πληρωμής"
+
+#. module: account
+#: model_terms:account.payment.term,note:account.account_payment_term_15days
+msgid "Payment terms: 15 Days"
+msgstr "Όροι Πληρωμής: 15 Ημέρες"
+
+#. module: account
+#: model_terms:account.payment.term,note:account.account_payment_term_end_following_month
+msgid "Payment terms: End of Following Month"
+msgstr "Όροι Πληρωμής: Τέλος του επόμενου μήνα"
+
+#. module: account
+#: model_terms:account.payment.term,note:account.account_payment_term_immediate
+msgid "Payment terms: Immediate Payment"
+msgstr "Όροι Πληρωμής: Άμεση Πληρωμή"
+
+#. module: account
+#. odoo-python
+#: code:addons/account/models/account_move.py:0
+#: code:addons/account/wizard/account_payment_register.py:0
+#: model:ir.actions.act_window,name:account.action_account_all_payments
+#: model:ir.model,name:account.model_account_payment
+#: model:ir.model.fields,field_description:account.field_account_move__payment_ids
+#: model:ir.ui.menu,name:account.menu_action_account_payments_payable
+#: model:ir.ui.menu,name:account.menu_action_account_payments_receivable
+#: model_terms:ir.ui.view,arch_db:account.account_journal_dashboard_kanban_view
+#: model_terms:ir.ui.view,arch_db:account.view_account_payment_search
+#: model_terms:ir.ui.view,arch_db:account.view_move_form
+msgid "Payments"
+msgstr "Πληρωμές"
+
+#. module: account
+#: model_terms:ir.ui.view,arch_db:account.view_move_form
+#: model_terms:ir.ui.view,arch_db:account.view_move_line_tree
+msgid "Post"
+msgstr "Καταχώρηση"
+
+#. module: account
+#: model_terms:ir.ui.view,arch_db:account.view_account_move_filter
+msgid "Posted Journal Entries"
+msgstr "Καταχωρημένες Λογιστικές Εγγραφές"
+
+#. module: account
+#: model_terms:ir.ui.view,arch_db:account.view_account_move_line_filter
+#: model_terms:ir.ui.view,arch_db:account.view_account_move_line_payment_filter
+msgid "Posted Journal Items"
+msgstr "Καταχωρημένα Στοιχεία Ημερολογίου"
+
+#. module: account
+#: model_terms:ir.ui.view,arch_db:account.view_move_form
+msgid "Price"
+msgstr "Τιμή"
+
+#. module: account
+#: model:ir.model,name:account.model_product_product
+msgid "Product Variant"
+msgstr "Παραλλαγή Είδους"
+
+#. module: account
+#: model:ir.actions.act_window,name:account.product_product_action_purchasable
+#: model:ir.actions.act_window,name:account.product_product_action_sellable
+#: model:ir.model.fields.selection,name:account.selection__account_account_tag__applicability__products
+#: model:ir.ui.menu,name:account.product_product_menu_purchasable
+#: model:ir.ui.menu,name:account.product_product_menu_sellable
+msgid "Products"
+msgstr "Προϊόντα"
+
+#. module: account
+#. odoo-javascript
+#: code:addons/account/static/src/components/receipt_selector/receipt_selector.js:0
+#: model_terms:ir.ui.view,arch_db:account.view_account_bill_filter
+msgid "Receipt"
+msgstr "Απόδειξη"
+
+#. module: account
+#: model_terms:ir.ui.view,arch_db:account.view_account_invoice_filter
+msgid "Receipts"
+msgstr "Αποδείξεις"
+
+#. module: account
+#: model:ir.model.fields,field_description:account.field_account_move_line__reconciled
+#: model_terms:ir.ui.view,arch_db:account.view_account_payment_search
+msgid "Reconciled"
+msgstr "Συμφωνημένη"
+
+#. module: account
+#. odoo-python
+#: code:addons/account/controllers/portal.py:0
+#: model:ir.model.fields,field_description:account.field_account_bank_statement__name
+#: model:ir.model.fields,field_description:account.field_account_bank_statement_line__ref
+#: model:ir.model.fields,field_description:account.field_account_move__ref
+#: model:ir.model.fields,field_description:account.field_account_move_line__ref
+msgid "Reference"
+msgstr "Αναφορά"
+
+#. module: account
+#: model:ir.model.fields.selection,name:account.selection__account_payment__state__rejected
+msgid "Rejected"
+msgstr "Απορρίφθηκε"
+
+#. module: account
+#: model:ir.model.fields,field_description:account.field_account_bank_statement_line__amount_residual
+#: model:ir.model.fields,field_description:account.field_account_move_line__amount_residual
+msgid "Residual Amount"
+msgstr "Υπόλοιπο Ποσό"
+
+#. module: account
+#: model:ir.model.fields,field_description:account.field_account_accrued_orders_wizard__reversal_date
+msgid "Reversal Date"
+msgstr "Ημερομηνία Αντιλογισμού"
+
+#. module: account
+#. odoo-python
+#: code:addons/account/models/account_partial_reconcile.py:0
+#: code:addons/account/wizard/account_move_reversal.py:0
+#: code:addons/account/wizard/accrued_orders.py:0
+msgid "Reversal of: %s"
+msgstr "Αντιλογισμός του: %s"
+
+#. module: account
+#: model:ir.ui.menu,name:account.account_audit_menu
+#: model_terms:ir.ui.view,arch_db:account.view_move_line_tree
+msgid "Review"
+msgstr "Έλεγχος"
+
+#. module: account
+#: model:ir.model,name:account.model_account_reconcile_model_line
+msgid "Rules for the reconciliation model"
+msgstr "Κανόνες για το μοντέλο συμφωνίας"
+
+#. module: account
+#: model:ir.model.fields.selection,name:account.selection__account_merge_wizard_line__display_type__line_section
+#: model:ir.model.fields.selection,name:account.selection__account_move_line__display_type__line_section
+#: model_terms:ir.ui.view,arch_db:account.view_move_form
+msgid "Section"
+msgstr "Ενότητα"
+
+#. module: account
+#: model_terms:ir.ui.view,arch_db:account.view_invoice_tree
+#: model_terms:ir.ui.view,arch_db:account.view_move_form
+msgid "Source Document"
+msgstr "Έγγραφο Προέλευσης"
+
+#. module: account
+#: model:ir.actions.report,name:account.action_report_account_statement
+#: model:ir.model.fields,field_description:account.field_account_bank_statement_line__statement_id
+#: model:ir.model.fields,field_description:account.field_account_move__statement_id
+#: model:ir.model.fields,field_description:account.field_account_move_line__statement_id
+#: model_terms:ir.ui.view,arch_db:account.view_bank_statement_search
+msgid "Statement"
+msgstr "Κατάσταση"
+
+#. module: account
+#: model:ir.model.fields,field_description:account.field_account_bank_statement_line__statement_line_id
+#: model:ir.model.fields,field_description:account.field_account_move__statement_line_id
+msgid "Statement Line"
+msgstr "Γραμμή Κατάστασης"
+
+#. module: account
+#: model:ir.model.fields,field_description:account.field_account_bank_statement__line_ids
+msgid "Statement lines"
+msgstr "Γραμμές Κατάστασης"
+
+#. module: account
+#: model:ir.model.fields,field_description:account.field_account_bank_statement_line__statement_line_ids
+#: model:ir.model.fields,field_description:account.field_account_move__statement_line_ids
+#: model_terms:ir.ui.view,arch_db:account.account_journal_dashboard_kanban_view
+#: model_terms:ir.ui.view,arch_db:account.view_bank_statement_tree
+msgid "Statements"
+msgstr "Καταστάσεις"
+
+#. module: account
+#: model:ir.model.fields,field_description:account.field_account_move_line__price_subtotal
+msgid "Subtotal"
+msgstr "Υποσύνολο"
+
+#. module: account
+#: model:ir.model.fields,field_description:account.field_account_bank_statement_line__tax_cash_basis_rec_id
+#: model:ir.model.fields,field_description:account.field_account_move__tax_cash_basis_rec_id
+msgid "Tax Cash Basis Entry of"
+msgstr "Εγγραφή Φόρου Ταμειακής Βάσης του"
+
+#. module: account
+#: model:ir.model.fields,help:account.field_account_journal__currency_id
+msgid "The currency used to enter statement"
+msgstr "Το νόμισμα που χρησιμοποιείται για την καταχώρηση της κατάστασης"
+
+#. module: account
+#: model:ir.model.fields,field_description:account.field_account_automatic_entry_wizard__total_amount
+#: model_terms:ir.ui.view,arch_db:account.view_move_tree
+msgid "Total Amount"
+msgstr "Συνολικό Ποσό"
+
+#. module: account
+#: model_terms:ir.ui.view,arch_db:account.view_move_line_tree
+msgid "Total Residual in Currency"
+msgstr "Συνολικό Υπόλοιπο σε Νόμισμα"
+
+#. module: account
+#: model_terms:ir.ui.view,arch_db:account.view_account_move_filter
+msgid "Unposted Journal Entries"
+msgstr "Μη Καταχωρημένες Λογιστικές Εγγραφές"
+
+#. module: account
+#: model_terms:ir.ui.view,arch_db:account.view_account_move_line_filter
+msgid "Unposted Journal Items"
+msgstr "Μη Καταχωρημένα Στοιχεία Ημερολογίου"
+
+#. module: account
+#. odoo-javascript
+#: code:addons/account/static/src/components/account_payment_field/account_payment.xml:0
+#: model:ir.actions.server,name:account.action_account_unreconcile
+msgid "Unreconcile"
+msgstr "Αναίρεση Συμφωνίας"
+
+#. module: account
+#: model_terms:ir.ui.view,arch_db:account.view_account_move_line_filter
+msgid "Unreconciled"
+msgstr "Μη Συμφωνημένα"
+
+#. module: account
+#: model:ir.model.fields,field_description:account.field_account_report__filter_unreconciled
+msgid "Unreconciled Entries"
+msgstr "Μη Συμφωνημένες Εγγραφές"
+
+#. module: account
+#: model_terms:ir.ui.view,arch_db:account.res_config_settings_view_form
+msgid "Update Terms"
+msgstr "Ενημέρωση Όρων"
+
+#. module: account
+#. odoo-python
+#: code:addons/account/models/account_analytic_account.py:0
+#: code:addons/account/models/account_journal.py:0
+#: model:ir.actions.act_window,name:account.res_partner_action_supplier_bills
+#: model:ir.model.fields.selection,name:account.selection__res_company__quick_edit_mode__in_invoices
+#: model_terms:ir.ui.view,arch_db:account.account_analytic_account_view_form_inherit
+#: model_terms:ir.ui.view,arch_db:account.partner_view_buttons
+#: model_terms:ir.ui.view,arch_db:account.res_config_settings_view_form
+#: model_terms:ir.ui.view,arch_db:account.res_partner_view_search
+msgid "Vendor Bills"
+msgstr "Λογαριασμοί Προμηθευτών"
+
+#. module: account
+#: model:ir.model.fields,field_description:account.field_account_merge_wizard_line__wizard_id
+msgid "Wizard"
+msgstr "Οδηγός"

@@ -1,0 +1,330 @@
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo 19.0 el overrides (product)\n"
+"Language: el\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#. module: product
+#. odoo-python
+#: code:addons/product/models/product_pricelist_item.py:0
+msgid ""
+"%(item_name)s: end date (%(end_date)s) should be after start date "
+"(%(start_date)s)"
+msgstr ""
+"%(item_name)s: η ημερομηνία λήξης (%(end_date)s) πρέπει να είναι μετά την "
+"ημερομηνία έναρξης (%(start_date)s)"
+
+#. module: product
+#: model_terms:ir.ui.view,arch_db:product.product_variant_easy_edit_view
+msgid "<span>All general settings about this product are managed on</span>"
+msgstr "<span>Όλες οι γενικές ρυθμίσεις αυτού του είδους ορίζονται στο</span>"
+
+#. module: product
+#. odoo-python
+#: code:addons/product/models/product_pricelist_item.py:0
+msgid ""
+"A pricelist item with \"Other Pricelist\" as base must have a "
+"base_pricelist_id."
+msgstr ""
+"Ένα στοιχείο τιμοκαταλόγου με βάση «Άλλος Τιμοκατάλογος» πρέπει να έχει "
+"base_pricelist_id."
+
+#. module: product
+#: model:ir.model.fields,field_description:product.field_product_attribute__active
+#: model:ir.model.fields,field_description:product.field_product_attribute_value__active
+#: model:ir.model.fields,field_description:product.field_product_document__active
+#: model:ir.model.fields,field_description:product.field_product_pricelist__active
+#: model:ir.model.fields,field_description:product.field_product_product__active
+#: model:ir.model.fields,field_description:product.field_product_template__active
+#: model:ir.model.fields,field_description:product.field_product_template_attribute_line__active
+#: model:ir.model.fields,field_description:product.field_product_template_attribute_value__ptav_active
+#: model_terms:ir.ui.view,arch_db:product.product_pricelist_item_view_search
+#: model_terms:ir.ui.view,arch_db:product.product_supplierinfo_search_view
+#: model_terms:ir.ui.view,arch_db:product.product_template_attribute_value_view_search
+msgid "Active"
+msgstr "Ενεργό"
+
+#. module: product
+#: model:ir.model.fields,field_description:product.field_product_pricelist__activity_exception_decoration
+#: model:ir.model.fields,field_description:product.field_product_product__activity_exception_decoration
+#: model:ir.model.fields,field_description:product.field_product_template__activity_exception_decoration
+msgid "Activity Exception Decoration"
+msgstr "Διακόσμηση Δραστηριότητας Εξαίρεσης"
+
+#. module: product
+#. odoo-javascript
+#: code:addons/product/static/src/js/pricelist_report/product_pricelist_report.xml:0
+msgid ""
+"Add products using the \"Add Products\" button at the top right to\n"
+"                                include them in the report."
+msgstr ""
+"Προσθέστε είδη χρησιμοποιώντας το κουμπί «Προσθέστε Είδη» πάνω δεξιά\n"
+"                                για να τα συμπεριλάβετε στην αναφορά."
+
+#. module: product
+#: model_terms:ir.ui.view,arch_db:product.product_document_form
+msgid "Attached To"
+msgstr "Συνημμένο σε"
+
+#. module: product
+#: model:product.template,description_sale:product.product_product_7_product_template
+msgid "Blue plastic bin for flexible office storage"
+msgstr "Πλαστικός μπλε κάδος για ευέλικτη αποθήκευση στο γραφείο"
+
+#. module: product
+#: model:ir.model.fields,field_description:product.field_product_attribute_value__color
+#: model:ir.model.fields,field_description:product.field_product_product__color
+#: model:ir.model.fields,field_description:product.field_product_template__color
+msgid "Color Index"
+msgstr "Δείκτης Χρώματος"
+
+#. module: product
+#: model:ir.model,name:product.model_res_country_group
+msgid "Country Group"
+msgstr "Ομάδα Χωρών"
+
+#. module: product
+#: model:product.attribute.value,name:product.pav_custom
+#: model:product.attribute.value,name:product.pav_legs_custom
+#: model:product.attribute.value,name:product.pav_length_custom
+msgid "Custom"
+msgstr "Προσαρμοσμένο"
+
+#. module: product
+#: model:ir.model.fields,field_description:product.field_product_attribute_value__default_extra_price_changed
+msgid "Default Extra Price Changed"
+msgstr "Η Προεπιλεγμένη Έξτρα Τιμή Άλλαξε"
+
+#. module: product
+#: model:product.template,name:product.desk_organizer_product_template
+msgid "Desk Organizer"
+msgstr "Οργανωτής Γραφείου"
+
+#. module: product
+#: model:product.template,description_sale:product.product_product_3_product_template
+msgid "Desk combination, black-brown: chair + desk + drawer"
+msgstr "Συνδυασμός γραφείου, μαύρο-καφέ: καρέκλα + γραφείο + συρτάρι"
+
+#. module: product
+#: model:ir.model.fields,field_description:product.field_ir_attachment__display_name
+#: model:ir.model.fields,field_description:product.field_product_attribute__display_name
+#: model:ir.model.fields,field_description:product.field_product_attribute_custom_value__display_name
+#: model:ir.model.fields,field_description:product.field_product_attribute_value__display_name
+#: model:ir.model.fields,field_description:product.field_product_catalog_mixin__display_name
+#: model:ir.model.fields,field_description:product.field_product_category__display_name
+#: model:ir.model.fields,field_description:product.field_product_combo__display_name
+#: model:ir.model.fields,field_description:product.field_product_combo_item__display_name
+#: model:ir.model.fields,field_description:product.field_product_document__display_name
+#: model:ir.model.fields,field_description:product.field_product_label_layout__display_name
+#: model:ir.model.fields,field_description:product.field_product_pricelist__display_name
+#: model:ir.model.fields,field_description:product.field_product_pricelist_item__display_name
+#: model:ir.model.fields,field_description:product.field_product_product__display_name
+#: model:ir.model.fields,field_description:product.field_product_supplierinfo__display_name
+#: model:ir.model.fields,field_description:product.field_product_tag__display_name
+#: model:ir.model.fields,field_description:product.field_product_template__display_name
+#: model:ir.model.fields,field_description:product.field_product_template_attribute_exclusion__display_name
+#: model:ir.model.fields,field_description:product.field_product_template_attribute_line__display_name
+#: model:ir.model.fields,field_description:product.field_product_template_attribute_value__display_name
+#: model:ir.model.fields,field_description:product.field_product_uom__display_name
+#: model:ir.model.fields,field_description:product.field_report_product_report_pricelist__display_name
+#: model:ir.model.fields,field_description:product.field_report_product_report_producttemplatelabel2x7__display_name
+#: model:ir.model.fields,field_description:product.field_report_product_report_producttemplatelabel4x12__display_name
+#: model:ir.model.fields,field_description:product.field_report_product_report_producttemplatelabel4x12noprice__display_name
+#: model:ir.model.fields,field_description:product.field_report_product_report_producttemplatelabel4x7__display_name
+#: model:ir.model.fields,field_description:product.field_report_product_report_producttemplatelabel_dymo__display_name
+#: model:ir.model.fields,field_description:product.field_res_company__display_name
+#: model:ir.model.fields,field_description:product.field_res_config_settings__display_name
+#: model:ir.model.fields,field_description:product.field_res_country_group__display_name
+#: model:ir.model.fields,field_description:product.field_res_currency__display_name
+#: model:ir.model.fields,field_description:product.field_res_partner__display_name
+#: model:ir.model.fields,field_description:product.field_uom_uom__display_name
+#: model:ir.model.fields,field_description:product.field_update_product_attribute_value__display_name
+msgid "Display Name"
+msgstr "Εμφανιζόμενο Όνομα"
+
+#. module: product
+#: model:ir.model.fields,field_description:product.field_product_attribute__display_type
+#: model:ir.model.fields,field_description:product.field_product_attribute_value__display_type
+#: model:ir.model.fields,field_description:product.field_product_template_attribute_value__display_type
+msgid "Display Type"
+msgstr "Τύπος Εμφάνισης"
+
+#. module: product
+#: model_terms:ir.ui.view,arch_db:product.product_document_search
+msgid "Documents of this variant"
+msgstr "Έγγραφα αυτής της παραλλαγής"
+
+#. module: product
+#: model:ir.model.fields,help:product.field_product_supplierinfo__date_end
+msgid "End date for this vendor price"
+msgstr "Ημερομηνία λήξης για αυτήν την τιμή προμηθευτή"
+
+#. module: product
+#: model:ir.model.fields,help:product.field_product_pricelist__activity_type_icon
+#: model:ir.model.fields,help:product.field_product_product__activity_type_icon
+#: model:ir.model.fields,help:product.field_product_template__activity_type_icon
+msgid "Font awesome icon e.g. fa-tasks"
+msgstr "Εικονίδιο Font Awesome π.χ. fa-tasks"
+
+#. module: product
+#: model:ir.model.fields,field_description:product.field_product_label_layout__print_format
+msgid "Format"
+msgstr "Μορφή"
+
+#. module: product
+#: model:product.attribute.value,name:product.pav_color_gold
+msgid "Gold"
+msgstr "Χρυσό"
+
+#. module: product
+#: model:ir.model.fields,field_description:product.field_product_document__index_content
+msgid "Indexed Content"
+msgstr "Ευρετηριασμένο Περιεχόμενο"
+
+#. module: product
+#: model:ir.model.fields,field_description:product.field_update_product_attribute_value__mode
+msgid "Mode"
+msgstr "Λειτουργία"
+
+#. module: product
+#: model:ir.model.fields,field_description:product.field_product_attribute_custom_value__name
+#: model:ir.model.fields,field_description:product.field_product_category__name
+#: model:ir.model.fields,field_description:product.field_product_combo__name
+#: model:ir.model.fields,field_description:product.field_product_document__name
+#: model:ir.model.fields,field_description:product.field_product_pricelist_item__name
+#: model:ir.model.fields,field_description:product.field_product_product__name
+#: model:ir.model.fields,field_description:product.field_product_tag__name
+#: model:ir.model.fields,field_description:product.field_product_template__name
+msgid "Name"
+msgstr "Όνομα"
+
+#. module: product
+#: model:ir.model.fields,field_description:product.field_product_pricelist_item__price
+#: model_terms:ir.ui.view,arch_db:product.product_pricelist_item_tree_view_from_product
+#: model_terms:ir.ui.view,arch_db:product.product_pricelist_view
+msgid "Price"
+msgstr "Τιμή"
+
+#. module: product
+#: model_terms:ir.ui.view,arch_db:product.product_product_view_form_normalized
+#: model_terms:ir.ui.view,arch_db:product.product_template_tree_view
+#: model_terms:ir.ui.view,arch_db:product.product_variant_easy_edit_view
+msgid "Product Name"
+msgstr "Όνομα Είδους"
+
+#. module: product
+#: model:ir.model.fields,field_description:product.field_product_label_layout__product_tmpl_ids
+msgid "Product Tmpl"
+msgstr "Πρότυπο Είδους"
+
+#. module: product
+#: model:ir.model,name:product.model_product_product
+#: model:ir.model.fields,field_description:product.field_product_supplierinfo__product_id
+#: model:ir.model.fields.selection,name:product.selection__product_pricelist_item__applied_on__0_product_variant
+#: model_terms:ir.ui.view,arch_db:product.product_document_form
+#: model_terms:ir.ui.view,arch_db:product.product_normal_form_view
+#: model_terms:ir.ui.view,arch_db:product.product_tag_tree_view
+msgid "Product Variant"
+msgstr "Παραλλαγή Είδους"
+
+#. module: product
+#: model:ir.actions.act_window,name:product.product_normal_action
+#: model:ir.actions.act_window,name:product.product_normal_action_sell
+#: model:ir.actions.act_window,name:product.product_variant_action
+#: model:ir.model.fields,field_description:product.field_product_tag__product_product_ids
+#: model_terms:ir.ui.view,arch_db:product.product_product_tree_view
+#: model_terms:ir.ui.view,arch_db:product.product_product_view_activity
+#: model_terms:ir.ui.view,arch_db:product.product_product_view_tree_tag
+msgid "Product Variants"
+msgstr "Παραλλαγές Είδους"
+
+#. module: product
+#. odoo-python
+#: code:addons/product/models/product_attribute.py:0
+#: code:addons/product/models/product_catalog_mixin.py:0
+#: model:ir.actions.act_window,name:product.product_template_action
+#: model:ir.actions.act_window,name:product.product_template_action_all
+#: model:ir.model.fields,field_description:product.field_product_product__product_variant_ids
+#: model:ir.model.fields,field_description:product.field_product_template__product_variant_ids
+#: model:res.groups.privilege,name:product.res_groups_privilege_product
+#: model_terms:ir.ui.view,arch_db:product.product_template_view_activity
+#: model_terms:ir.ui.view,arch_db:product.report_pricelist_page
+msgid "Products"
+msgstr "Προϊόντα"
+
+#. module: product
+#: model_terms:ir.ui.view,arch_db:product.product_pricelist_view_search
+msgid "Products Price"
+msgstr "Τιμές Ειδών"
+
+#. module: product
+#: model:ir.model.fields,field_description:product.field_product_product__code
+#: model_terms:ir.ui.view,arch_db:product.product_template_only_form_view
+msgid "Reference"
+msgstr "Αναφορά"
+
+#. module: product
+#: model:product.attribute.value,name:product.pav_color_silver
+msgid "Silver"
+msgstr "Ασημί"
+
+#. module: product
+#: model:ir.model.fields,help:product.field_product_pricelist_item__categ_id
+msgid ""
+"Specify a product category if this rule only applies to products belonging "
+"to this category or its children categories. Keep empty otherwise."
+msgstr ""
+"Καθορίστε μια κατηγορία είδους εάν αυτός ο κανόνας εφαρμόζεται μόνο σε είδη "
+"που ανήκουν σε αυτή την κατηγορία ή τις θυγατρικές της. Διαφορετικά αφήστε "
+"το κενό."
+
+#. module: product
+#: model:ir.model.fields,help:product.field_product_pricelist_item__product_id
+msgid ""
+"Specify a product if this rule only applies to one product. Keep empty "
+"otherwise."
+msgstr ""
+"Καθορίστε ένα είδος εάν αυτός ο κανόνας εφαρμόζεται μόνο σε ένα είδος. "
+"Διαφορετικά αφήστε το κενό."
+
+#. module: product
+#: model:ir.model.fields,help:product.field_product_supplierinfo__date_start
+msgid "Start date for this vendor price"
+msgstr "Ημερομηνία έναρξης για αυτήν την τιμή προμηθευτή"
+
+#. module: product
+#: model_terms:ir.ui.view,arch_db:product.product_tag_form_view
+msgid "Tag"
+msgstr "Ετικέτα"
+
+#. module: product
+#: model:ir.model.fields,field_description:product.field_product_pricelist_item__product_uom_name
+#: model:ir.model.fields,field_description:product.field_product_product__uom_name
+#: model:ir.model.fields,field_description:product.field_product_template__uom_name
+msgid "Unit Name"
+msgstr "Όνομα Μονάδας"
+
+#. module: product
+#: model:ir.model.fields,field_description:product.field_product_document__url
+msgid "Url"
+msgstr "Διεύθυνση URL"
+
+#. module: product
+#: model:ir.model.fields,field_description:product.field_product_product__price_extra
+msgid "Variant Price Extra"
+msgstr "Επιπλέον Τιμή Παραλλαγής"
+
+#. module: product
+#: model:ir.model.fields,field_description:product.field_product_product__product_template_variant_value_ids
+#: model_terms:ir.ui.view,arch_db:product.attribute_tree_view
+msgid "Variant Values"
+msgstr "Τιμές Παραλλαγής"
+
+#. module: product
+#: model_terms:ir.ui.view,arch_db:product.product_template_form_view
+msgid "Vendor Bills"
+msgstr "Λογαριασμοί Προμηθευτών"

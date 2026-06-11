@@ -1,0 +1,704 @@
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo 19.0 el overrides (base)\n"
+"Language: el\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#. module: base
+#: model_terms:ir.ui.view,arch_db:base.wizard_lang_export
+msgid ", or your preferred text editor"
+msgstr ", ή τον προτιμώμενό σας επεξεργαστή κειμένου"
+
+#. module: base
+#: model:ir.model.fields,field_description:base.field_res_company__user_ids
+msgid "Accepted Users"
+msgstr "Εγκεκριμένοι Χρήστες"
+
+#. module: base
+#: model:ir.module.module,shortdesc:base.module_account_test
+msgid "Accounting Consistency Tests"
+msgstr "Έλεγχοι Συνέπειας Λογιστικής"
+
+#. module: base
+#: model:ir.model.fields,field_description:base.field_ir_cron__active
+#: model:ir.model.fields,field_description:base.field_ir_filters__active
+#: model:ir.model.fields,field_description:base.field_ir_mail_server__active
+#: model:ir.model.fields,field_description:base.field_ir_model_access__active
+#: model:ir.model.fields,field_description:base.field_ir_rule__active
+#: model:ir.model.fields,field_description:base.field_ir_sequence__active
+#: model:ir.model.fields,field_description:base.field_ir_ui_menu__active
+#: model:ir.model.fields,field_description:base.field_ir_ui_view__active
+#: model:ir.model.fields,field_description:base.field_res_bank__active
+#: model:ir.model.fields,field_description:base.field_res_company__active
+#: model:ir.model.fields,field_description:base.field_res_currency__active
+#: model:ir.model.fields,field_description:base.field_res_lang__active
+#: model:ir.model.fields,field_description:base.field_res_partner__active
+#: model:ir.model.fields,field_description:base.field_res_partner_bank__active
+#: model:ir.model.fields,field_description:base.field_res_partner_category__active
+#: model:ir.model.fields,field_description:base.field_res_partner_industry__active
+#: model:ir.model.fields,field_description:base.field_res_users__active
+#: model_terms:ir.ui.view,arch_db:base.asset_view_search
+#: model_terms:ir.ui.view,arch_db:base.res_lang_search
+#: model_terms:ir.ui.view,arch_db:base.view_currency_search
+#: model_terms:ir.ui.view,arch_db:base.view_view_search
+msgid "Active"
+msgstr "Ενεργό"
+
+#. module: base
+#: model:ir.model.fields.selection,name:base.selection__res_currency__position__after
+msgid "After Amount"
+msgstr "Μετά το Ποσό"
+
+#. module: base
+#. odoo-python
+#: code:addons/base/models/ir_module.py:0
+#: model:ir.actions.act_window,name:base.action_view_base_module_upgrade
+#: model_terms:ir.ui.view,arch_db:base.view_base_module_upgrade_install
+msgid "Apply Schedule Upgrade"
+msgstr "Εφαρμογή Προγραμματισμένης Αναβάθμισης"
+
+#. module: base
+#: model_terms:ir.ui.view,arch_db:base.view_attachment_form
+msgid "Attached To"
+msgstr "Συνημμένο σε"
+
+#. module: base
+#: model:ir.model.fields.selection,name:base.selection__ir_ui_view__mode__primary
+msgid "Base view"
+msgstr "Βασική Προβολή"
+
+#. module: base
+#: model:ir.model.fields.selection,name:base.selection__ir_model_fields__on_delete__cascade
+msgid "Cascade"
+msgstr "Διαδοχικά"
+
+#. module: base
+#: model:ir.model.fields,field_description:base.field_res_partner__color
+#: model:ir.model.fields,field_description:base.field_res_users__color
+msgid "Color Index"
+msgstr "Δείκτης Χρώματος"
+
+#. module: base
+#: model:ir.model.fields,field_description:base.field_res_partner__commercial_partner_id
+#: model:ir.model.fields,field_description:base.field_res_users__commercial_partner_id
+msgid "Commercial Entity"
+msgstr "Εμπορική Οντότητα"
+
+#. module: base
+#: model_terms:ir.ui.view,arch_db:base.res_config_view_base
+msgid "Configuration"
+msgstr "Ρυθμίσεις"
+
+#. module: base
+#: model:ir.actions.act_window,name:base.action_country_group
+#: model:ir.model,name:base.model_res_country_group
+#: model_terms:ir.ui.view,arch_db:base.view_country_group_form
+#: model_terms:ir.ui.view,arch_db:base.view_country_group_tree
+msgid "Country Group"
+msgstr "Ομάδα Χωρών"
+
+#. module: base
+#: model:ir.model.fields.selection,name:base.selection__report_paperformat__format__custom
+#: model:ir.model.fields.selection,name:base.selection__res_company__layout_background__custom
+#: model_terms:ir.ui.view,arch_db:base.view_model_fields_search
+#: model_terms:ir.ui.view,arch_db:base.view_model_search
+msgid "Custom"
+msgstr "Προσαρμοσμένο"
+
+#. module: base
+#: model:ir.actions.act_window,name:base.action_ui_view_custom
+#: model:ir.ui.menu,name:base.menu_action_ui_view_custom
+#: model_terms:ir.ui.view,arch_db:base.view_view_custom_form
+#: model_terms:ir.ui.view,arch_db:base.view_view_custom_search
+#: model_terms:ir.ui.view,arch_db:base.view_view_custom_tree
+msgid "Customized Views"
+msgstr "Προσαρμοσμένες Προβολές"
+
+#. module: base
+#: model_terms:ir.ui.view,arch_db:base.base_partner_merge_automatic_wizard_form
+msgid "Deduplicate the other Contacts"
+msgstr "Απαλοιφή διπλότυπων στις υπόλοιπες Επαφές"
+
+#. module: base
+#: model_terms:ir.ui.view,arch_db:base.res_users_identitycheck_view_form
+#: model_terms:ir.ui.view,arch_db:base.view_base_module_uninstall
+#: model_terms:ir.ui.view,arch_db:base.view_users_form_simple_modif
+msgid "Discard"
+msgstr "Ακύρωση"
+
+#. module: base
+#: model:ir.model.fields,field_description:base.field__unknown__display_name
+#: model:ir.model.fields,field_description:base.field_avatar_mixin__display_name
+#: model:ir.model.fields,field_description:base.field_base__display_name
+#: model:ir.model.fields,field_description:base.field_base_enable_profiling_wizard__display_name
+#: model:ir.model.fields,field_description:base.field_base_language_export__display_name
+#: model:ir.model.fields,field_description:base.field_base_language_import__display_name
+#: model:ir.model.fields,field_description:base.field_base_language_install__display_name
+#: model:ir.model.fields,field_description:base.field_base_module_uninstall__display_name
+#: model:ir.model.fields,field_description:base.field_base_module_update__display_name
+#: model:ir.model.fields,field_description:base.field_base_module_upgrade__display_name
+#: model:ir.model.fields,field_description:base.field_base_partner_merge_automatic_wizard__display_name
+#: model:ir.model.fields,field_description:base.field_base_partner_merge_line__display_name
+#: model:ir.model.fields,field_description:base.field_change_password_own__display_name
+#: model:ir.model.fields,field_description:base.field_change_password_user__display_name
+#: model:ir.model.fields,field_description:base.field_change_password_wizard__display_name
+#: model:ir.model.fields,field_description:base.field_decimal_precision__display_name
+#: model:ir.model.fields,field_description:base.field_format_address_mixin__display_name
+#: model:ir.model.fields,field_description:base.field_format_vat_label_mixin__display_name
+#: model:ir.model.fields,field_description:base.field_image_mixin__display_name
+#: model:ir.model.fields,field_description:base.field_ir_actions_act_url__display_name
+#: model:ir.model.fields,field_description:base.field_ir_actions_act_window__display_name
+#: model:ir.model.fields,field_description:base.field_ir_actions_act_window_close__display_name
+#: model:ir.model.fields,field_description:base.field_ir_actions_act_window_view__display_name
+#: model:ir.model.fields,field_description:base.field_ir_actions_actions__display_name
+#: model:ir.model.fields,field_description:base.field_ir_actions_client__display_name
+#: model:ir.model.fields,field_description:base.field_ir_actions_report__display_name
+#: model:ir.model.fields,field_description:base.field_ir_actions_server__display_name
+#: model:ir.model.fields,field_description:base.field_ir_actions_server_history__display_name
+#: model:ir.model.fields,field_description:base.field_ir_actions_todo__display_name
+#: model:ir.model.fields,field_description:base.field_ir_asset__display_name
+#: model:ir.model.fields,field_description:base.field_ir_attachment__display_name
+#: model:ir.model.fields,field_description:base.field_ir_autovacuum__display_name
+#: model:ir.model.fields,field_description:base.field_ir_binary__display_name
+#: model:ir.model.fields,field_description:base.field_ir_config_parameter__display_name
+#: model:ir.model.fields,field_description:base.field_ir_cron__display_name
+#: model:ir.model.fields,field_description:base.field_ir_cron_progress__display_name
+#: model:ir.model.fields,field_description:base.field_ir_cron_trigger__display_name
+#: model:ir.model.fields,field_description:base.field_ir_default__display_name
+#: model:ir.model.fields,field_description:base.field_ir_demo__display_name
+#: model:ir.model.fields,field_description:base.field_ir_demo_failure__display_name
+#: model:ir.model.fields,field_description:base.field_ir_demo_failure_wizard__display_name
+#: model:ir.model.fields,field_description:base.field_ir_embedded_actions__display_name
+#: model:ir.model.fields,field_description:base.field_ir_exports__display_name
+#: model:ir.model.fields,field_description:base.field_ir_exports_line__display_name
+#: model:ir.model.fields,field_description:base.field_ir_fields_converter__display_name
+#: model:ir.model.fields,field_description:base.field_ir_filters__display_name
+#: model:ir.model.fields,field_description:base.field_ir_http__display_name
+#: model:ir.model.fields,field_description:base.field_ir_logging__display_name
+#: model:ir.model.fields,field_description:base.field_ir_mail_server__display_name
+#: model:ir.model.fields,field_description:base.field_ir_model__display_name
+#: model:ir.model.fields,field_description:base.field_ir_model_access__display_name
+#: model:ir.model.fields,field_description:base.field_ir_model_constraint__display_name
+#: model:ir.model.fields,field_description:base.field_ir_model_data__display_name
+#: model:ir.model.fields,field_description:base.field_ir_model_fields__display_name
+#: model:ir.model.fields,field_description:base.field_ir_model_fields_selection__display_name
+#: model:ir.model.fields,field_description:base.field_ir_model_inherit__display_name
+#: model:ir.model.fields,field_description:base.field_ir_model_relation__display_name
+#: model:ir.model.fields,field_description:base.field_ir_module_category__display_name
+#: model:ir.model.fields,field_description:base.field_ir_module_module__display_name
+#: model:ir.model.fields,field_description:base.field_ir_module_module_dependency__display_name
+#: model:ir.model.fields,field_description:base.field_ir_module_module_exclusion__display_name
+#: model:ir.model.fields,field_description:base.field_ir_profile__display_name
+#: model:ir.model.fields,field_description:base.field_ir_qweb__display_name
+#: model:ir.model.fields,field_description:base.field_ir_qweb_field__display_name
+#: model:ir.model.fields,field_description:base.field_ir_qweb_field_barcode__display_name
+#: model:ir.model.fields,field_description:base.field_ir_qweb_field_contact__display_name
+#: model:ir.model.fields,field_description:base.field_ir_qweb_field_date__display_name
+#: model:ir.model.fields,field_description:base.field_ir_qweb_field_datetime__display_name
+#: model:ir.model.fields,field_description:base.field_ir_qweb_field_duration__display_name
+#: model:ir.model.fields,field_description:base.field_ir_qweb_field_float__display_name
+#: model:ir.model.fields,field_description:base.field_ir_qweb_field_float_time__display_name
+#: model:ir.model.fields,field_description:base.field_ir_qweb_field_html__display_name
+#: model:ir.model.fields,field_description:base.field_ir_qweb_field_image__display_name
+#: model:ir.model.fields,field_description:base.field_ir_qweb_field_image_url__display_name
+#: model:ir.model.fields,field_description:base.field_ir_qweb_field_integer__display_name
+#: model:ir.model.fields,field_description:base.field_ir_qweb_field_many2many__display_name
+#: model:ir.model.fields,field_description:base.field_ir_qweb_field_many2one__display_name
+#: model:ir.model.fields,field_description:base.field_ir_qweb_field_monetary__display_name
+#: model:ir.model.fields,field_description:base.field_ir_qweb_field_one2many__display_name
+#: model:ir.model.fields,field_description:base.field_ir_qweb_field_qweb__display_name
+#: model:ir.model.fields,field_description:base.field_ir_qweb_field_relative__display_name
+#: model:ir.model.fields,field_description:base.field_ir_qweb_field_selection__display_name
+#: model:ir.model.fields,field_description:base.field_ir_qweb_field_text__display_name
+#: model:ir.model.fields,field_description:base.field_ir_qweb_field_time__display_name
+#: model:ir.model.fields,field_description:base.field_ir_rule__display_name
+#: model:ir.model.fields,field_description:base.field_ir_sequence__display_name
+#: model:ir.model.fields,field_description:base.field_ir_sequence_date_range__display_name
+#: model:ir.model.fields,field_description:base.field_ir_ui_menu__display_name
+#: model:ir.model.fields,field_description:base.field_ir_ui_view__display_name
+#: model:ir.model.fields,field_description:base.field_ir_ui_view_custom__display_name
+#: model:ir.model.fields,field_description:base.field_properties_base_definition__display_name
+#: model:ir.model.fields,field_description:base.field_properties_base_definition_mixin__display_name
+#: model:ir.model.fields,field_description:base.field_report_base_report_irmodulereference__display_name
+#: model:ir.model.fields,field_description:base.field_report_layout__display_name
+#: model:ir.model.fields,field_description:base.field_report_paperformat__display_name
+#: model:ir.model.fields,field_description:base.field_res_bank__display_name
+#: model:ir.model.fields,field_description:base.field_res_company__display_name
+#: model:ir.model.fields,field_description:base.field_res_config__display_name
+#: model:ir.model.fields,field_description:base.field_res_config_settings__display_name
+#: model:ir.model.fields,field_description:base.field_res_country__display_name
+#: model:ir.model.fields,field_description:base.field_res_country_group__display_name
+#: model:ir.model.fields,field_description:base.field_res_country_state__display_name
+#: model:ir.model.fields,field_description:base.field_res_currency__display_name
+#: model:ir.model.fields,field_description:base.field_res_currency_rate__display_name
+#: model:ir.model.fields,field_description:base.field_res_device__display_name
+#: model:ir.model.fields,field_description:base.field_res_device_log__display_name
+#: model:ir.model.fields,field_description:base.field_res_groups__display_name
+#: model:ir.model.fields,field_description:base.field_res_groups_privilege__display_name
+#: model:ir.model.fields,field_description:base.field_res_lang__display_name
+#: model:ir.model.fields,field_description:base.field_res_partner__display_name
+#: model:ir.model.fields,field_description:base.field_res_partner_bank__display_name
+#: model:ir.model.fields,field_description:base.field_res_partner_category__display_name
+#: model:ir.model.fields,field_description:base.field_res_partner_industry__display_name
+#: model:ir.model.fields,field_description:base.field_res_users__display_name
+#: model:ir.model.fields,field_description:base.field_res_users_apikeys__display_name
+#: model:ir.model.fields,field_description:base.field_res_users_apikeys_description__display_name
+#: model:ir.model.fields,field_description:base.field_res_users_apikeys_show__display_name
+#: model:ir.model.fields,field_description:base.field_res_users_deletion__display_name
+#: model:ir.model.fields,field_description:base.field_res_users_identitycheck__display_name
+#: model:ir.model.fields,field_description:base.field_res_users_log__display_name
+#: model:ir.model.fields,field_description:base.field_res_users_settings__display_name
+#: model:ir.model.fields,field_description:base.field_reset_view_arch_wizard__display_name
+#: model:ir.model.fields,field_description:base.field_server_action_history_wizard__display_name
+#: model:ir.model.fields,field_description:base.field_wizard_ir_model_menu_create__display_name
+msgid "Display Name"
+msgstr "Εμφανιζόμενο Όνομα"
+
+#. module: base
+#: model:ir.module.module,shortdesc:base.module_stock_dropshipping
+#: model:ir.module.module,summary:base.module_stock_dropshipping
+msgid "Drop Shipping"
+msgstr "Απευθείας Παράδοση σε Πελάτη"
+
+#. module: base
+#. odoo-python
+#: code:addons/template_inheritance.py:0
+msgid "Element '%s' cannot be located in parent view"
+msgstr "Το στοιχείο '%s' δεν μπορεί να εντοπιστεί στη γονική προβολή"
+
+#. module: base
+#: model:ir.module.module,shortdesc:base.module_equity
+msgid "Equity"
+msgstr "Ίδια Κεφάλαια"
+
+#. module: base
+#. odoo-python
+#: code:addons/base/models/ir_module.py:0
+msgid "Error ! You cannot create recursive categories."
+msgstr "Σφάλμα! Δεν μπορείτε να δημιουργήσετε αναδρομικές κατηγορίες."
+
+#. module: base
+#: model:ir.model.fields,help:base.field_report_paperformat__report_ids
+msgid "Explicitly associated reports"
+msgstr "Ρητά συσχετισμένες αναφορές"
+
+#. module: base
+#: model:ir.model.fields.selection,name:base.selection__ir_ui_view__mode__extension
+msgid "Extension View"
+msgstr "Προβολή Επέκτασης"
+
+#. module: base
+#: model:ir.model.fields,field_description:base.field_ir_model_fields__field_description
+msgid "Field Label"
+msgstr "Ετικέτα Πεδίου"
+
+#. module: base
+#: model_terms:ir.ui.view,arch_db:base.ir_filters_view_search
+msgid "Filters shared with all users"
+msgstr "Φίλτρα κοινόχρηστα με όλους τους χρήστες"
+
+#. module: base
+#: model:ir.module.category,name:base.module_category_theme_food
+msgid "Food"
+msgstr "Τρόφιμα"
+
+#. module: base
+#. odoo-python
+#: code:addons/base/models/ir_qweb_fields.py:0
+msgid "Format"
+msgstr "Μορφή"
+
+#. module: base
+#: model:ir.model.fields,field_description:base.field_base_partner_merge_line__aggr_ids
+msgid "Ids"
+msgstr "Κωδικοί"
+
+#. module: base
+#: model:ir.model.fields,help:base.field_res_users__action_id
+msgid ""
+"If specified, this action will be opened at log on for this user, in "
+"addition to the standard menu."
+msgstr ""
+"Εάν καθοριστεί, αυτή η ενέργεια θα ανοίγει κατά τη σύνδεση αυτού του χρήστη,"
+" επιπλέον του τυπικού μενού."
+
+#. module: base
+#: model:ir.model.fields,help:base.field_base_language_install__overwrite
+msgid ""
+"If you check this box, your customized translations will be overwritten and "
+"replaced by the official ones."
+msgstr ""
+"Αν επιλέξετε αυτό το πλαίσιο, οι προσαρμοσμένες μεταφράσεις σας θα "
+"διαγραφούν και θα αντικατασταθούν από τις επίσημες."
+
+#. module: base
+#: model:ir.module.module,shortdesc:base.module_account_bank_statement_import_camt
+msgid "Import CAMT Bank Statement"
+msgstr "Εισαγωγή Τραπεζικής Κατάστασης CAMT"
+
+#. module: base
+#: model:ir.module.module,shortdesc:base.module_account_bank_statement_import_csv
+msgid "Import CSV Bank Statement"
+msgstr "Εισαγωγή Τραπεζικής Κατάστασης CSV"
+
+#. module: base
+#: model:ir.module.module,shortdesc:base.module_account_bank_statement_import_ofx
+msgid "Import OFX Bank Statement"
+msgstr "Εισαγωγή Τραπεζικής Κατάστασης OFX"
+
+#. module: base
+#: model:ir.module.module,shortdesc:base.module_account_bank_statement_import_qif
+msgid "Import QIF Bank Statement"
+msgstr "Εισαγωγή Τραπεζικής Κατάστασης QIF"
+
+#. module: base
+#: model:ir.model.fields,field_description:base.field_ir_attachment__index_content
+#: model_terms:ir.ui.view,arch_db:base.view_attachment_form
+msgid "Indexed Content"
+msgstr "Ευρετηριασμένο Περιεχόμενο"
+
+#. module: base
+#: model_terms:ir.ui.view,arch_db:base.view_groups_form
+msgid "Inherited"
+msgstr "Κληρονομημένη"
+
+#. module: base
+#: model:ir.model.fields,field_description:base.field_ir_ui_view__inherit_id
+msgid "Inherited View"
+msgstr "Παράγωγη Προβολή"
+
+#. module: base
+#: model:ir.module.module,summary:base.module_stock_landed_costs
+msgid "Landed Costs"
+msgstr "Κόστη Κτήσης"
+
+#. module: base
+#: model:ir.model.fields,field_description:base.field_ir_module_module__maintainer
+msgid "Maintainer"
+msgstr "Συντηρητής"
+
+#. module: base
+#: model:ir.actions.act_window,name:base.grant_menu_access
+#: model:ir.ui.menu,name:base.menu_grant_menu_access
+msgid "Menu Items"
+msgstr "Στοιχεία Μενού"
+
+#. module: base
+#: model_terms:ir.ui.view,arch_db:base.base_partner_merge_automatic_wizard_form
+msgid "Merge Automatically all process"
+msgstr "Αυτόματη Συγχώνευση όλης της διαδικασίας"
+
+#. module: base
+#: model:ir.model.fields,field_description:base.field_base_language_export__model_name
+#: model:ir.model.fields,field_description:base.field_ir_actions_report__model
+#: model:ir.model.fields,field_description:base.field_ir_actions_server__model_name
+#: model:ir.model.fields,field_description:base.field_ir_cron__model_name
+#: model:ir.model.fields,field_description:base.field_ir_model_data__model
+#: model:ir.model.fields,field_description:base.field_ir_model_fields__model
+msgid "Model Name"
+msgstr "Όνομα Μοντέλου"
+
+#. module: base
+#: model:ir.actions.report,name:base.report_ir_model_overview
+msgid "Model Overview"
+msgstr "Επισκόπηση Υποδείγματος"
+
+#. module: base
+#: model_terms:ir.ui.view,arch_db:base.view_base_module_update
+msgid "Module Update Result"
+msgstr "Αποτέλεσμα Ενημέρωσης Αρθρωμάτων"
+
+#. module: base
+#: model:res.groups,name:base.group_multi_company
+msgid "Multi Companies"
+msgstr "Πολλαπλές Εταιρείες"
+
+#. module: base
+#. odoo-python
+#: code:addons/base/models/ir_qweb_fields.py:0
+msgid "Narrow"
+msgstr "Στενό"
+
+#. module: base
+#: model:ir.module.module,shortdesc:base.module_l10n_nl
+msgid "Netherlands - Accounting"
+msgstr "Ολλανδία - Λογιστική"
+
+#. module: base
+#: model:ir.model.fields,help:base.field_ir_sequence__number_next_actual
+#: model:ir.model.fields,help:base.field_ir_sequence_date_range__number_next_actual
+msgid ""
+"Next number that will be used. This number can be incremented frequently so "
+"the displayed value might already be obsolete"
+msgstr ""
+"Ο επόμενος αριθμός που θα χρησιμοποιηθεί. Ο αριθμός αυτός μπορεί να "
+"αυξάνεται συχνά, οπότε η εμφανιζόμενη τιμή μπορεί να είναι ήδη ξεπερασμένη"
+
+#. module: base
+#: model:ir.model.fields,help:base.field_ir_sequence__padding
+msgid ""
+"Odoo will automatically adds some '0' on the left of the 'Next Number' to "
+"get the required padding size."
+msgstr ""
+"Το Odoo θα προσθέσει αυτόματα '0' στα αριστερά του «Επόμενου Αριθμού» για να"
+" επιτευχθεί το απαιτούμενο μέγεθος συμπλήρωσης."
+
+#. module: base
+#. odoo-python
+#: code:addons/base/models/res_config.py:0
+msgid "Only administrators can change the settings"
+msgstr "Μόνο οι διαχειριστές μπορούν να αλλάξουν τις ρυθμίσεις"
+
+#. module: base
+#. odoo-python
+#: code:addons/base/models/ir_attachment.py:0
+msgid "Only administrators can execute this action."
+msgstr "Μόνο διαχειριστές μπορούν να εκτελέσουν αυτήν την ενέργεια."
+
+#. module: base
+#: model:ir.model.constraint,message:base.constraint_decimal_precision_name_uniq
+msgid "Only one value can be defined for each given usage!"
+msgstr "Μόνο μία τιμή μπορεί να οριστεί για κάθε δεδομένη χρήση!"
+
+#. module: base
+#: model:ir.model.fields,field_description:base.field_ir_profile__speedscope_url
+msgid "Open"
+msgstr "Άνοιγμα"
+
+#. module: base
+#: model_terms:ir.ui.view,arch_db:base.view_window_action_form
+#: model_terms:ir.ui.view,arch_db:base.view_window_action_search
+msgid "Open a Window"
+msgstr "Άνοιγμα Παραθύρου"
+
+#. module: base
+#: model:ir.model.fields.selection,name:base.selection__ir_module_module__license__other_proprietary
+msgid "Other Proprietary"
+msgstr "Άλλη Ιδιόκτητη Άδεια"
+
+#. module: base
+#: model:ir.model.fields,field_description:base.field_base_language_import__overwrite
+#: model:ir.model.fields,field_description:base.field_base_language_install__overwrite
+msgid "Overwrite Existing Terms"
+msgstr "Αντικατάσταση Υπαρχόντων Όρων"
+
+#. module: base
+#: model:ir.model.fields,field_description:base.field_ir_actions_report__paperformat_id
+#: model:ir.ui.menu,name:base.paper_format_menuitem
+msgid "Paper Format"
+msgstr "Μορφή Χαρτιού"
+
+#. module: base
+#: model:ir.module.category,name:base.module_category_accounting_localizations_point_of_sale
+#: model:ir.module.category,name:base.module_category_point_of_sale
+#: model:ir.module.category,name:base.module_category_sales_point_of_sale
+#: model:ir.module.module,shortdesc:base.module_point_of_sale
+msgid "Point of Sale"
+msgstr "Σημείο Πώλησης"
+
+#. module: base
+#: model:ir.module.module,shortdesc:base.module_pos_discount
+msgid "Point of Sale Discounts"
+msgstr "Εκπτώσεις Σημείου Πώλησης"
+
+#. module: base
+#. odoo-python
+#: code:addons/base/models/res_users.py:0
+#: model:ir.actions.act_window,name:base.action_rule
+#: model:ir.model.fields,field_description:base.field_ir_model__rule_ids
+#: model:ir.ui.menu,name:base.menu_action_rule
+#: model_terms:ir.ui.view,arch_db:base.view_groups_form
+#: model_terms:ir.ui.view,arch_db:base.view_model_form
+#: model_terms:ir.ui.view,arch_db:base.view_rule_search
+#: model_terms:ir.ui.view,arch_db:base.view_rule_tree
+#: model_terms:ir.ui.view,arch_db:base.view_users_form
+msgid "Record Rules"
+msgstr "Κανόνες Εγγραφών"
+
+#. module: base
+#: model_terms:ir.ui.view,arch_db:base.view_rule_form
+msgid "Record rules"
+msgstr "Κανόνες εγγραφών"
+
+#. module: base
+#: model:ir.model.fields,field_description:base.field_ir_model_data__reference
+#: model:ir.model.fields,field_description:base.field_res_partner__ref
+#: model:ir.model.fields,field_description:base.field_res_users__ref
+#: model_terms:ir.ui.view,arch_db:base.view_partner_form
+msgid "Reference"
+msgstr "Αναφορά"
+
+#. module: base
+#: model:ir.model.fields,field_description:base.field_ir_cron_progress__remaining
+msgid "Remaining"
+msgstr "Υπόλοιπο"
+
+#. module: base
+#: model:ir.model.fields,field_description:base.field_ir_actions_report__report_file
+msgid "Report File"
+msgstr "Αρχείο Αναφοράς"
+
+#. module: base
+#: model:ir.model.fields,field_description:base.field_res_company__report_footer
+msgid "Report Footer"
+msgstr "Υποσέλιδο Αναφοράς"
+
+#. module: base
+#: model_terms:ir.ui.view,arch_db:base.act_report_xml_search_view
+msgid "Report Model"
+msgstr "Υπόδειγμα Αναφοράς"
+
+#. module: base
+#: model_terms:ir.ui.view,arch_db:base.act_report_xml_search_view
+msgid "Report Xml"
+msgstr "Αναφορά XML"
+
+#. module: base
+#. odoo-python
+#: code:addons/base/models/ir_rule.py:0
+msgid "Rules can not be applied on the Record Rules model."
+msgstr ""
+"Οι κανόνες δεν μπορούν να εφαρμοστούν στο υπόδειγμα των Κανόνων Εγγραφών."
+
+#. module: base
+#: model:res.partner.industry,name:base.res_partner_industry_M
+msgid "Scientific"
+msgstr "Επιστημονικός Τομέας"
+
+#. module: base
+#. odoo-python
+#: code:addons/base/models/ir_fields.py:0
+msgid "See all possible values"
+msgstr "Δείτε όλες τις πιθανές τιμές"
+
+#. module: base
+#: model:ir.model.fields,field_description:base.field_ir_model_fields__selection_ids
+msgid "Selection Options"
+msgstr "Επιλογές Λίστας"
+
+#. module: base
+#: model:ir.actions.act_window,name:base.ir_sequence_form
+#: model:ir.ui.menu,name:base.menu_ir_sequence_form
+#: model_terms:ir.ui.view,arch_db:base.sequence_view
+#: model_terms:ir.ui.view,arch_db:base.sequence_view_tree
+#: model_terms:ir.ui.view,arch_db:base.view_sequence_search
+msgid "Sequences"
+msgstr "Ακολουθίες"
+
+#. module: base
+#: model:ir.module.category,name:base.module_category_shipping_connectors
+msgid "Shipping Connectors"
+msgstr "Διασυνδέσεις Μεταφορικών"
+
+#. module: base
+#: model:ir.module.module,summary:base.module_pos_discount
+msgid "Simple Discounts in the Point of Sale "
+msgstr "Απλές εκπτώσεις στο Σημείο Πώλησης"
+
+#. module: base
+#: model_terms:ir.ui.view,arch_db:base.base_partner_merge_automatic_wizard_form
+msgid "Skip these contacts"
+msgstr "Παράλειψη αυτών των επαφών"
+
+#. module: base
+#: model:ir.module.module,summary:base.module_website_event_track
+msgid "Sponsors, Tracks, Agenda, Event News"
+msgstr "Χορηγοί, Ενότητες, Ατζέντα, Νέα Εκδηλώσεων"
+
+#. module: base
+#: model:ir.model.fields,field_description:base.field_ir_actions_client__params
+msgid "Supplementary arguments"
+msgstr "Συμπληρωματικά ορίσματα"
+
+#. module: base
+#: model_terms:ir.ui.view,arch_db:base.view_res_partner_filter
+msgid "Tag"
+msgstr "Ετικέτα"
+
+#. module: base
+#: model:ir.model.fields,field_description:base.field_ir_actions_act_window__target
+#: model:ir.model.fields,field_description:base.field_ir_actions_client__target
+#: model_terms:ir.ui.view,arch_db:base.view_window_action_search
+msgid "Target Window"
+msgstr "Παράθυρο Προορισμού"
+
+#. module: base
+#: model:ir.module.module,shortdesc:base.module_l10n_th
+msgid "Thailand - Accounting"
+msgstr "Ταϊλάνδη - Λογιστική"
+
+#. module: base
+#: model:ir.module.module,shortdesc:base.module_timer
+msgid "Timer"
+msgstr "Χρονόμετρο"
+
+#. module: base
+#: model:res.country,name:base.us
+msgid "United States"
+msgstr "Ηνωμένες Πολιτείες"
+
+#. module: base
+#: model:ir.model.fields,field_description:base.field_ir_attachment__url
+msgid "Url"
+msgstr "Διεύθυνση URL"
+
+#. module: base
+#: model:ir.ui.menu,name:base.next_id_2
+msgid "User Interface"
+msgstr "Διεπαφή Χρήστη"
+
+#. module: base
+#: model:ir.model.fields,field_description:base.field_ir_actions_act_window__view_mode
+msgid "View Mode"
+msgstr "Λειτουργία Προβολής"
+
+#. module: base
+#: model:ir.module.module,shortdesc:base.module_website_partner
+msgid "Website Partner"
+msgstr "Συνεργάτης Ιστότοπου"
+
+#. module: base
+#: model:ir.model.fields,help:base.field_ir_mail_server__sequence
+msgid ""
+"When no specific mail server is requested for a mail, the highest priority "
+"one is used. Default priority is 10 (smaller number = higher priority)"
+msgstr ""
+"Όταν δεν ζητείται συγκεκριμένος διακομιστής mail, χρησιμοποιείται αυτός με "
+"την υψηλότερη προτεραιότητα. Η προεπιλεγμένη προτεραιότητα είναι 10 "
+"(μικρότερος αριθμός = υψηλότερη προτεραιότητα)"
+
+#. module: base
+#. odoo-python
+#: code:addons/base/models/res_users.py:0
+msgid ""
+"You can not remove the admin user as it is used internally for resources "
+"created by Odoo (updates, module installation, ...)"
+msgstr ""
+"Δεν μπορείτε να διαγράψετε τον διαχειριστή διότι χρησιμοποιείται εσωτερικά "
+"για πόρους που δημιουργήθηκαν από το Odoo (ενημερώσεις, εγκατάσταση "
+"αρθρωμάτων, ...)"
+
+#. module: base
+#. odoo-python
+#: code:addons/base/models/res_partner.py:0
+msgid "You cannot create recursive Partner hierarchies."
+msgstr "Δεν μπορείτε να δημιουργήσετε αναδρομικές ιεραρχίες Συνεργατών."
+
+#. module: base
+#. odoo-python
+#: code:addons/base/wizard/base_partner_merge.py:0
+msgid "You cannot merge a contact with one of his parent."
+msgstr "Δεν μπορείτε να συγχωνεύσετε μια επαφή με γονική της επαφή."
+
+#. module: base
+#: model_terms:ir.ui.view,arch_db:base.view_users_simple_form
+msgid ""
+"You will be able to define additional access rights by editing the newly "
+"created user under the Settings / Users menu."
+msgstr ""
+"Θα μπορείτε να ορίσετε επιπλέον δικαιώματα πρόσβασης επεξεργαζόμενοι τον "
+"νεοδημιουργημένο χρήστη στο μενού Ρυθμίσεις / Χρήστες."
