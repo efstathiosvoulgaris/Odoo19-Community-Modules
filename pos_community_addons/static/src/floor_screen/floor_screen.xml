@@ -44,7 +44,7 @@
                               t-att-class="{'opacity-25': table.parent_id}"
                               t-attf-style="border-radius: {{table.shape === 'round' ? 1000 : 3}}px;"
                         >
-                              <div t-esc="table.table_number"
+                              <div t-esc="table.table_name || table.table_number"
                                     class="label fw-bolder fs-4 position-absolute top-50 start-50 translate-middle" />
                         </div>
                         <t t-set="data" t-value="getChangeCount(table)" />

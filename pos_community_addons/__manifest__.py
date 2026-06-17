@@ -11,6 +11,7 @@
     "depends": ["pos_restaurant"],
     "assets": {
       'point_of_sale._assets_pos': [
+            "pos_community_addons/static/src/floor_screen/floor_screen.js",
             "pos_community_addons/static/src/floor_screen/floor_screen.xml",
             "pos_community_addons/static/src/overrides/actionpad_widget.xml",
             "pos_community_addons/static/src/overrides/product_screen.xml",

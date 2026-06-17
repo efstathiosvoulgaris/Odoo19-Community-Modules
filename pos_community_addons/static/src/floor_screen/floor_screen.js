@@ -3,6 +3,7 @@
 import { FloorScreen } from "@pos_restaurant/app/screens/floor_screen/floor_screen";
 import { patch } from '@web/core/utils/patch';
 import { AlertDialog } from '@web/core/confirmation_dialog/confirmation_dialog';
+import { TextInputPopup } from "@point_of_sale/app/components/popups/text_input_popup/text_input_popup";
 import { _t } from "@web/core/l10n/translation";
 import { getDataURLFromFile } from "@web/core/utils/urls";
 import { loadImage } from "@point_of_sale/utils";
@@ -10,6 +11,31 @@ import { loadImage } from "@point_of_sale/utils";
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 
 patch(FloorScreen.prototype, {
+    async renameTable() {
+        if (this.selectedTables.length > 1) {
+            return;
+        }
+        if (this.selectedTables.length === 1) {
+            const table = this.selectedTables[0];
+            this.dialog.add(TextInputPopup, {
+                startingValue: table.table_name || String(table.table_number),
+                title: _t("Table Name"),
+                placeholder: _t("Enter a table name or number"),
+                getPayload: (newName) => {
+                    const trimmed = newName.trim();
+                    if (trimmed && trimmed !== (table.table_name || String(table.table_number))) {
+                        this.pos.data.write("restaurant.table", [table.id], {
+                            table_name: trimmed,
+                        });
+                    }
+                },
+            });
+        } else {
+            // No table selected — fall back to floor rename (original behaviour)
+            return super.renameTable();
+        }
+    },
+
     async uploadTableImage(table) {
         if (!table) return;
 
