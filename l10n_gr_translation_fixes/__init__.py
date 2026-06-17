@@ -87,11 +87,14 @@ class L10nGrTranslationFixes(models.AbstractModel):
 
     def _register_hook(self):
         # Runs at every registry load: re-deploys the files if an Odoo core
-        # upgrade wiped i18n_extra, and reloads DB terms when the bundle changed.
+        # upgrade wiped i18n_extra, and reloads DB terms when the bundle changed
+        # or when files were actually (re)written — covers installs where the
+        # first deployment failed (e.g. read-only core addons in Docker) and
+        # only succeeds after the administrator fixes permissions.
         super()._register_hook()
-        _deploy_files()
+        changed = _deploy_files()
         bundle = _bundle_hash()
         param = self.env['ir.config_parameter'].sudo()
-        if param.get_param(HASH_PARAM) != bundle:
+        if changed or param.get_param(HASH_PARAM) != bundle:
             _reload_db_terms(self.env)
             param.set_param(HASH_PARAM, bundle)

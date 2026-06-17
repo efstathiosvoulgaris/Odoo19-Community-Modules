@@ -55,6 +55,28 @@ override them directly; instead this module acts as a deployer:
 - Dependencies: `base` (corrections apply only to target modules that are
   actually installed)
 
+### Docker note
+
+In the official Odoo image the core addons under
+`/usr/lib/python3/dist-packages/odoo/addons` are owned by **root**, while Odoo
+runs as the `odoo` user — the deployer then logs
+`cannot deploy translation fixes ... Permission denied` and nothing is applied.
+Grant write access to the `i18n_extra` directories once, then restart:
+
+```bash
+docker exec -u root <odoo-container> bash -c \
+  'for m in purchase sale product stock account point_of_sale pos_restaurant base web; do
+     d=/usr/lib/python3/dist-packages/odoo/addons/$m/i18n_extra
+     mkdir -p "$d" && chown odoo "$d"
+   done'
+docker restart <odoo-container>
+```
+
+On the next start the module deploys the files and reloads the database terms
+automatically (look for `Greek translation fixes deployed for: ...` in the
+logs). The directories persist as long as the container does; if you recreate
+the container from the image, run the command again.
+
 ## Unified terminology
 
 Table=Τραπέζι, Floor=Αίθουσα, Bill=Λογαριασμός Προμηθευτή, Order=Παραγγελία,
