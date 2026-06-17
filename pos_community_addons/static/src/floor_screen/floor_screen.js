@@ -1,12 +1,19 @@
 /** @odoo-module **/
 
 import { FloorScreen } from "@pos_restaurant/app/screens/floor_screen/floor_screen";
+import { RestaurantTable } from "@pos_restaurant/app/models/restaurant_table";
 import { patch } from '@web/core/utils/patch';
 import { AlertDialog } from '@web/core/confirmation_dialog/confirmation_dialog';
 import { TextInputPopup } from "@point_of_sale/app/components/popups/text_input_popup/text_input_popup";
 import { _t } from "@web/core/l10n/translation";
 import { getDataURLFromFile } from "@web/core/utils/urls";
 import { loadImage } from "@point_of_sale/utils";
+
+patch(RestaurantTable.prototype, {
+    getName() {
+        return this.table_name || this.table_number.toString();
+    },
+});
 
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 

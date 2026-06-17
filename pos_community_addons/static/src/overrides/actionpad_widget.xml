@@ -17,4 +17,11 @@
         <xpath expr="//button[hasclass('course-btn')]" position="replace"/>
     </t>
 
+    <!-- Desktop ActionpadWidget: remove "New" button (coffee shop doesn't need another-round ordering) -->
+    <t t-name="pos_community_addons.RestaurantActionpadNewButton"
+       t-inherit="pos_restaurant.ActionpadWidget"
+       t-inherit-mode="extension">
+        <xpath expr="//button[@t-on-click='() => this.clickNew()']" position="replace"/>
+    </t>
+
 </templates>
