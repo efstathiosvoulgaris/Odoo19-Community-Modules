@@ -11,7 +11,7 @@
                 <!-- HEADER -->
                 <div class="text-center" style="padding: 14px 8px 8px 8px;">
                     <div style="font-size: 190%; font-weight: 900; letter-spacing: 1px; line-height: 1.2;">
-                        Erkyna Cafe
+                        <t t-esc="data.company_name"/>
                     </div>
                     <div style="font-size: 140%; font-weight: 700; letter-spacing: 2px; margin-top: 4px;">
                         ΠΑΡΑΓΓΕΛΙΟΛΗΨΙΑ
@@ -34,7 +34,7 @@
                         <t t-esc="data.time"/>
                     </div>
                     <div t-if="data.reprint" style="font-size: 130%; font-weight: 900; margin-top: 8px; border: 3px solid black; display: inline-block; padding: 2px 12px;">
-                        *** ANTIGRAFO ***
+                        *** ΑΝΤΙΓΡΑΦΟ ***
                     </div>
                 </div>
 
@@ -71,7 +71,7 @@
 
                     <!-- Internal note only (no item changes) -->
                     <div t-if="data.internal_note and !hasDataChanges" style="margin-bottom: 10px;">
-                        <div class="text-center" style="font-size: 130%; font-weight: 900; margin-bottom: 6px;">ESOTERIKE SEMEIVSE</div>
+                        <div class="text-center" style="font-size: 130%; font-weight: 900; margin-bottom: 6px;">ΕΣΩΤΕΡΙΚΗ ΣΗΜΕΙΩΣΗ</div>
                         <div class="text-center" style="font-size: 150%; font-weight: 700;">
                             <t t-esc="data.internal_note"/>
                         </div>
@@ -79,7 +79,7 @@
 
                     <!-- Customer note only -->
                     <div t-if="data.general_customer_note and !hasDataChanges">
-                        <div class="text-center" style="font-size: 130%; font-weight: 900; margin-bottom: 6px;">SEMEIVSE PELATE</div>
+                        <div class="text-center" style="font-size: 130%; font-weight: 900; margin-bottom: 6px;">ΣΗΜΕΙΩΣΗ ΠΕΛΑΤΗ</div>
                         <div class="text-center" style="font-size: 150%; font-weight: 700;">
                             <t t-esc="data.general_customer_note"/>
                         </div>

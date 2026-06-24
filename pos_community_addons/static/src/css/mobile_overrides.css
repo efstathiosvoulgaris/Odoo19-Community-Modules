@@ -1,4 +1,4 @@
-/* Payment screen: hide Customer, Invoice, Tip */
+/* ─── Payment screen: hide Customer, Invoice, Tip ───────────────────────── */
 .payment-screen .customer-button,
 .payment-screen .partner-button,
 .payment-screen .invoice-toggle,
@@ -8,10 +8,39 @@
     display: none !important;
 }
 
-/* Order screen actionpad: hide Customer/Partner button */
+/* ─── Order screen actionpad: hide Customer/Partner button ──────────────── */
 .action-pad .partner-button,
 .action-pad .customer-button,
 .actionpad .partner-button,
 .actionpad .customer-button {
     display: none !important;
+}
+
+/* ─── Floor plan: minimum touch target on position-mode tables (mobile) ─── */
+@media (max-width: 768px) {
+    .floor-table.position-absolute {
+        min-width: 65px !important;
+        min-height: 65px !important;
+    }
+}
+
+/* ─── Order lines: sent vs unsent visual separation ─────────────────────── */
+
+/*
+ * pos_restaurant adds .has-change to lines that have unsent changes.
+ * Sent lines have no .has-change → dim them to signal "kitchen knows".
+ * Scoped to .order-container so receipt lines are unaffected.
+ */
+.order-container .orderline.has-change {
+    border-left: 3px solid #f39c12;
+    padding-left: calc(0.5rem + 3px);
+}
+
+.order-container .orderline:not(.has-change) {
+    opacity: 0.55;
+}
+
+/* ─── Swipe-to-delete: prevent clipping during gesture ──────────────────── */
+.order-container .orderline {
+    overflow: visible;
 }

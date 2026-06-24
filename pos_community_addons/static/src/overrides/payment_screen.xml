@@ -8,7 +8,7 @@
             <div t-if="currentOrder.table_id"
                  class="text-center fw-bold text-dark mb-1"
                  style="font-size: 180%; letter-spacing: 3px;">
-                ΤΡΑΠΕΖΙ <t t-esc="currentOrder.table_id.table_number"/>
+                ΤΡΑΠΕΖΙ <t t-esc="currentOrder.table_id.table_name || currentOrder.table_id.table_number"/>
             </div>
         </xpath>
     </t>

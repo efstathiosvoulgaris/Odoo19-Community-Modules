@@ -1,28 +1,119 @@
 <?xml version='1.0' encoding='utf-8'?>
 <templates>
 
-    <t t-name="pos_community_addons.BaristaTicket">
-        <div class="pos-receipt">
+    <!--
+        Customer payment receipt — replaces point_of_sale.OrderReceipt.
+        Clean layout: company header, table/date meta, priced lines, total,
+        payment method. No tax breakdown, no product attributes.
+        Activated in receipt_screen.js via OrderReceipt.template.
+    -->
+    <t t-name="pos_community_addons.CustomerReceipt">
+        <div class="pos-receipt" style="font-family: Arial, sans-serif; width: 100%; padding: 6px 4px; background: white; color: #000;">
 
-            <div style="text-align:center; font-size:22px; font-weight:bold; padding:8px 0; border-bottom:2px dashed #000;">
-                <t t-if="order.table_id">
-                    TABLE: <t t-esc="order.table_id.table_number"/>
+            <!-- ── COMPANY HEADER ─────────────────────────────── -->
+            <div style="text-align: center; padding-bottom: 6px;">
+                <div style="font-size: 160%; font-weight: 900; letter-spacing: 1px; line-height: 1.2;">
+                    <t t-esc="header.company.name"/>
+                </div>
+                <t t-if="header.company.street">
+                    <div style="font-size: 88%; margin-top: 2px;"><t t-esc="header.company.street"/></div>
                 </t>
-                <t t-else="">
-                    DIRECT SALE
+                <t t-if="header.company.city">
+                    <div style="font-size: 88%;"><t t-esc="header.company.city"/></div>
+                </t>
+                <t t-if="header.company.phone">
+                    <div style="font-size: 88%; margin-top: 2px;">Τηλ: <t t-esc="header.company.phone"/></div>
+                </t>
+                <t t-if="header.header">
+                    <div style="font-size: 88%; margin-top: 4px; white-space: pre-line;"><t t-esc="header.header"/></div>
                 </t>
             </div>
 
-            <div style="margin:10px 0;">
+            <div style="border-top: 2px dashed #000; margin: 4px 0;"/>
+
+            <!-- ── ORDER META ─────────────────────────────────── -->
+            <div style="font-size: 88%; margin: 4px 0 6px 0;">
+                <div style="display: flex; justify-content: space-between;">
+                    <span>
+                        <t t-if="order.date_order">
+                            <t t-esc="order.date_order.toFormat('dd/MM/yyyy')"/>
+                        </t>
+                    </span>
+                    <span>
+                        <t t-if="order.date_order">
+                            <t t-esc="order.date_order.toFormat('HH:mm')"/>
+                        </t>
+                    </span>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-top: 2px;">
+                    <span>Αρ.: <strong><t t-esc="order.pos_reference"/></strong></span>
+                    <t t-if="order.table_id">
+                        <span>Τραπέζι: <strong><t t-esc="order.table_id.table_name || order.table_id.table_number"/></strong></span>
+                    </t>
+                </div>
+                <t t-if="order.employee_id">
+                    <div style="margin-top: 2px;">Σερβιτόρος: <t t-esc="order.employee_id.name"/></div>
+                </t>
+            </div>
+
+            <div style="border-top: 2px solid #000; margin: 4px 0;"/>
+
+            <!-- ── ORDER LINES ────────────────────────────────── -->
+            <div style="margin: 6px 0;">
                 <t t-foreach="order.lines" t-as="line" t-key="line.uuid">
-                    <div style="font-size:15px; padding:4px 0; border-bottom:1px dotted #ccc;">
-                        <strong><t t-esc="line.qty"/>x</strong>&#160;<t t-esc="line.full_product_name"/>
+                    <div style="display: flex; justify-content: space-between; align-items: baseline; padding: 3px 0;">
+                        <!-- Quantity + Product name -->
+                        <div style="flex: 1; padding-right: 8px;">
+                            <span style="font-weight: 700; margin-right: 5px; min-width: 24px; display: inline-block;">
+                                <t t-esc="line.qty"/>×
+                            </span>
+                            <span><t t-esc="line.product_id.name"/></span>
+                        </div>
+                        <!-- Line total (incl. VAT) -->
+                        <div style="white-space: nowrap; font-weight: 700; text-align: right;">
+                            <t t-esc="formatCurrency(line.price_subtotal_incl)"/>
+                        </div>
                     </div>
+                    <!-- Discount note (only if discount applied) -->
+                    <t t-if="line.discount">
+                        <div style="font-size: 83%; color: #555; padding-left: 28px; margin-bottom: 2px;">
+                            Έκπτωση <t t-esc="line.discount"/>%
+                        </div>
+                    </t>
                 </t>
             </div>
 
-            <div style="text-align:center; font-size:12px; padding-top:6px; border-top:2px dashed #000;">
-                * * *
+            <div style="border-top: 2px solid #000; margin: 4px 0;"/>
+
+            <!-- ── TOTAL ──────────────────────────────────────── -->
+            <div style="display: flex; justify-content: space-between; font-size: 140%; font-weight: 900; padding: 5px 0;">
+                <span>ΣΥΝΟΛΟ</span>
+                <span><t t-esc="formatCurrency(order.amount_total)"/></span>
+            </div>
+
+            <div style="border-top: 1px dashed #000; margin: 4px 0;"/>
+
+            <!-- ── PAYMENT METHOD(S) ───────────────────────────── -->
+            <t t-foreach="paymentLines" t-as="pm" t-key="pm.payment_method_id.id">
+                <div style="display: flex; justify-content: space-between; font-size: 95%; padding: 2px 0;">
+                    <span><t t-esc="pm.payment_method_id.name"/></span>
+                    <span><t t-esc="formatCurrency(pm.amount)"/></span>
+                </div>
+            </t>
+            <!-- Change -->
+            <t t-set="_change" t-value="order.payment_ids.find(p => p.is_change)"/>
+            <t t-if="_change and _change.amount">
+                <div style="display: flex; justify-content: space-between; font-size: 95%; padding: 2px 0;">
+                    <span>Ρέστα</span>
+                    <span><t t-esc="formatCurrency(Math.abs(_change.amount))"/></span>
+                </div>
+            </t>
+
+            <div style="border-top: 2px dashed #000; margin: 8px 0 4px 0;"/>
+
+            <!-- ── FOOTER ─────────────────────────────────────── -->
+            <div style="text-align: center; font-size: 88%; color: #444; padding-bottom: 4px;">
+                Σας ευχαριστούμε!
             </div>
 
         </div>
