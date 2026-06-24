@@ -12,7 +12,7 @@ class SkroutzAcceptWizard(models.TransientModel):
     _description = 'Accept Skroutz Order'
 
     order_id = fields.Many2one('skroutz.order', string='Order', required=True)
-    pickup_location = fields.Char(string='Pickup Location ID', required=True)
+    pickup_location = fields.Integer(string='Pickup Location ID', required=True)
     pickup_window = fields.Integer(string='Pickup Window ID', required=True)
     number_of_parcels = fields.Integer(string='Number of Parcels', default=1)
     accept_options_hint = fields.Text(string='Available Options', readonly=True)
@@ -33,7 +33,7 @@ class SkroutzAcceptWizard(models.TransientModel):
             parcels = opts.get('number_of_parcels') or [1]
 
             if len(locations) == 1:
-                res['pickup_location'] = str(locations[0]['id'])
+                res['pickup_location'] = int(locations[0]['id'])
             if len(windows) == 1:
                 res['pickup_window'] = windows[0]['id']
             if parcels:
@@ -70,5 +70,12 @@ class SkroutzAcceptWizard(models.TransientModel):
         order.state = 'accepted'
         config = self.env['ir.config_parameter'].sudo()
         if config.get_param('skroutz.auto_create_sale_order', 'True') == 'True':
-            order._create_sale_order()
+            try:
+                with self.env.cr.savepoint():
+                    order._create_sale_order()
+            except Exception:
+                _logger.exception(
+                    "Skroutz order %s accepted on Skroutz but sale order creation failed. "
+                    "Create it manually from the order form.", order.code
+                )
         return {'type': 'ir.actions.act_window_close'}

@@ -10,7 +10,7 @@ from odoo.http import request, route, Response, Controller
 _logger = logging.getLogger(__name__)
 
 
-def _build_product_element(product):
+def _build_product_element(product, default_avail):
     """Build a <product> XML element for a product.template record."""
     p = Element('product')
 
@@ -27,16 +27,12 @@ def _build_product_element(product):
     for img_url in product._get_additional_image_urls():
         add('additionalimage', img_url)
 
-    add('category', product._get_category_path())
+    add('category', product.skroutz_category_path)
     add('price_with_vat', f"{product._get_skroutz_price_with_vat():.2f}")
     add('vat', f"{product._get_skroutz_vat_rate():.2f}")
-    add('availability', product._get_skroutz_availability())
+    add('availability', product._get_skroutz_availability(default_avail))
 
-    manufacturer = (
-        product.brand_id.name
-        if hasattr(product, 'brand_id') and product.brand_id
-        else 'OEM'
-    )
+    manufacturer = product.brand_id.name if 'brand_id' in product._fields and product.brand_id else 'OEM'
     add('manufacturer', manufacturer)
     add('mpn', product.default_code or '')
     if product.barcode:
@@ -64,7 +60,7 @@ def _build_product_element(product):
     return p
 
 
-def _generate_xml(products):
+def _generate_xml(products, default_avail):
     """Generate the full Skroutz XML feed string."""
     root = Element('mywebstore')
     created = SubElement(root, 'created_at')
@@ -73,7 +69,7 @@ def _generate_xml(products):
 
     for product in products:
         try:
-            products_el.append(_build_product_element(product))
+            products_el.append(_build_product_element(product, default_avail))
         except Exception as e:
             _logger.warning("Skroutz feed: skipping product %s (%s): %s",
                             product.id, product.name, e)
@@ -91,21 +87,18 @@ class SkroutzFeedController(Controller):
 
         # Token check (optional)
         required_token = config.get_param('skroutz.feed_token', '')
-        if required_token and token != required_token:
+        if required_token and not hmac.compare_digest(token or '', required_token):
             return Response('Unauthorized', status=401, content_type='text/plain')
 
-        include_zero = config.get_param('skroutz.include_zero_stock', 'True') == 'True'
+        include_zero = config.get_param('skroutz.include_zero_stock', 'True').lower() in ('1', 'true', 'yes')
 
-        domain = [
-            ('is_published', '=', True),
-            ('default_code', '!=', False),
-            ('default_code', '!=', ''),
-        ]
+        domain = [('is_published', '=', True), ('default_code', '!=', False)]
         if not include_zero:
             domain.append(('qty_available', '>', 0))
 
+        default_avail = config.get_param('skroutz.default_availability', 'Delivery 1 to 3 days')
         products = request.env['product.template'].sudo().search(domain, order='id')
-        xml_content = _generate_xml(products)
+        xml_content = _generate_xml(products, default_avail)
 
         headers = {
             'Content-Type': 'application/xml; charset=utf-8',

@@ -32,7 +32,6 @@ class ProductTemplate(models.Model):
     )
     skroutz_outlet = fields.Boolean(
         string='Outlet (Skroutz)',
-        default=False,
         help='Mark this product as an outlet item on Skroutz.',
     )
     skroutz_shipping_cost = fields.Float(
@@ -45,13 +44,7 @@ class ProductTemplate(models.Model):
         help='Comma-separated list of available sizes, e.g. "S,M,L,XL" or "38,39,40". '
              'Required for fashion and footwear categories.',
     )
-
     # --- Computed helpers ---
-
-    @api.depends('categ_id')
-    def _compute_skroutz_category_path(self):
-        for tmpl in self:
-            tmpl.skroutz_category_path = tmpl._get_category_path()
 
     skroutz_category_path = fields.Char(
         string='Category Path',
@@ -59,16 +52,18 @@ class ProductTemplate(models.Model):
         help='Full category breadcrumb path for Skroutz XML.',
     )
 
-    def _get_category_path(self):
-        """Build full category path: Parent > Child > Grandchild."""
-        if not self.categ_id:
-            return ''
-        parts = []
-        categ = self.categ_id
-        while categ and categ.name != 'All':
-            parts.insert(0, categ.name)
-            categ = categ.parent_id
-        return ' > '.join(parts) if parts else self.categ_id.name
+    @api.depends('categ_id')
+    def _compute_skroutz_category_path(self):
+        for tmpl in self:
+            if not tmpl.categ_id:
+                tmpl.skroutz_category_path = ''
+                continue
+            parts = []
+            categ = tmpl.categ_id
+            while categ and categ.name != 'All':
+                parts.insert(0, categ.name)
+                categ = categ.parent_id
+            tmpl.skroutz_category_path = ' > '.join(parts) if parts else tmpl.categ_id.name
 
     def _get_skroutz_price_with_vat(self):
         """Return list_price with VAT applied."""
@@ -87,17 +82,9 @@ class ProductTemplate(models.Model):
             return round(tax.amount, 2)
         return 0.0
 
-    def _get_skroutz_availability(self):
-        """Auto availability based on stock quantity."""
+    def _get_skroutz_availability(self, default_avail='Delivery 1 to 3 days'):
         self.ensure_one()
-        config = self.env['ir.config_parameter'].sudo()
-        default_avail = config.get_param(
-            'skroutz.default_availability', 'Delivery 1 to 3 days'
-        )
-        qty = self.qty_available
-        if qty > 0:
-            return 'In stock'
-        return default_avail
+        return 'In stock' if self.qty_available > 0 else default_avail
 
     def _get_skroutz_weight(self):
         """Return weight in grams (Odoo stores in kg)."""
@@ -106,27 +93,23 @@ class ProductTemplate(models.Model):
             return ''
         return str(int(self.weight * 1000))
 
-    def _get_skroutz_product_url(self):
-        """Return absolute HTTPS product URL."""
-        self.ensure_one()
+    def _get_base_url(self):
         website = self.env['website'].sudo().search([], limit=1)
-        base_url = website.get_base_url() if website else self.env['ir.config_parameter'].sudo().get_param('web.base.url')
+        return website.get_base_url() if website else self.env['ir.config_parameter'].sudo().get_param('web.base.url')
+
+    def _get_skroutz_product_url(self):
+        self.ensure_one()
         slug = self.env['ir.http']._slug(self)
-        return f"{base_url}/shop/{slug}"
+        return f"{self._get_base_url()}/shop/{slug}"
 
     def _get_image_url(self):
-        """Return absolute HTTPS image URL."""
         self.ensure_one()
-        website = self.env['website'].sudo().search([], limit=1)
-        base_url = website.get_base_url() if website else self.env['ir.config_parameter'].sudo().get_param('web.base.url')
-        return f"{base_url}/web/image/product.template/{self.id}/image_1920"
+        return f"{self._get_base_url()}/web/image/product.template/{self.id}/image_1920"
 
     def _get_additional_image_urls(self):
-        """Return list of additional product image URLs (up to 15)."""
         self.ensure_one()
-        website = self.env['website'].sudo().search([], limit=1)
-        base_url = website.get_base_url() if website else self.env['ir.config_parameter'].sudo().get_param('web.base.url')
-        urls = []
-        for img in self.product_template_image_ids[:15]:
-            urls.append(f"{base_url}/web/image/product.image/{img.id}/image_1920")
-        return urls
+        base_url = self._get_base_url()
+        return [
+            f"{base_url}/web/image/product.image/{img.id}/image_1920"
+            for img in self.product_template_image_ids[:15]
+        ]

@@ -25,20 +25,7 @@ ORDER_STATES = [
     ('partially_delivered', 'Partially Delivered'),
 ]
 
-# Skroutz API state values that map directly to our state keys
-_SKROUTZ_STATE_MAP = {
-    'open': 'open',
-    'accepted': 'accepted',
-    'rejected': 'rejected',
-    'dispatched': 'dispatched',
-    'delivered': 'delivered',
-    'cancelled': 'cancelled',
-    'expired': 'expired',
-    'returned': 'returned',
-    'partially_returned': 'partially_returned',
-    'for_return': 'for_return',
-    'partially_delivered': 'partially_delivered',
-}
+_SKROUTZ_VALID_STATES = frozenset(k for k, _ in ORDER_STATES[:])
 
 REJECTION_REASONS = [
     ('out_of_stock', 'Out of Stock'),
@@ -159,12 +146,14 @@ class SkroutzOrder(models.Model):
 
     line_ids = fields.One2many('skroutz.order.line', 'order_id', string='Order Lines')
 
+    @staticmethod
+    def _join_parts(*parts):
+        return ' '.join(p for p in parts if p)
+
     @api.depends('customer_first_name', 'customer_last_name')
     def _compute_customer_name(self):
         for rec in self:
-            rec.customer_name = ' '.join(
-                p for p in [rec.customer_first_name or '', rec.customer_last_name or ''] if p
-            ).strip()
+            rec.customer_name = self._join_parts(rec.customer_first_name, rec.customer_last_name)
 
     # ── API client factory ────────────────────────────────────────────────────
 
@@ -240,6 +229,8 @@ class SkroutzOrder(models.Model):
     # ── Sale order creation ───────────────────────────────────────────────────
 
     def _create_sale_order(self):
+        if self.odoo_order_id:
+            return self.odoo_order_id
         partner = self._find_or_create_partner()
         lines = []
         for line in self.line_ids:
@@ -281,9 +272,7 @@ class SkroutzOrder(models.Model):
         country = self.env['res.country'].search(
             [('code', '=', self.ship_country_code or 'GR')], limit=1
         )
-        name = self.customer_name or ' '.join(
-            p for p in [self.ship_first_name or '', self.ship_last_name or ''] if p
-        ).strip() or 'Skroutz Customer'
+        name = self.customer_name or self._join_parts(self.ship_first_name, self.ship_last_name) or 'Skroutz Customer'
         vals = {
             'name': name,
             'ref': ref or '',
@@ -295,13 +284,14 @@ class SkroutzOrder(models.Model):
         }
         # If the l10n_gr_partner addon is installed, store the street number
         # in its dedicated field; otherwise combine name + number in street.
-        if 'arithmos_odou' in Partner._fields and self.ship_street_number:
+        l10n_gr_installed = self.env['ir.module.module'].sudo().search_count(
+            [('name', '=', 'l10n_gr_partner'), ('state', '=', 'installed')]
+        )
+        if l10n_gr_installed and self.ship_street_number:
             vals['street'] = self.ship_street or ''
             vals['arithmos_odou'] = self.ship_street_number
         else:
-            vals['street'] = ' '.join(
-                p for p in [self.ship_street or '', self.ship_street_number or ''] if p
-            ).strip()
+            vals['street'] = self._join_parts(self.ship_street, self.ship_street_number)
         return Partner.create(vals)
 
     # ── Data ingestion ────────────────────────────────────────────────────────
@@ -325,6 +315,8 @@ class SkroutzOrder(models.Model):
             return False
 
     def _apply_skroutz_data(self, order_data):
+        # Capture before write for idempotency check below
+        _prev_data_json = self.skroutz_data
         customer = order_data.get('customer') or {}
         address = customer.get('address') or {}
         tracking = order_data.get('courier_tracking_codes') or []
@@ -335,14 +327,21 @@ class SkroutzOrder(models.Model):
 
         # Map Skroutz state to our state; fall back to current state if unknown
         raw_state = order_data.get('state', '')
-        mapped_state = _SKROUTZ_STATE_MAP.get(raw_state, self.state)
+        if raw_state and raw_state not in _SKROUTZ_VALID_STATES:
+            _logger.warning("Skroutz order %s: unknown state '%s', keeping current state.", self.code, raw_state)
+        mapped_state = raw_state if raw_state in _SKROUTZ_VALID_STATES else self.state
 
         # Compute order total from line items (no top-level total_price in the API).
         # Fees (handling, installments, etc.) are added when present.
         line_items = order_data.get('line_items') or []
         computed_total = sum(float(item.get('total_price', 0)) for item in line_items)
         fees = order_data.get('fees') or {}
-        fees_total = sum(float(v or 0) for v in fees.values() if isinstance(v, (int, float)))
+        fees_total = 0.0
+        for v in fees.values():
+            try:
+                fees_total += float(v)
+            except (TypeError, ValueError):
+                pass
         computed_total += fees_total
 
         self.write({
@@ -374,9 +373,18 @@ class SkroutzOrder(models.Model):
             'skroutz_data': json.dumps(order_data),
         })
 
-        # Rebuild line items
-        self.line_ids.unlink()
-        for item in order_data.get('line_items') or []:
+        # Rebuild line items only when payload changed (avoids churn on Skroutz webhook retries)
+        new_line_items_json = json.dumps(order_data.get('line_items') or [], sort_keys=True)
+        try:
+            old_line_items_json = json.dumps(
+                json.loads(_prev_data_json or '{}').get('line_items') or [], sort_keys=True
+            )
+        except (ValueError, TypeError):
+            old_line_items_json = None
+        lines_changed = new_line_items_json != old_line_items_json
+        if lines_changed:
+            self.line_ids.unlink()
+        for item in (order_data.get('line_items') or []) if lines_changed else []:
             shop_uid = item.get('shop_uid') or ''
             mpn = item.get('mpn') or ''
             size = item.get('size') or {}

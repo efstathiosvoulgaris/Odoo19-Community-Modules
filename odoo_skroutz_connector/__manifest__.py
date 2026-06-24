@@ -1,12 +1,25 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Skroutz Connector',
-    'version': '1.2',
+    'version': '1.3',
     'category': 'eCommerce',
     'summary': 'Skroutz XML feed, order webhook and order management API',
     'description': (
         'Changelog\n'
         '---------\n'
+        '* 1.3 — Security: feed token now uses hmac.compare_digest (timing-safe comparison).\n'
+        '        Correctness: API accept call sends pickup_location/pickup_window as integers.\n'
+        '        Correctness: sale order creation is idempotent (no duplicate on double-submit).\n'
+        '        Correctness: sale order creation failure no longer rolls back the accepted state '
+        '(wrapped in savepoint; logs warning instead).\n'
+        '        Correctness: fee amounts parsed with float() so string values (e.g. "2.50") are included.\n'
+        '        Correctness: unknown Skroutz states logged as warning instead of silently ignored.\n'
+        '        Correctness: l10n_gr_partner detected via ir.module.module install state, not _fields duck-typing.\n'
+        '        Correctness: webhook line items skipped on retry when payload is unchanged.\n'
+        '        Feed: db_name set in odoo.conf so public routes resolve without database selector.\n'
+        '        Simplification: state map replaced with frozenset; name/street joins deduplicated.\n'
+        '        Simplification: category path inlined; include_zero param comparison case-insensitive.\n'
+        '        Simplification: brand_id presence checked via product._fields (correct ORM guard).\n'
         '* 1.2 — Webhook: removed HMAC signature check (Skroutz sends no signature header; '
         'it blocked all webhooks when a secret was set). Secret is now a URL token: /skroutz/webhook/<secret>.\n'
         '        Webhook failures now return HTTP 500 so Skroutz retries delivery.\n'
