@@ -1,12 +1,14 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Skroutz Connector',
-    'version': '1.3',
+    'version': '1.4',
     'category': 'eCommerce',
     'summary': 'Skroutz XML feed, order webhook and order management API',
     'description': (
         'Changelog\n'
         '---------\n'
+        '* 1.4 — Added dedicated skroutz_mpn field on product.template; '
+        'default_code (Internal Reference) is no longer used as MPN.\n'
         '* 1.3 — Security: feed token now uses hmac.compare_digest (timing-safe comparison).\n'
         '        Correctness: API accept call sends pickup_location/pickup_window as integers.\n'
         '        Correctness: sale order creation is idempotent (no duplicate on double-submit).\n'

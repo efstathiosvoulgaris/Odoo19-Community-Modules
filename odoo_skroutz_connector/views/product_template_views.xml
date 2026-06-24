@@ -10,9 +10,12 @@
             <notebook position="inside">
                 <page string="Skroutz" name="skroutz">
                     <group string="Feed Status">
-                        <field name="default_code" string="MPN / Internal Reference" readonly="1"/>
-                        <field name="barcode" string="EAN" readonly="1"/>
-                        <field name="skroutz_category_path" string="Category Path" readonly="1"/>
+                        <group>
+                            <field name="skroutz_mpn" placeholder="Συμπλήρωσε με για να ανέβω στο Skroutz"/>
+                            <field name="barcode" string="EAN" readonly="1"/>
+                            <field name="skroutz_category_path" string="Category Path" readonly="1"/>
+                        </group>
+                        <group/>
                     </group>
                     <group string="Optional Skroutz Fields">
                         <group>
@@ -30,8 +33,7 @@
                         <strong>Feed inclusion:</strong>
                         This product is included in the Skroutz feed when it is
                         <strong>published on the website</strong> and has a
-                        <strong>non-empty Internal Reference (MPN)</strong>.
-                        Set the Internal Reference on the General tab.
+                        <strong>non-empty MPN</strong> set above.
                     </div>
                 </page>
             </notebook>

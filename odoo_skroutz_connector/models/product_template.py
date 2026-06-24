@@ -7,6 +7,10 @@ class ProductTemplate(models.Model):
 
     # --- Skroutz-specific optional fields ---
 
+    skroutz_mpn = fields.Char(
+        string='MPN (Skroutz)',
+        help='Manufacturer Part Number sent to Skroutz. Required for feed inclusion.',
+    )
     skroutz_color = fields.Char(
         string='Color (Skroutz)',
         help='Product color as shown in product image. Required for fashion categories.',

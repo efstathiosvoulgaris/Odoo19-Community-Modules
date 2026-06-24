@@ -34,7 +34,7 @@ def _build_product_element(product, default_avail):
 
     manufacturer = product.brand_id.name if 'brand_id' in product._fields and product.brand_id else 'OEM'
     add('manufacturer', manufacturer)
-    add('mpn', product.default_code or '')
+    add('mpn', product.skroutz_mpn or '')
     if product.barcode:
         add('ean', product.barcode)
     add('description', product.description_sale or product.description or product.name or '')
@@ -92,7 +92,7 @@ class SkroutzFeedController(Controller):
 
         include_zero = config.get_param('skroutz.include_zero_stock', 'True').lower() in ('1', 'true', 'yes')
 
-        domain = [('is_published', '=', True), ('default_code', '!=', False)]
+        domain = [('is_published', '=', True), ('skroutz_mpn', '!=', False)]
         if not include_zero:
             domain.append(('qty_available', '>', 0))
 

@@ -10,7 +10,7 @@ Connects Odoo 19 to the [Skroutz Marketplace](https://www.skroutz.gr) via:
 ### XML Feed
 - Serves a Skroutz-compatible XML feed at `/skroutz/feed`
 - Optional feed token: `/skroutz/feed?token=YOUR_TOKEN`
-- Products included when **published on the website** and have a non-empty **Internal Reference** (used as MPN)
+- Products included when **published on the website** and have a non-empty **MPN** (set on the Skroutz tab)
 - Configurable zero-stock inclusion and default availability label
 - Supports optional Skroutz fields per product: size, color, season, size fit, outlet flag, per-product shipping cost
 
@@ -54,16 +54,19 @@ db_name = your_database_name
 ## Product Setup
 
 On each product's **Skroutz** tab:
-- **Feed Status** group shows the current Internal Reference (MPN), EAN, and category path
+- **Feed Status** group: set the **MPN** here (editable), EAN and category path shown for reference
 - **Optional Skroutz Fields**: size, color, season, size fit, outlet, per-product shipping cost
 
-The product is included in the feed when it is **published on the website** and has a non-empty **Internal Reference** (set on the General tab).
+The product is included in the feed when it is **published on the website** and has a non-empty **MPN**.
 
 ## Optional Integration
 
 If the [`l10n_gr_partner`](https://github.com/) addon is installed, the street number from the shipping address is written to the partner's `arithmos_odou` field instead of being concatenated into the street name.
 
 ## Changelog
+
+### 1.4
+- Added dedicated `skroutz_mpn` field on products; `default_code` (Internal Reference) is no longer used as MPN
 
 ### 1.3
 - Security: feed token uses `hmac.compare_digest` (timing-safe)
