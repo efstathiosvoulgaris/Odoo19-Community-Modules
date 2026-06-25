@@ -76,16 +76,9 @@ def _reload_db_terms(env):
         _logger.info('Greek translation terms reloaded for: %s', ', '.join(modules.mapped('name')))
 
 
-def _fix_gr_vat_label(env):
-    gr = env.ref('base.gr', raise_if_not_found=False)
-    if gr and gr.vat_label != 'ΑΦΜ':
-        gr.sudo().write({'vat_label': 'ΑΦΜ'})
-
-
 def post_init_hook(env):
     _deploy_files()
     _reload_db_terms(env)
-    _fix_gr_vat_label(env)
     env['ir.config_parameter'].sudo().set_param(HASH_PARAM, _bundle_hash())
 
 
@@ -101,4 +94,3 @@ class L10nGrTranslationFixes(models.AbstractModel):
         if changed or param.get_param(HASH_PARAM) != bundle:
             _reload_db_terms(self.env)
             param.set_param(HASH_PARAM, bundle)
-        _fix_gr_vat_label(self.env)
