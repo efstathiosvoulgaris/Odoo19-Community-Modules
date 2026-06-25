@@ -80,7 +80,7 @@ class SkroutzApiClient:
             'rejection_reason_other': rejection_reason_other,
         })
 
-    def update_tracking(self, order_code, courier, tracking_codes, fulfilled_by_skroutz=False):
+    def update_tracking(self, order_code, courier=None, tracking_codes=None, fulfilled_by_skroutz=False):
         if isinstance(tracking_codes, str):
             codes = [c.strip() for c in tracking_codes.split(',') if c.strip()]
         else:
@@ -133,6 +133,8 @@ class SkroutzOrder(models.Model):
     courier_voucher = fields.Char(string='Courier Voucher URL')
     courier_tracking_codes = fields.Char(string='Tracking Codes')
     fulfilled_by_skroutz = fields.Boolean(string='Fulfilled by Skroutz (FBS)', default=False)
+    set_as_ready_required = fields.Boolean(string='Set as Ready Required', default=False)
+    is_ready_for_dispatch = fields.Boolean(string='Ready for Dispatch', default=False)
 
     # Financials
     total_price = fields.Float(string='Total Price', digits=(10, 2))
@@ -230,14 +232,21 @@ class SkroutzOrder(models.Model):
         self.ensure_one()
         if self.state != 'accepted':
             raise UserError('Only accepted orders can be marked as dispatched.')
-        return {
-            'type': 'ir.actions.act_window',
-            'name': 'Mark as Shipped',
-            'res_model': 'skroutz.ship.wizard',
-            'view_mode': 'form',
-            'target': 'new',
-            'context': {'default_order_id': self.id},
-        }
+        if self.fulfilled_by_skroutz:
+            # FBS: need courier + tracking codes — open wizard
+            return {
+                'type': 'ir.actions.act_window',
+                'name': 'Mark as Shipped',
+                'res_model': 'skroutz.ship.wizard',
+                'view_mode': 'form',
+                'target': 'new',
+                'context': {'default_order_id': self.id},
+            }
+        # Standard order: courier/tracking already set by Skroutz, just dispatch
+        client = self._get_api_client()
+        client.update_tracking(self.code, fulfilled_by_skroutz=False)
+        self.state = 'dispatched'
+        return {'type': 'ir.actions.act_window_close'}
 
     def action_view_sale_order(self):
         self.ensure_one()
@@ -389,6 +398,8 @@ class SkroutzOrder(models.Model):
             'courier': order_data.get('courier', ''),
             'courier_voucher': order_data.get('courier_voucher', ''),
             'fulfilled_by_skroutz': bool(order_data.get('fulfilled_by_skroutz', False)),
+            'set_as_ready_required': bool(order_data.get('set_as_ready_required', False)),
+            'is_ready_for_dispatch': bool(order_data.get('is_ready_for_dispatch', False)),
             'courier_tracking_codes': ', '.join(str(t) for t in tracking),
             'total_price': computed_total,
             'payment_cost': fees_total,
@@ -443,6 +454,7 @@ class SkroutzOrder(models.Model):
         is fetched from the API (e.g. when called from action_sync_from_skroutz).
         """
         record = self.search([('code', '=', order_code)], limit=1)
+        is_new = not record
         if not record:
             record = self.create({'code': order_code})
         if order_data:
@@ -451,7 +463,24 @@ class SkroutzOrder(models.Model):
             client = record._get_api_client()
             data = client.get_order(order_code)
             record._apply_skroutz_data(data.get('order', {}))
+        if is_new:
+            record._notify_new_order()
         return record
+
+    def _notify_new_order(self):
+        sales_group = self.env.ref('sales_team.group_sale_salesman', raise_if_not_found=False)
+        if not sales_group:
+            return
+        partners = sales_group.users.mapped('partner_id')
+        if not partners:
+            return
+        self.message_post(
+            body=f'New Skroutz order <b>{self.code}</b> received.',
+            message_type='notification',
+            subtype_xmlid='mail.mt_comment',
+            partner_ids=partners.ids,
+            notify_by_email=False,
+        )
 
 
 class SkroutzOrderLine(models.Model):

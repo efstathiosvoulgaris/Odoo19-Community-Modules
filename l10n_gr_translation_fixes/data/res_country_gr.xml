@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Greece: vat_label shown on partner/company forms should be ΑΦΜ (tax ID),
+         not ΦΠΑ (the tax rate). The el.po translates the shared "VAT" msgid as
+         ΦΠΑ which is correct for other EU countries but wrong for the GR field label. -->
+    <record id="base.gr" model="res.country">
+        <field name="vat_label">ΑΦΜ</field>
+    </record>
+</odoo>

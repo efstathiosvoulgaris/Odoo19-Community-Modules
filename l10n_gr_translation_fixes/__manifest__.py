@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Greek Translation Fixes',
-    'version': '1.0',
+    'version': '1.1',
     'category': 'Localization',
     'summary': 'Curated el_GR translation overrides, auto-deployed into core modules via i18n_extra',
     'description': (
@@ -20,6 +20,7 @@
         'the service after updating this module.\n\n'
         'Changelog\n'
         '---------\n'
+        '* 1.1 — Set Greece vat_label to ΑΦΜ (was ΦΠΑ due to shared EU msgid).\n'
         '* 1.0 — Initial release: 676 corrections across 9 modules; unified '
         'terminology (Table=Τραπέζι, Floor=Αίθουσα, Bill=Λογαριασμός, '
         'picking=Συλλογή, replenishment=Αναπλήρωση, reconcile=Συμφωνία, '
@@ -30,6 +31,7 @@
     'support': 'efstathiosvoulgaris@gmail.com',
     'license': 'LGPL-3',
     'depends': ['base'],
+    'data': ['data/res_country_gr.xml'],
     'post_init_hook': 'post_init_hook',
     'installable': True,
     'auto_install': False,
