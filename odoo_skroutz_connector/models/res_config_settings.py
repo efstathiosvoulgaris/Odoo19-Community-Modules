@@ -50,12 +50,7 @@ class ResConfigSettings(models.TransientModel):
              'Skroutz does not sign webhook requests, so the URL token is the authentication. '
              'Leave empty to accept calls on the plain /skroutz/webhook URL.',
     )
-    skroutz_auto_create_sale_order = fields.Boolean(
-        string='Auto-create Sale Order on Accept',
-        config_parameter='skroutz.auto_create_sale_order',
-        default=True,
-        help='When an order is accepted, automatically create a linked Odoo Sale Order.',
-    )
+
 
     def _get_public_base_url(self):
         """Return the public-facing base URL.

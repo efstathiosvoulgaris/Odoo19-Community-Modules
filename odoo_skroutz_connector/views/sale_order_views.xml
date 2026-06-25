@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="sale_order_list_skroutz_origin" model="ir.ui.view">
+        <field name="name">sale.order.list.skroutz.origin</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.sale_order_tree"/>
+        <field name="arch" type="xml">
+            <field name="client_order_ref" position="after">
+                <field name="origin" optional="show"/>
+            </field>
+        </field>
+    </record>
+
+</odoo>

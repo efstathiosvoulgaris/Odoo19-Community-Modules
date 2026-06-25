@@ -59,6 +59,13 @@
                                 <span class="o_stat_text">Sale Order</span>
                             </div>
                         </button>
+                        <button name="action_create_sale_order" type="object"
+                                class="oe_stat_button btn-primary" icon="fa-shopping-cart"
+                                invisible="odoo_order_id">
+                            <div class="o_field_widget o_stat_info">
+                                <span class="o_stat_text">Create Sale Order</span>
+                            </div>
+                        </button>
                     </div>
                     <div class="oe_title">
                         <h1><field name="code" readonly="id"/></h1>

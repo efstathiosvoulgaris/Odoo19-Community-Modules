@@ -1,12 +1,19 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Skroutz Connector',
-    'version': '1.4',
+    'version': '1.5',
     'category': 'eCommerce',
     'summary': 'Skroutz XML feed, order webhook and order management API',
     'description': (
         'Changelog\n'
         '---------\n'
+        '* 1.5 — Manual "Create Sale Order" button replaces auto-create on accept.\n'
+        '        Accept skips wizard for standard orders (no pickup options from API).\n'
+        '        Standard orders use /dispatched endpoint; FBS orders use /tracking_details.\n'
+        '        fulfilled_by_skroutz field stored from webhook payload.\n'
+        '        Origin field added to sale order list view.\n'
+        '        product.brand public read access for website visitors.\n'
+        '        pickup_location/pickup_window changed to Char (Skroutz uses string IDs).\n'
         '* 1.4 — Added dedicated skroutz_mpn field on product.template; '
         'default_code (Internal Reference) is no longer used as MPN.\n'
         '* 1.3 — Security: feed token now uses hmac.compare_digest (timing-safe comparison).\n'
@@ -64,6 +71,7 @@
         'security/ir.model.access.csv',
         'data/res_config_data.xml',
         'views/res_config_settings_views.xml',
+        'views/sale_order_views.xml',
         'views/product_template_views.xml',
         'views/skroutz_order_views.xml',
         'views/skroutz_accept_wizard_views.xml',

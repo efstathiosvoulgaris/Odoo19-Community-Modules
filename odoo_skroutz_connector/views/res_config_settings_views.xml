@@ -58,11 +58,6 @@
                             </div>
                         </setting>
 
-                        <setting string="Auto-create Sale Order" name="skroutz_auto_sale_order_setting"
-                                 help="Automatically create a linked Odoo Sale Order when a Skroutz order is accepted.">
-                            <field name="skroutz_auto_create_sale_order"/>
-                        </setting>
-
                     </block>
 
                 </app>

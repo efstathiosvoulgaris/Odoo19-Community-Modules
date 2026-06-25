@@ -67,27 +67,32 @@ class SkroutzApiClient:
     def get_order(self, order_code):
         return self._request('GET', f'/merchants/ecommerce/orders/{order_code}')
 
-    def accept_order(self, order_code, pickup_location, pickup_window, number_of_parcels=1):
-        return self._request('POST', f'/merchants/ecommerce/orders/{order_code}/accept', json={
-            'pickup_location': pickup_location,
-            'pickup_window': pickup_window,
-            'number_of_parcels': number_of_parcels,
-        })
+    def accept_order(self, order_code, pickup_location=None, pickup_window=None, number_of_parcels=1):
+        body = {'number_of_parcels': number_of_parcels}
+        if pickup_location is not None:
+            body['pickup_location'] = pickup_location
+        if pickup_window is not None:
+            body['pickup_window'] = pickup_window
+        return self._request('POST', f'/merchants/ecommerce/orders/{order_code}/accept', json=body)
 
     def reject_order(self, order_code, rejection_reason_other):
         return self._request('POST', f'/merchants/ecommerce/orders/{order_code}/reject', json={
             'rejection_reason_other': rejection_reason_other,
         })
 
-    def update_tracking(self, order_code, courier, tracking_codes):
-        """Update tracking details for FBM orders."""
+    def update_tracking(self, order_code, courier, tracking_codes, fulfilled_by_skroutz=False):
         if isinstance(tracking_codes, str):
             codes = [c.strip() for c in tracking_codes.split(',') if c.strip()]
         else:
             codes = list(tracking_codes)
-        return self._request('POST', f'/merchants/ecommerce/orders/{order_code}/tracking_details', json={
-            'tracking_details': [{'courier': courier, 'tracking_code': code} for code in codes],
-        })
+        if fulfilled_by_skroutz:
+            # FBS orders: send courier + tracking to Skroutz
+            return self._request('POST', f'/merchants/ecommerce/orders/{order_code}/tracking_details', json={
+                'tracking_details': [{'courier': courier, 'tracking_code': code} for code in codes],
+            })
+        else:
+            # Standard orders: just mark as dispatched; courier info is local only
+            return self._request('POST', f'/merchants/ecommerce/orders/{order_code}/dispatched')
 
 
 class SkroutzOrder(models.Model):
@@ -127,6 +132,7 @@ class SkroutzOrder(models.Model):
     courier = fields.Char(string='Courier')
     courier_voucher = fields.Char(string='Courier Voucher URL')
     courier_tracking_codes = fields.Char(string='Tracking Codes')
+    fulfilled_by_skroutz = fields.Boolean(string='Fulfilled by Skroutz (FBS)', default=False)
 
     # Financials
     total_price = fields.Float(string='Total Price', digits=(10, 2))
@@ -180,6 +186,19 @@ class SkroutzOrder(models.Model):
         self.ensure_one()
         if self.state != 'open':
             raise UserError('Only open orders can be accepted.')
+        # Check if the API returns accept_options; if not, accept directly.
+        try:
+            client = self._get_api_client()
+            data = client.get_order(self.code)
+            opts = (data.get('order') or {}).get('accept_options') or {}
+            has_options = bool(opts.get('pickup_location') or opts.get('pickup_window'))
+        except Exception:
+            has_options = False
+        if not has_options:
+            client = self._get_api_client()
+            client.accept_order(self.code)
+            self.state = 'accepted'
+            return {'type': 'ir.actions.act_window_close'}
         return {
             'type': 'ir.actions.act_window',
             'name': 'Accept Order',
@@ -188,6 +207,11 @@ class SkroutzOrder(models.Model):
             'target': 'new',
             'context': {'default_order_id': self.id},
         }
+
+    def action_create_sale_order(self):
+        self.ensure_one()
+        self._create_sale_order()
+        return {'type': 'ir.actions.act_window_close'}
 
     def action_reject(self):
         self.ensure_one()
@@ -364,6 +388,7 @@ class SkroutzOrder(models.Model):
             'payment_method': order_data.get('payment_method', ''),
             'courier': order_data.get('courier', ''),
             'courier_voucher': order_data.get('courier_voucher', ''),
+            'fulfilled_by_skroutz': bool(order_data.get('fulfilled_by_skroutz', False)),
             'courier_tracking_codes': ', '.join(str(t) for t in tracking),
             'total_price': computed_total,
             'payment_cost': fees_total,

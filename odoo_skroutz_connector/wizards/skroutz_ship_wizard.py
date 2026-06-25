@@ -42,7 +42,7 @@ class SkroutzShipWizard(models.TransientModel):
         if order.state != 'accepted':
             raise UserError('Only accepted orders can be marked as dispatched.')
         client = order._get_api_client()
-        client.update_tracking(order.code, self.courier, self.tracking_codes)
+        client.update_tracking(order.code, self.courier, self.tracking_codes, order.fulfilled_by_skroutz)
         order.write({
             'state': 'dispatched',
             'courier_tracking_codes': self.tracking_codes,
