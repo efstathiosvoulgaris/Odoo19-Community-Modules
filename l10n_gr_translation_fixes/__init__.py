@@ -1,3 +1,4 @@
+from . import models
 import hashlib
 import logging
 import os
