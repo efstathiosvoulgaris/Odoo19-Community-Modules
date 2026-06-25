@@ -31,7 +31,6 @@
     'support': 'efstathiosvoulgaris@gmail.com',
     'license': 'LGPL-3',
     'depends': ['base'],
-    'data': ['data/res_country_gr.xml'],
     'post_init_hook': 'post_init_hook',
     'installable': True,
     'auto_install': False,
