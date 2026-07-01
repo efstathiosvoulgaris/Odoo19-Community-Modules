@@ -1,9 +1,16 @@
 # -*- coding: utf-8 -*-
 import base64
 import logging
+from decimal import Decimal, ROUND_HALF_UP
 
 from odoo import api, fields, models, _
 from odoo.exceptions import UserError
+from .gr_mydata import (
+    WITHHOLDING_CATEGORY_SELECTION, WITHHOLDING_CATEGORY_RATE,
+    FEES_CATEGORY_SELECTION, OTHER_TAXES_CATEGORY_SELECTION,
+    STAMP_DUTY_CATEGORY_SELECTION,
+    partner_class, journal_types_for_class,
+)
 
 _logger = logging.getLogger(__name__)
 
@@ -69,9 +76,107 @@ class AccountMove(models.Model):
              'name and its ΑΑΗΤ code; adjust if the contracting authority differs.')
     l10n_gr_prov_b2g_status = fields.Char(string='B2G Status', copy=False)
 
+    # ── Dispatch note (9.3) ───────────────────────────────────────────────────
+    l10n_gr_prov_move_purpose = fields.Selection(
+        selection=[
+            ('1', '1 - Πώληση'),
+            ('2', '2 - Πώληση για Λογαριασμό Τρίτων'),
+            ('3', '3 - Δειγματισμός'),
+            ('4', '4 - Έκθεση'),
+            ('5', '5 - Επιστροφή'),
+            ('6', '6 - Φύλαξη'),
+            ('7', '7 - Επεξεργασία - Συναρμολόγηση'),
+            ('8', '8 - Μεταξύ Εγκαταστάσεων Οντότητας'),
+            ('9', '9 - Μεταφορά Αδρανών Στοιχείων Ενεργητικού'),
+            ('10', '10 - Παρακαταθήκη'),
+            ('11', '11 - Πώληση Αδρανών Στοιχείων Ενεργητικού'),
+            ('12', '12 - Παραγωγή Παγίων - Αυτοπαράδοση'),
+            ('13', '13 - Παραλαβή / Επιστροφή Εμπορευμάτων'),
+            ('14', '14 - Εκτελωνισμός'),
+            ('15', '15 - Αποστολή / Εισαγωγή'),
+            ('16', '16 - Εισαγωγή'),
+            ('17', '17 - Εξαγωγή'),
+            ('18', '18 - Δηλωτικό Αποστολής'),
+            ('19', '19 - Λοιπές Διακινήσεις'),
+        ],
+        string='Σκοπός Διακίνησης (9.3)', copy=False, default='1',
+        help='Mandatory for dispatch notes (type 9.3). Σκοπός Διακίνησης per myDATA.'
+    )
+
+    # ── myDATA invoice fields (clean-slate, no l10n_gr_edi dependency) ───────
+    # inv_type and payment_method come from l10n_gr_edi_inv_type / l10n_gr_edi_payment_method
+    l10n_gr_prov_withholding_category = fields.Selection(
+        selection=WITHHOLDING_CATEGORY_SELECTION,
+        string='Κρατήσεις (κατηγορία ΑΑΔΕ)',
+        copy=False,
+        help='AADE withholding tax category (§8.4). Amount is auto-calculated for fixed-rate '
+             'categories; enter manually for variable-rate ones (11,14,15,16,17).',
+    )
+    l10n_gr_prov_withholding_amount = fields.Monetary(
+        string='Κρατήσεις (ποσό)',
+        currency_field='currency_id',
+        compute='_compute_l10n_gr_prov_withholding_amount',
+        store=True, readonly=False, copy=False,
+        help='Auto-calculated from the selected AADE category rate × net total. '
+             'Editable for variable-rate categories.',
+    )
+    l10n_gr_prov_stamp_duty_amount = fields.Monetary(
+        string='Χαρτόσημο',
+        currency_field='currency_id',
+        copy=False,
+        help='Stamp duty (χαρτόσημο). Enter the amount if applicable; '
+             'the provider will validate legality.',
+    )
+    l10n_gr_prov_stamp_duty_category = fields.Selection(
+        selection=STAMP_DUTY_CATEGORY_SELECTION,
+        string='Χαρτόσημο (κατηγορία ΑΑΔΕ)',
+        copy=False,
+        help='AADE stamp duty category (§8.6). Required when a stamp duty amount is set.',
+    )
+    l10n_gr_prov_fees_amount = fields.Monetary(
+        string='Τέλη',
+        currency_field='currency_id',
+        copy=False,
+        help='Other fees (τέλη) not included in invoice lines.',
+    )
+    l10n_gr_prov_fees_category = fields.Selection(
+        selection=FEES_CATEGORY_SELECTION,
+        string='Τέλη (κατηγορία ΑΑΔΕ)',
+        copy=False,
+        help='AADE fees category (§8.7). Required when a fees amount is set.',
+    )
+    l10n_gr_prov_other_taxes_amount = fields.Monetary(
+        string='Λοιποί Φόροι',
+        currency_field='currency_id',
+        copy=False,
+        help='Other taxes (λοιποί φόροι) not included in invoice lines.',
+    )
+    l10n_gr_prov_other_taxes_category = fields.Selection(
+        selection=OTHER_TAXES_CATEGORY_SELECTION,
+        string='Λοιποί Φόροι (κατηγορία ΑΑΔΕ)',
+        copy=False,
+        help='AADE other taxes category (§8.5). Required when an other taxes amount is set.',
+    )
+
+    @api.depends('l10n_gr_prov_withholding_category', 'amount_untaxed')
+    def _compute_l10n_gr_prov_withholding_amount(self):
+        for move in self:
+            cat = move.l10n_gr_prov_withholding_category
+            rate = WITHHOLDING_CATEGORY_RATE.get(cat, 0.0)
+            if not cat:
+                move.l10n_gr_prov_withholding_amount = 0.0
+            elif rate:
+                net = Decimal(str(move.amount_untaxed))
+                move.l10n_gr_prov_withholding_amount = float(
+                    (net * Decimal(str(rate))).quantize(Decimal('0.01'), ROUND_HALF_UP)
+                )
+            # else: rate == 0.0 (manual categories 11,14,15,16,17) → leave user value
+
     @api.depends('partner_id', 'l10n_gr_prov_b2g')
     def _compute_l10n_gr_prov_buyer_ref(self):
         for move in self:
+            # Only default when B2G is active and the field has no value yet.
+            # Check per-record (not once before the loop) to handle multi-record sets.
             if move.l10n_gr_prov_buyer_ref or not move.l10n_gr_prov_b2g:
                 continue
             partner = move.commercial_partner_id
@@ -79,6 +184,40 @@ class AccountMove(models.Model):
                 move.l10n_gr_prov_buyer_ref = f'{partner.name}|{partner.l10n_gr_prov_aaht}'
             elif partner:
                 move.l10n_gr_prov_buyer_ref = partner.name or False
+
+    journal_id_inv_type_default = fields.Boolean(
+        compute='_compute_journal_id_inv_type_default')
+
+    @api.depends('journal_id.l10n_gr_edi_inv_type_default')
+    def _compute_journal_id_inv_type_default(self):
+        for move in self:
+            move.journal_id_inv_type_default = bool(move.journal_id.l10n_gr_edi_inv_type_default)
+
+    # ── Partner-driven journal net ────────────────────────────────────────────
+    # Narrow core's suitable_journal_ids (which drives the journal_id domain) to
+    # the myDATA types valid for the selected partner's class. Journals with no
+    # myDATA type default are left untouched (non-GR / generic journals).
+    @api.depends('move_type', 'company_id',
+                 'partner_id.is_company', 'partner_id.country_id', 'partner_id.vat')
+    def _compute_suitable_journal_ids(self):
+        super()._compute_suitable_journal_ids()
+        eu = self.env.ref('base.europe', raise_if_not_found=False)
+        eu_codes = set(eu.country_ids.mapped('code') if eu else []) - {'GR'}
+        for move in self:
+            partner = move.partner_id
+            if (not partner
+                    or not move.is_sale_document(include_receipts=True)
+                    or not move.company_id._l10n_gr_prov_active()):
+                continue
+            cls = partner_class(
+                partner.is_company, partner.country_id.code,
+                eu_codes, bool(partner.vat),
+            )
+            valid = journal_types_for_class(cls)
+            move.suitable_journal_ids = move.suitable_journal_ids.filtered(
+                lambda j: not j.l10n_gr_edi_inv_type_default
+                or j.l10n_gr_edi_inv_type_default in valid
+            )
 
     l10n_gr_prov_applicable = fields.Boolean(
         compute='_compute_l10n_gr_prov_applicable')
@@ -178,7 +317,11 @@ class AccountMove(models.Model):
     # ── Cron: retry queue ─────────────────────────────────────────────────────
     @api.model
     def _l10n_gr_prov_cron_process(self):
-        """Send queued documents, upload pending PDFs, poll B2G statuses."""
+        """Send queued documents, upload pending PDFs, poll B2G statuses.
+
+        Each record is processed in its own savepoint so a single failure
+        does not roll back the entire batch.
+        """
         # 1. Pending sends (auto-send companies) and previous errors (all companies)
         domain = [
             ('state', '=', 'posted'),
@@ -189,9 +332,9 @@ class AccountMove(models.Model):
             if not move.l10n_gr_prov_applicable:
                 continue
             if move.l10n_gr_prov_state == 'to_send' and not move.company_id.l10n_gr_prov_auto_send:
-                continue  # manual mode: only retry documents that were attempted (error)
-            move._l10n_gr_prov_try_send()
-            self.env.cr.commit()  # persist each marking immediately; it exists at AADE
+                continue  # manual mode: only retry documents that were attempted (error state)
+            with self.env.cr.savepoint():
+                move._l10n_gr_prov_try_send()
 
         # 2. Upload PDFs for marked documents
         for move in self.search([
@@ -199,8 +342,8 @@ class AccountMove(models.Model):
             ('l10n_gr_prov_pdf_uploaded', '=', False),
             ('l10n_gr_prov_invoice_id', '!=', False),
         ], limit=50):
-            move._l10n_gr_prov_try_upload_pdf()
-            self.env.cr.commit()
+            with self.env.cr.savepoint():
+                move._l10n_gr_prov_try_upload_pdf()
 
         # 3. Poll B2G statuses
         for move in self.search([

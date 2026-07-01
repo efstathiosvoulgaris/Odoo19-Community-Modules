@@ -6,9 +6,16 @@
         <field name="model">res.partner</field>
         <field name="inherit_id" ref="base.view_partner_form"/>
         <field name="arch" type="xml">
-            <field name="category_id" position="after">
+            <!--
+                Place ΑΑΗΤ after the VAT field, which lives in the right-hand
+                <group> of the partner form alongside category_id.  Using
+                category_id as anchor is fragile because it is wrapped in a
+                many2many_tags widget; vat is a plain Char and always present.
+            -->
+            <field name="gemh" position="after">
                 <field name="l10n_gr_prov_aaht" string="ΑΑΗΤ"
-                       placeholder="e.g. 1234.Ε00123.0001"/>
+                       placeholder="π.χ. 1234.Ε00123.0001"
+                       invisible="country_code != 'GR'"/>
             </field>
         </field>
     </record>

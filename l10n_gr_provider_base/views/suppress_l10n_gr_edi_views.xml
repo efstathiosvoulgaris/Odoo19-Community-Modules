@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+        Suppress l10n_gr_edi UI elements when our provider module is installed.
+        We own all classification fields via l10n_gr_prov_* equivalents.
+    -->
+    <record id="view_move_form_suppress_l10n_gr_edi_buttons" model="ir.ui.view">
+        <field name="name">account.move.form.suppress.l10n.gr.edi.buttons</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="l10n_gr_edi.account_move_form_inherit_l10n_gr_edi"/>
+        <field name="arch" type="xml">
+
+            <!-- Hide the "Send Expense Classifications to myDATA" button -->
+            <button name="l10n_gr_edi_try_send_expense_classification" position="attributes">
+                <attribute name="invisible">
+                    not l10n_gr_edi_enable_send_expense_classification or l10n_gr_prov_applicable
+                </attribute>
+            </button>
+
+            <!-- Hide l10n_gr_edi line classification columns — we show our own -->
+            <field name="l10n_gr_edi_cls_category" position="attributes">
+                <attribute name="column_invisible">1</attribute>
+                <attribute name="optional">hide</attribute>
+            </field>
+            <field name="l10n_gr_edi_cls_type" position="attributes">
+                <attribute name="column_invisible">1</attribute>
+                <attribute name="optional">hide</attribute>
+            </field>
+            <field name="l10n_gr_edi_cls_vat" position="attributes">
+                <attribute name="column_invisible">1</attribute>
+                <attribute name="optional">hide</attribute>
+            </field>
+            <field name="l10n_gr_edi_tax_exemption_category" position="attributes">
+                <attribute name="column_invisible">1</attribute>
+                <attribute name="optional">hide</attribute>
+            </field>
+            <field name="l10n_gr_edi_detail_type" position="attributes">
+                <attribute name="column_invisible">1</attribute>
+                <attribute name="optional">hide</attribute>
+            </field>
+
+        </field>
+    </record>
+</odoo>

@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_l10n_gr_prov_cls_default_list" model="ir.ui.view">
+        <field name="name">l10n.gr.prov.cls.default.list</field>
+        <field name="model">l10n.gr.prov.cls.default</field>
+        <field name="arch" type="xml">
+            <list string="Προεπιλογές Χαρακτηρισμού" editable="bottom">
+                <field name="inv_type"/>
+                <field name="product_type"/>
+                <field name="cls_category"/>
+                <field name="cls_type"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_l10n_gr_prov_cls_default" model="ir.actions.act_window">
+        <field name="name">Προεπιλογές Χαρακτηρισμού myDATA</field>
+        <field name="res_model">l10n.gr.prov.cls.default</field>
+        <field name="view_mode">list</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Προσθέστε εξαιρέσεις προεπιλογής χαρακτηρισμού</p>
+            <p>Κάθε συνδυασμός τύπου παραστατικού + είδους που δεν οριστεί εδώ
+               παίρνει αυτόματα τον παραγόμενο χαρακτηρισμό από τον πίνακα myDATA.</p>
+        </field>
+    </record>
+
+    <menuitem id="menu_l10n_gr_prov_cls_default"
+              name="Προεπιλογές Χαρακτηρισμού myDATA"
+              parent="account.menu_finance_configuration"
+              action="action_l10n_gr_prov_cls_default"
+              sequence="90"/>
+
+</odoo>

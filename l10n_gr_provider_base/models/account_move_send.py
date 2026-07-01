@@ -28,7 +28,9 @@ class AccountMoveSend(models.AbstractModel):
                 and not invoice.l10n_gr_prov_mark
             ):
                 invoice._l10n_gr_prov_try_send()
-                if invoice.l10n_gr_prov_state == 'error':
+                # Guard with .get() — another hook may have removed this invoice
+                # from invoices_data before we get here.
+                if invoice.l10n_gr_prov_state == 'error' and invoice in invoices_data:
                     invoices_data[invoice]['error'] = {
                         'error_title': 'Error when issuing through the e-invoicing provider',
                         'errors': [invoice.l10n_gr_prov_error or 'Unknown error'],

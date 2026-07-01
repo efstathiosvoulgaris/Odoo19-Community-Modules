@@ -9,15 +9,22 @@ Implements the operations dispatched by l10n_gr_provider_base:
 API reference: ILYDA "Οδηγίες υλοποίησης eInvoicing" v1.0.6.
 """
 import logging
+import unicodedata
 
 import requests
 
 from odoo import models, _
 from odoo.exceptions import UserError
-from odoo.addons.l10n_gr_edi.models.preferred_classification import (
-    TYPES_WITH_VAT_CATEGORY_8,
-    TYPES_WITH_VAT_EXEMPT,
-    VALID_TAX_CATEGORY_MAP,
+from odoo.addons.l10n_gr_provider_base.models.gr_mydata import (
+    VAT_CATEGORY_MAP,
+    TYPES_NO_BUYER,
+    TYPES_NO_VAT,
+    TYPES_NO_CLASSIFICATION,
+    TYPES_CREDIT,
+    TYPES_NEED_CORRELATED,
+    PAYMENT_METHOD_MAP,
+    PROVIDER_SUBMITTABLE_TYPES,
+    TYPES_DISPATCH,
 )
 
 _logger = logging.getLogger(__name__)
@@ -36,40 +43,37 @@ class IlydaClient:
 
     def __init__(self, company):
         self.base = ILYDA_TEST_BASE if company.l10n_gr_prov_test_env else ILYDA_PROD_BASE
-        self.auth_key = company.sudo().l10n_gr_prov_ilyda_auth_key
         self.username = company.sudo().l10n_gr_prov_ilyda_username
         self.password = company.sudo().l10n_gr_prov_ilyda_password
-        if not self.auth_key:
+        if not self.username or not self.password:
             raise UserError(_(
-                'ILYDA X-Auth-Key is not configured. '
-                'Set it in Settings > Accounting > Greek E-Invoicing Provider.'))
+                'ILYDA credentials are not configured. '
+                'Set Username and Password in Settings > Accounting > Greek E-Invoicing Provider.'))
+        self._auth = (self.username, self.password)
 
     def _headers(self, json_content=True):
-        headers = {'X-Auth-Key': self.auth_key}
+        headers = {}
         if json_content:
             headers['Content-Type'] = 'application/json'
-        if self.username and self.password:
-            headers['X-Auth-Username'] = self.username
-            headers['X-Auth-Password'] = self.password
         return headers
 
     def submit_invoice(self, payload):
         resp = requests.post(
             f'{self.base}/api/invoice',
-            json=payload, headers=self._headers(), timeout=TIMEOUT)
+            json=payload, headers=self._headers(), auth=self._auth, timeout=TIMEOUT)
         return self._parse(resp)
 
     def upload_pdf(self, invoice_id, filename, pdf_bytes):
         resp = requests.post(
             f'{self.base}/api/invoice/upload/{invoice_id}',
             files={'FileUpload': (filename, pdf_bytes, 'application/pdf')},
-            headers=self._headers(json_content=False), timeout=TIMEOUT)
+            headers=self._headers(json_content=False), auth=self._auth, timeout=TIMEOUT)
         return self._parse(resp)
 
     def get_status(self, invoice_id):
         resp = requests.get(
             f'{self.base}/api/invoice/status/{invoice_id}',
-            headers=self._headers(json_content=False), timeout=TIMEOUT)
+            headers=self._headers(json_content=False), auth=self._auth, timeout=TIMEOUT)
         return self._parse(resp)
 
     @staticmethod
@@ -88,6 +92,29 @@ def _r2(amount):
     return round(amount or 0.0, 2)
 
 
+def _ascii_safe(text):
+    """Transliterate Greek to ASCII. ponytail: kept as a fallback — series is now
+    sent as Greek (AADE allows it); rewrap the series fields with this if ILYDA
+    ever rejects Greek."""
+    _GR = 'ΑΒΓΔΕΖΗΘΙΚΛΜΝΞΟΠΡΣΤΥΦΧΨΩαβγδεζηθικλμνξοπρστυφχψω'
+    _LA = 'ABGDEZHQIKLMNXOPRSTYFCPWabgdezhqiklmnxoprstyfcpw'
+    _GR_TO_LATIN = str.maketrans(_GR, _LA)
+    text = (text or '').translate(_GR_TO_LATIN)
+    text = unicodedata.normalize('NFKD', text).encode('ascii', 'ignore').decode()
+    return text
+
+
+def _vat_category(tax, inv_type):
+    """Return (aade_vat_category_int, en16931_category_code) for a tax line."""
+    if not tax or inv_type in TYPES_NO_VAT:
+        return 8, 'O'
+    rate = int(tax.amount)
+    aade_cat = VAT_CATEGORY_MAP.get(rate, 7)
+    # category 7 = 0% with exemption reason → use 'E' (exempt) in EN16931
+    code = 'E' if aade_cat == 7 else ('S' if rate else 'E')
+    return aade_cat, code
+
+
 class AccountMove(models.Model):
     _inherit = 'account.move'
 
@@ -98,7 +125,9 @@ class AccountMove(models.Model):
         self._l10n_gr_prov_ilyda_validate()
         client = IlydaClient(self.company_id)
         payload = self._l10n_gr_prov_ilyda_build_payload()
+        _logger.info('ILYDA submit payload for %s: %s', self.name, payload)
         data = client.submit_invoice(payload)
+        _logger.info('ILYDA raw response for %s: %s', self.name, data)
         self._l10n_gr_prov_ilyda_handle_response(data)
 
     def _l10n_gr_prov_upload_pdf_ilyda(self):
@@ -123,43 +152,69 @@ class AccountMove(models.Model):
             self.l10n_gr_prov_b2g_status = status
             self.message_post(body=_('B2G status update: %s', status))
 
+    # ── Helpers ───────────────────────────────────────────────────────────────
+
+    def _l10n_gr_prov_ilyda_inv_type(self):
+        """Return the effective AADE invoice type for this document.
+
+        For credit notes the journal default is always wrong (it carries the
+        forward invoice type, e.g. 1.1).  Core l10n_gr_edi sets 5.1/5.2
+        correctly but our journal-default override in account_move_inv_type.py
+        clobbers it, and the stored value can't be trusted.  Derive it here
+        from move_type directly so the payload is always correct.
+        """
+        self.ensure_one()
+        if self.move_type == 'out_refund':
+            return '5.1' if self.reversed_entry_id else '5.2'
+        return self.journal_id.l10n_gr_edi_inv_type_default or self.l10n_gr_edi_inv_type
+
     # ── Validation ────────────────────────────────────────────────────────────
 
     def _l10n_gr_prov_ilyda_validate(self):
         self.ensure_one()
         errors = []
         company_partner = self.company_id.partner_id
+        inv_type = self._l10n_gr_prov_ilyda_inv_type()
         if not self.company_id.vat:
             errors.append(_('Company VAT number is missing.'))
-        if not self.l10n_gr_edi_inv_type:
-            errors.append(_('myDATA Invoice Type is missing (set it in the myDATA tab).'))
+        if not inv_type:
+            errors.append(_('myDATA Invoice Type is missing (set it on the E-Invoicing Provider tab).'))
+        elif inv_type not in PROVIDER_SUBMITTABLE_TYPES:
+            errors.append(_(
+                'Invoice type %s cannot be submitted through the e-invoicing provider '
+                '(only 1.1–11.5 are allowed). Use an accounting/ERP journal instead.',
+                inv_type))
         lines = self._l10n_gr_prov_ilyda_lines()
         if not lines:
             errors.append(_('The document has no product lines.'))
+        # Dispatch types (9.x/10.x) classify with category3 only, no E3 code.
+        no_cls = inv_type in TYPES_NO_CLASSIFICATION or inv_type in TYPES_DISPATCH
+        no_vat = inv_type in TYPES_NO_VAT
         for line in lines:
             line_label = line.name or line.product_id.display_name
-            if not line.l10n_gr_edi_cls_category or not line.l10n_gr_edi_cls_type:
+            if not no_cls and (not line.l10n_gr_prov_cls_category or not line.l10n_gr_prov_cls_type):
                 errors.append(_(
-                    'Line "%s": myDATA income classification (category/type) is missing.',
+                    'Line "%s": myDATA income classification (category + E3 type) is missing.',
                     line_label))
-            # VAT category is derived from the tax rate (as l10n_gr_edi does)
             tax = line.tax_ids[:1]
-            if not tax:
-                if self.l10n_gr_edi_inv_type not in TYPES_WITH_VAT_CATEGORY_8:
+            if not no_vat:
+                if not tax:
                     errors.append(_('Line "%s": no VAT tax is set.', line_label))
-            elif int(tax.amount) not in VALID_TAX_CATEGORY_MAP:
-                errors.append(_(
-                    'Line "%s": tax rate %s%% is not a valid Greek VAT rate '
-                    '(24, 13, 6, 17, 9, 4 or 0).', line_label, tax.amount))
-            elif (
-                int(tax.amount) == 0
-                and self.l10n_gr_edi_inv_type not in TYPES_WITH_VAT_EXEMPT
-                and self.l10n_gr_edi_inv_type not in TYPES_WITH_VAT_CATEGORY_8
-                and not line.l10n_gr_edi_tax_exemption_category
-            ):
-                errors.append(_(
-                    'Line "%s": 0%% VAT requires a Tax Exemption Category '
-                    '(myDATA tab on the line).', line_label))
+                elif int(tax.amount) not in VAT_CATEGORY_MAP:
+                    errors.append(_(
+                        'Line "%s": tax rate %s%% is not a valid Greek VAT rate '
+                        '(24, 13, 6, 17, 9, 4 or 0).', line_label, tax.amount))
+                elif int(tax.amount) == 0 and not line.l10n_gr_prov_vat_exemption:
+                    errors.append(_(
+                        'Line "%s": 0%% VAT requires a VAT Exemption Reason '
+                        '(set on the line in the invoice).', line_label))
+        # Counterpart required for B2B types; forbidden for retail/no-VAT types
+        if (self.is_sale_document()
+                and inv_type not in TYPES_NO_BUYER
+                and not self.commercial_partner_id.vat):
+            errors.append(_(
+                'Invoice type %s requires a customer with a VAT number (counterpart is mandatory). '
+                'Use an 11.x journal for retail sales without a VAT customer.', inv_type))
         if self.move_type == 'out_refund' and self.reversed_entry_id \
                 and not self.reversed_entry_id.l10n_gr_prov_mark:
             errors.append(_(
@@ -186,71 +241,81 @@ class AccountMove(models.Model):
             raise UserError('\n'.join(errors))
 
     def _l10n_gr_prov_ilyda_lines(self):
-        return self.invoice_line_ids.filtered(
-            lambda l: l.display_type == 'product')
+        return self.invoice_line_ids.filtered(lambda l: l.display_type == 'product')
 
     # ── Payload builder ───────────────────────────────────────────────────────
 
     @staticmethod
     def _ilyda_vat(vat, prefixed=True):
-        """Return VAT in the requested form. ILYDA examples use the bare 9-digit
-        number for AADE-related fields and the EL-prefixed one for EN16931."""
+        """Return VAT normalised for EN16931.
+
+        Greek VAT: strip GR/EL prefix, re-add EL when prefixed=True.
+        Foreign VAT: return as-is (already carries the correct country prefix).
+        prefixed=False is only meaningful for Greek VAT (used in B2G references).
+        """
         vat = (vat or '').replace(' ', '').upper()
-        bare = vat[2:] if vat.startswith('EL') or vat.startswith('GR') else vat
-        return f'EL{bare}' if prefixed else bare
+        if vat.startswith('EL') or vat.startswith('GR'):
+            bare = vat[2:]
+            return f'EL{bare}' if prefixed else bare
+        return vat
 
     def _l10n_gr_prov_ilyda_build_payload(self):
         self.ensure_one()
         company = self.company_id
         partner = self.commercial_partner_id
         lines = self._l10n_gr_prov_ilyda_lines()
-        sign = 1  # amounts are sent positive for both invoices and credit notes
+        inv_type = self._l10n_gr_prov_ilyda_inv_type()
+        no_vat = inv_type in TYPES_NO_VAT
+        no_cls = inv_type in TYPES_NO_CLASSIFICATION or inv_type in TYPES_DISPATCH
 
         # ── Lines, VAT breakdown buckets, classifications ────────────────────
         invoice_lines, row_types = [], []
         vat_buckets = {}      # (rate, aade_vat_category, exemption) -> [taxable, tax]
-        cls_totals = {}       # (category, type) -> amount
+        cls_totals = {}       # (category, cls_type) -> amount
         for number, line in enumerate(lines, start=1):
-            net = _r2(sign * line.price_subtotal)
-            vat_amount = _r2(sign * (line.price_total - line.price_subtotal))
+            net = _r2(line.price_subtotal)
+            vat_amount = _r2(line.price_total - line.price_subtotal)
             tax = line.tax_ids[:1]
             rate = tax.amount if tax else 0.0
-            # Derive the myDATA VAT category from the tax rate, mirroring l10n_gr_edi
-            if tax and self.l10n_gr_edi_inv_type not in TYPES_WITH_VAT_EXEMPT:
-                aade_vat_cat = VALID_TAX_CATEGORY_MAP.get(int(rate), 7)
-            else:
-                aade_vat_cat = 8
-            if aade_vat_cat == 7 and self.l10n_gr_edi_inv_type in TYPES_WITH_VAT_CATEGORY_8:
-                aade_vat_cat = 8
+
+            aade_vat_cat, category_code = _vat_category(tax, inv_type)
+
             exemption = (
-                line.l10n_gr_edi_tax_exemption_category
-                if aade_vat_cat == 7 else None
+                line.l10n_gr_prov_vat_exemption if aade_vat_cat == 7 else None
             ) or None
-            category_code = 'S' if rate else 'E'
 
             key = (rate, aade_vat_cat, exemption)
             bucket = vat_buckets.setdefault(key, [0.0, 0.0])
             bucket[0] += net
             bucket[1] += vat_amount
 
-            cls_key = (line.l10n_gr_edi_cls_category, line.l10n_gr_edi_cls_type)
-            cls_totals[cls_key] = _r2(cls_totals.get(cls_key, 0.0) + net)
+            if not no_cls and line.l10n_gr_prov_cls_category and line.l10n_gr_prov_cls_type:
+                cls_key = (line.l10n_gr_prov_cls_category, line.l10n_gr_prov_cls_type)
+                cls_totals[cls_key] = _r2(cls_totals.get(cls_key, 0.0) + net)
 
             line_cls = [{
-                'classificationCategory': line.l10n_gr_edi_cls_category,
-                'classificationType': line.l10n_gr_edi_cls_type,
-                'amount': f'{net:.2f}',
-            }]
+                'classificationCategory': line.l10n_gr_prov_cls_category,
+                'classificationType': line.l10n_gr_prov_cls_type,
+                'amount': net,
+            }] if not no_cls and line.l10n_gr_prov_cls_category and line.l10n_gr_prov_cls_type else []
+
+            discount_pct = line.discount or 0.0
+            discount_amount = _r2(line.price_unit * line.quantity * discount_pct / 100.0)
+
             line_vals = {
                 'lineNumber': number,
+                'note': '',
                 'invoicedQuantity': line.quantity,
+                'invoicedQuantityUnits': 'EA',
                 'netAmount': net,
+                'discountAmount': discount_amount,
+                'discountTotalAmount': discount_amount,
                 'itemInfo': {
                     'itemInfoName': (line.product_id.name or line.name or '')[:200],
                     'itemInfoDescription': (line.name or line.product_id.name or '')[:200],
                 },
                 'priceDetails': {
-                    'itemNetPrice': _r2(line.price_unit * (1 - (line.discount or 0.0) / 100.0)),
+                    'itemNetPrice': _r2(net / line.quantity) if line.quantity else _r2(net),
                     'itemPriceBaseQuantity': 1,
                 },
                 'lineVatInfo': {
@@ -259,11 +324,10 @@ class AccountMove(models.Model):
                     'vatCategoryCode': category_code,
                     'aadeVatData': {
                         'aadeVatCategory': aade_vat_cat,
-                        'aadeVatExemptionCategory': exemption,
+                        'aadeVatExemptionCategory': int(exemption) if exemption else None,
                     },
                 },
             }
-            # CPV classification (BT-158, scheme STI) — mandatory on B2G lines
             cpv = line.product_id.l10n_gr_prov_cpv
             if cpv:
                 line_vals['itemClassificationIdentifiers'] = [{
@@ -271,51 +335,126 @@ class AccountMove(models.Model):
                     'classificationIdentifierScheme': 'STI',
                 }]
             invoice_lines.append(line_vals)
-            row_types.append({
+
+            row_type = {
                 'lineNumber': number,
                 'netValue': net,
+                'vatCategory': str(aade_vat_cat),   # ILYDA expects string
                 'vatAmount': vat_amount,
-                'vatCategory': aade_vat_cat,
-                'incomeClassification': line_cls,
-            })
+            }
+            if exemption:
+                row_type['vatExemptionCategory'] = int(exemption)
+            if inv_type == '9.3':
+                row_type['itemDescr'] = (line.product_id.name or line.name or '')[:200]
+                row_type['quantity'] = line.quantity
+                row_type['measurementUnit'] = 1  # ponytail: no UoM mapping yet
+            if line_cls:
+                row_type['incomeClassification'] = line_cls
+            row_types.append(row_type)
 
-        vat_breakdowns = [{
-            'categoryCode': 'S' if rate else 'E',
-            'categoryRate': rate,
-            'categoryTaxableAmount': _r2(taxable),
-            'categoryTaxAmount': _r2(tax),
-            'exemptionReasonCode': None,
-            'exemptionReasonText': None,
-            'aadeVatData': {
-                'aadeVatCategory': aade_cat,
-                'aadeVatExemptionCategory': exemption,
-            },
-        } for (rate, aade_cat, exemption), (taxable, tax) in vat_buckets.items()]
+        # VAT breakdowns
+        vat_breakdowns = []
+        for (rate, aade_cat, exemption), (taxable, tax) in vat_buckets.items():
+            code = 'O' if no_vat else ('E' if aade_cat == 7 else ('S' if rate else 'E'))
+            vat_breakdowns.append({
+                'categoryCode': code,
+                'categoryRate': rate,
+                'categoryTaxableAmount': _r2(taxable),
+                'categoryTaxAmount': _r2(tax),
+                'exemptionReasonCode': str(exemption) if exemption else None,
+                'exemptionReasonText': None,
+                'aadeVatData': {
+                    'aadeVatCategory': aade_cat,
+                    'aadeVatExemptionCategory': int(exemption) if exemption else None,
+                },
+            })
 
         income_classifications = [{
             'classificationCategory': cat,
             'classificationType': cls_type,
-            'amount': f'{amount:.2f}',
+            'amount': amount,
         } for (cat, cls_type), amount in cls_totals.items()]
 
         # ── Totals ────────────────────────────────────────────────────────────
         total_net = _r2(sum(b[0] for b in vat_buckets.values()))
         total_vat = _r2(sum(b[1] for b in vat_buckets.values()))
         total_gross = _r2(total_net + total_vat)
+        withholding = _r2(self.l10n_gr_prov_withholding_amount or 0.0)
+        stamp_duty = _r2(self.l10n_gr_prov_stamp_duty_amount or 0.0)
+        fees = _r2(self.l10n_gr_prov_fees_amount or 0.0)
+        other_taxes = _r2(self.l10n_gr_prov_other_taxes_amount or 0.0)
+        amount_due = _r2(total_gross - withholding + stamp_duty + fees + other_taxes)
+
+        exchange_rate = 0.0
+        if self.currency_id and self.currency_id.name != 'EUR':
+            company_currency = company.currency_id
+            exchange_rate = _r2(self.currency_id._get_conversion_rate(
+                self.currency_id, company_currency,
+                company, self.invoice_date or self.date,
+            ))
+
+        # ── taxTotals (TaxTotalsType) — one entry per non-zero extra tax ────────
+        # taxType: 1=Παρακρατούμενοι, 2=Τέλη, 3=Λοιποί Φόροι, 4=Χαρτόσημο
+        tax_totals = []
+        _extra_taxes = [
+            (withholding,   1, self.l10n_gr_prov_withholding_category),
+            (fees,          2, self.l10n_gr_prov_fees_category),
+            (other_taxes,   3, self.l10n_gr_prov_other_taxes_category),
+            (stamp_duty,    4, self.l10n_gr_prov_stamp_duty_category),
+        ]
+        for amount, tax_type, category in _extra_taxes:
+            if amount:
+                entry = {
+                    'taxType': tax_type,
+                    'taxAmount': amount,
+                    'underlyingValue': total_net,
+                }
+                if category:
+                    entry['taxCategory'] = int(category)
+                tax_totals.append(entry)
+
+        # ── docLevelCharges — non-VAT taxes as document-level charges ────────
+        doc_level_charges = []
+        _charge_taxes = [
+            (stamp_duty,   4, self.l10n_gr_prov_stamp_duty_category,   'Χαρτόσημο'),
+            (fees,         2, self.l10n_gr_prov_fees_category,          'Τέλη'),
+            (other_taxes,  3, self.l10n_gr_prov_other_taxes_category,   'Λοιποί Φόροι'),
+        ]
+        for amount, tax_type, category, reason in _charge_taxes:
+            if amount:
+                charge = {
+                    'chargeAmount': amount,
+                    'chargeReason': reason,
+                    'vatCategoryCode': 'O',
+                    'vatRate': 0,
+                    'aadeTaxData': {'aadeTaxType': tax_type},
+                }
+                if category:
+                    charge['aadeTaxData']['aadeTaxCategory'] = int(category)
+                doc_level_charges.append(charge)
+
+        doc_charges_sum = _r2(sum(c['chargeAmount'] for c in doc_level_charges))
+
         doc_total = {
             'invoiceLinesNetAmountSum': total_net,
             'invoiceTotalWithoutVat': total_net,
             'invoiceTotalVatAmount': total_vat,
             'invoiceTotalAmountWithVat': total_gross,
-            'amountDueForPayment': total_gross,
+            'invoiceTotalVatAmountInAccountingCurrency': None,
+            'amountDueForPayment': amount_due,
+            'paidAmount': 0.0,
+            'roundingAmount': 0.0,
+            'documentLevelAllowancesSum': 0.0,
+            'documentLevelChargesSum': doc_charges_sum,
+            'exchangeRate': exchange_rate,
             'aadeDocTotals': {
                 'aadeTotalNetValue': total_net,
                 'aadeTotalVatAmount': total_vat,
                 'aadeTotalGrossValue': total_gross,
-                'aadeTotalWitheldAmount': 0.0,
-                'aadeTotalFeesAmount': 0.0,
-                'aadeTotalStampDutyAmount': 0.0,
-                'aadeTotalOtherTaxesAmount': 0.0,
+                'aadeTotalWitheldAmount': withholding,
+                'aadeTotalFeesAmount': fees,
+                'aadeTotalStampDutyAmount': stamp_duty,
+                'aadeTotalOtherTaxesAmount': other_taxes,
                 'aadeTotalDeductionsAmount': 0.0,
             },
         }
@@ -333,7 +472,9 @@ class AccountMove(models.Model):
             'sellerPostalAddress': {
                 'sellerCountryCode': company_partner.country_id.code or 'GR',
                 'sellerAddressLine1': company_partner.street or '',
-                'sellerAddressLine2': company_partner.street2 or '',
+                'sellerAddressLine2': (
+                    getattr(company_partner, 'arithmos_odou', None)
+                    or company_partner.street2 or ''),
                 'sellerCity': company_partner.city or '',
                 'sellerPostCode': company_partner.zip or '',
                 'sellerCountrySubdivision': company_partner.state_id.name or '',
@@ -342,14 +483,17 @@ class AccountMove(models.Model):
 
         # ── Buyer (B2B/B2G only; retail stays anonymous) ─────────────────────
         buyer = None
-        if partner.vat:
+        if partner.vat and inv_type not in TYPES_NO_BUYER:
             buyer = {
                 'buyerVatIdentifier': self._ilyda_vat(partner.vat),
+                'buyerName': partner.name,
                 'buyerTradingName': partner.name,
+                'buyerBranch': partner.l10n_gr_edi_branch_number or 0,
                 'buyerPostalAddress': {
                     'buyerCountryCode': partner.country_id.code or 'GR',
                     'buyerAddressLine1': partner.street or '',
-                    'buyerAddressLine2': partner.street2 or '',
+                    'buyerAddressLine2': (
+                        getattr(partner, 'arithmos_odou', None) or partner.street2 or ''),
                     'buyerCity': partner.city or '',
                     'buyerPostCode': partner.zip or '',
                     'buyerCountrySubdivision': partner.state_id.name or '',
@@ -358,21 +502,51 @@ class AccountMove(models.Model):
             if partner.email:
                 buyer['buyerContact'] = {'buyerContactEmail': partner.email}
 
-        # ── Series / serial, same convention as l10n_gr_edi's myDATA XML ─────
-        # 'INV/2026/00042' -> series 'INV_2026', serial '00042'
+        # ── Series / serial ────────────────────────────────────────────────────
+        # AADE series is plain xs:string(50) — Greek is permitted (ERP doc §5, series).
+        # Send the journal code verbatim (ΤΙΜ, ΔΑ, ΑΛΠ) as Greek ERPs do.
         name_parts = (self.name or '').split('/')
-        series = '_'.join(name_parts[:-1]) or self.journal_id.code
+        series = ('_'.join(name_parts[:-1]) or self.journal_id.code)[:50]
         serial = name_parts[-1] or str(self.sequence_number or 0)
 
         # ── AADE block ────────────────────────────────────────────────────────
         aade_data = {
-            'aadeInvoiceTypeCode': self.l10n_gr_edi_inv_type,
-            'incomeClassifications': income_classifications,
+            'aadeInvoiceTypeCode': inv_type,
             'invoiceRowTypes': row_types,
         }
+        if income_classifications:
+            aade_data['incomeClassifications'] = income_classifications
+        if tax_totals:
+            aade_data['taxTotals'] = tax_totals
+
+        if inv_type == '9.3':
+            aade_data['aadeMovePurpose'] = int(self.l10n_gr_prov_move_purpose or '1')
+            ship = self.partner_shipping_id or partner
+            aade_data['otherDeliveryNoteHeader'] = {
+                'loadingAddress': {
+                    'street': company_partner.street or '',
+                    'number': getattr(company_partner, 'arithmos_odou', None) or company_partner.street2 or '',
+                    'postalCode': company_partner.zip or '',
+                    'city': company_partner.city or '',
+                },
+                'deliveryAddress': {
+                    'street': ship.street or '',
+                    'number': getattr(ship, 'arithmos_odou', None) or ship.street2 or '',
+                    'postalCode': ship.zip or '',
+                    'city': ship.city or '',
+                },
+            }
+
+        if inv_type in TYPES_NEED_CORRELATED and self.reversed_entry_id \
+                and self.reversed_entry_id.l10n_gr_prov_mark:
+            aade_data['correlatedInvoices'] = [
+                int(self.reversed_entry_id.l10n_gr_prov_mark)
+            ]
 
         payload = {
             'b2g': bool(self.l10n_gr_prov_b2g),
+            'selfPricing': False,
+            'vatPaidByBuyer': False,
             'invoiceTypeCode': UBL_CREDIT_NOTE if self.move_type == 'out_refund' else UBL_INVOICE,
             'seriesNumber': series,
             'serialNumber': serial,
@@ -383,26 +557,38 @@ class AccountMove(models.Model):
             'invoiceLines': invoice_lines,
             'vatBreakdowns': vat_breakdowns,
             'docTotal': doc_total,
+            'docLevelAllowances': None,
+            'docLevelCharges': doc_level_charges or None,
             'aadeData': aade_data,
         }
 
-        # Payment method (myDATA codes '1'..'7' match ILYDA paymentMethods.type)
-        method = self.l10n_gr_edi_payment_method
-        payload['paymentMethods'] = [{
-            'type': int(method) if method and method.isdigit() else 5,  # default: on credit
-            'amount': total_gross,
-        }]
+        # Payment method — forbidden for dispatch notes (9.3)
+        if inv_type != '9.3':
+            method = self.l10n_gr_edi_payment_method or '5'
+            ilyda_type, method_info = PAYMENT_METHOD_MAP.get(method, (5, 'Επί Πιστώσει'))
+            # gross amount is correct: paymentMethods.amount = total payable incl. VAT
+            payload['paymentMethods'] = [{
+                'type': ilyda_type,
+                'paymentMethodInfo': method_info,
+                'amount': amount_due,
+            }]
+            _TERMS = {
+                '1': 'ΤΡΑΠΕΖΙΚΗ ΜΕΤΑΦΟΡΑ', '2': 'ΤΡΑΠΕΖΙΚΗ ΜΕΤΑΦΟΡΑ',
+                '3': 'ΜΕΤΡΗΤΑ', '4': 'ΕΠΙΤΑΓΗ', '5': 'ΕΠΙ ΠΙΣΤΩΣΕΙ',
+                '6': 'WEB BANKING', '7': 'POS / e-POS',
+            }
+            payload['paymentTerms'] = _TERMS.get(method, 'ΕΠΙ ΠΙΣΤΩΣΕΙ')
 
         # Credit note: reference the reversed invoice
-        # Format: MARK|dd/mm/yyyy|branch|aadeType|series|serial
         if self.move_type == 'out_refund' and self.reversed_entry_id \
                 and self.reversed_entry_id.l10n_gr_prov_mark:
             origin = self.reversed_entry_id
             origin_parts = (origin.name or '').split('/')
-            origin_series = '_'.join(origin_parts[:-1]) or origin.journal_id.code
+            origin_series = ('_'.join(origin_parts[:-1]) or origin.journal_id.code)[:50]
             origin_serial = origin_parts[-1] or str(origin.sequence_number or 0)
+            seller_bare_vat = self._ilyda_vat(company.vat, prefixed=False)
             reference = '|'.join([
-                origin.l10n_gr_prov_mark,
+                seller_bare_vat,
                 origin.invoice_date.strftime('%d/%m/%Y') if origin.invoice_date else '',
                 str(company_partner.l10n_gr_edi_branch_number or 0),
                 origin.l10n_gr_edi_inv_type or '',
@@ -425,27 +611,26 @@ class AccountMove(models.Model):
                 'buyerReference': self.l10n_gr_prov_buyer_ref or None,
                 'purchaseOrderReference': self.l10n_gr_prov_purchase_order_ref or None,
             })
-            # Peppol routing: scheme 9933 = Greek VAT (bare, no country prefix)
+            payload['sellerIdentifiers'] = [{'sellerIdentifier': self._ilyda_vat(company.vat)}]
             if buyer:
                 bare_vat = self._ilyda_vat(partner.vat, prefixed=False)
-                buyer['buyerName'] = partner.name
+                if partner.l10n_gr_prov_aaht:
+                    payload['buyerIdentifiers'] = [{'buyerIdentifier': partner.l10n_gr_prov_aaht}]
                 buyer['buyerElectronicAddress'] = {
-                    'buyerElectronicAddress': f'9933:{bare_vat}',
+                    'buyerElectronicAddress': bare_vat,
                     'buyerElectronicAddressSchemeIdentifier': '9933',
                 }
-            # Delivery details (BT-70/75/77/78) from the shipping address
             ship = self.partner_shipping_id or partner
-            if ship:
-                payload['delivery'] = {
-                    'partyName': ship.name or partner.name,
-                    'deliveryAddress': {
-                        'deliveryAddressLine1': ship.street or '',
-                        'deliveryAddressLine2': ship.street2 or '',
-                        'deliveryCity': ship.city or '',
-                        'deliveryPostCode': ship.zip or '',
-                        'deliveryCountryCode': ship.country_id.code or 'GR',
-                    },
-                }
+            payload['delivery'] = {
+                'partyName': ship.name or partner.name,
+                'deliveryAddress': {
+                    'deliveryAddressLine1': ship.street or '',
+                    'deliveryAddressLine2': ship.street2 or '',
+                    'deliveryCity': ship.city or '',
+                    'deliveryPostCode': ship.zip or '',
+                    'deliveryCountryCode': ship.country_id.code or 'GR',
+                },
+            }
 
         return payload
 
@@ -463,6 +648,14 @@ class AccountMove(models.Model):
 
     def _l10n_gr_prov_ilyda_handle_response(self, data):
         self.ensure_one()
+        _logger.debug('ILYDA response: %s', data)
+        if isinstance(data, list):
+            details = '; '.join(
+                self._l10n_gr_prov_ilyda_format_error(e) if isinstance(e, dict)
+                else str(e)
+                for e in data
+            ) or str(data)[:500]
+            raise UserError(_('ILYDA rejected the document: %s', details))
         marking = data.get('invoiceMarking') or {}
         errors = data.get('errors') or []
         fatal = [e for e in errors if e.get('fatal')]
@@ -486,5 +679,5 @@ class AccountMove(models.Model):
             'l10n_gr_prov_invoice_identifier': marking.get('invoiceIdentifier'),
             'l10n_gr_prov_qr_url': marking.get('qrCode'),
             'l10n_gr_prov_provider_url': marking.get('providerUrl'),
-            'l10n_gr_prov_previously_submitted': bool(marking.get('previouslySubmitted')),
+            'l10n_gr_prov_previously_submitted': bool(marking.get('aadePreviouslySubmittedError228')),
         })

@@ -1,6 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
+    <!-- Hide the myDATA inv-type selector when the journal already governs the type -->
+    <record id="view_move_form_l10n_gr_prov_hide_inv_type" model="ir.ui.view">
+        <field name="name">account.move.form.l10n.gr.prov.hide.inv.type</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="l10n_gr_edi.account_move_form_inherit_l10n_gr_edi"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='l10n_gr_edi_inv_type'][@widget='dynamic_selection']" position="attributes">
+                <attribute name="invisible">not l10n_gr_edi_enable_view_mydata or journal_id_inv_type_default</attribute>
+                <attribute name="required">0</attribute>
+            </xpath>
+            <!-- expose the journal's default as an invisible field for the domain above -->
+            <xpath expr="//field[@name='l10n_gr_edi_available_inv_type']" position="after">
+                <field name="journal_id_inv_type_default" invisible="1"/>
+            </xpath>
+        </field>
+    </record>
+
     <record id="view_move_form_l10n_gr_prov" model="ir.ui.view">
         <field name="name">account.move.form.l10n.gr.prov</field>
         <field name="model">account.move</field>
@@ -16,6 +33,33 @@
             <notebook position="inside">
                 <page string="E-Invoicing Provider" name="l10n_gr_prov"
                       invisible="not l10n_gr_prov_applicable">
+
+                    <!-- myDATA invoice classification -->
+                    <group string="myDATA">
+                        <group>
+                            <field name="l10n_gr_prov_withholding_category"
+                                   readonly="l10n_gr_prov_mark"/>
+                            <field name="l10n_gr_prov_withholding_amount"
+                                   readonly="l10n_gr_prov_mark"
+                                   invisible="not l10n_gr_prov_withholding_category"/>
+                            <field name="l10n_gr_prov_stamp_duty_amount"
+                                   readonly="l10n_gr_prov_mark"/>
+                            <field name="l10n_gr_prov_stamp_duty_category"
+                                   readonly="l10n_gr_prov_mark"
+                                   invisible="not l10n_gr_prov_stamp_duty_amount"/>
+                            <field name="l10n_gr_prov_fees_amount"
+                                   readonly="l10n_gr_prov_mark"/>
+                            <field name="l10n_gr_prov_fees_category"
+                                   readonly="l10n_gr_prov_mark"
+                                   invisible="not l10n_gr_prov_fees_amount"/>
+                            <field name="l10n_gr_prov_other_taxes_amount"
+                                   readonly="l10n_gr_prov_mark"/>
+                            <field name="l10n_gr_prov_other_taxes_category"
+                                   readonly="l10n_gr_prov_mark"
+                                   invisible="not l10n_gr_prov_other_taxes_amount"/>
+                        </group>
+                    </group>
+
                     <group>
                         <group string="Status">
                             <field name="l10n_gr_prov_state" readonly="1"/>
@@ -34,6 +78,10 @@
                             <field name="l10n_gr_prov_qr_url" widget="url" readonly="1"/>
                             <field name="l10n_gr_prov_provider_url" widget="url" readonly="1"/>
                         </group>
+                    </group>
+                    <group string="Δελτίο Αποστολής (9.3)"
+                           invisible="l10n_gr_edi_inv_type != '9.3'">
+                        <field name="l10n_gr_prov_move_purpose" readonly="l10n_gr_prov_mark"/>
                     </group>
                     <group string="B2G — Public Contracts (Peppol)">
                         <group>
@@ -59,6 +107,35 @@
                 </page>
             </notebook>
 
+            <!-- Classification lives in the line's Προβολή dialog (inline form below).
+                 Kept here as hidden-by-default columns, toggleable via the list menu. -->
+            <xpath expr="//field[@name='invoice_line_ids']/list" position="inside">
+                <field name="l10n_gr_prov_cls_category" optional="hide"
+                       string="Κατηγορία" column_invisible="parent.country_code != 'GR'"/>
+                <field name="l10n_gr_prov_cls_type" optional="hide"
+                       string="Κωδικός E3" column_invisible="parent.country_code != 'GR'"/>
+                <field name="l10n_gr_prov_vat_exemption" optional="hide"
+                       string="Απαλλαγή ΦΠΑ" column_invisible="parent.country_code != 'GR'"/>
+            </xpath>
+
+        </field>
+    </record>
+
+    <!-- myDATA classification on the invoice-line form (opened by the line's
+         'Προβολή' button, which does an act_window on account.move.line). -->
+    <record id="view_move_line_form_l10n_gr_prov" model="ir.ui.view">
+        <field name="name">account.move.line.form.l10n.gr.prov</field>
+        <field name="model">account.move.line</field>
+        <field name="inherit_id" ref="account.view_move_line_form"/>
+        <field name="arch" type="xml">
+            <page name="information" position="inside">
+                <group string="myDATA Χαρακτηρισμός"
+                       invisible="display_type in ('line_section', 'line_subsection', 'line_note')">
+                    <field name="l10n_gr_prov_cls_category"/>
+                    <field name="l10n_gr_prov_cls_type"/>
+                    <field name="l10n_gr_prov_vat_exemption"/>
+                </group>
+            </page>
         </field>
     </record>
 

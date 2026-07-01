@@ -8,6 +8,15 @@
         <field name="arch" type="xml">
             <div name="taxes_div" position="after">
                 <field name="l10n_gr_prov_cpv" placeholder="e.g. 30237200-1"/>
+                <separator string="myDATA (Ελλάδα)"/>
+                <field name="l10n_gr_prov_product_type_gr"
+                       string="Τύπος Προϊόντος"/>
+                <field name="l10n_gr_prov_cls_category"
+                       string="Κατηγορία Χαρακτηρισμού (default)"
+                       help="Overrides the automatic suggestion from the product type above."/>
+                <field name="l10n_gr_prov_cls_type"
+                       string="Κωδικός E3 (default)"
+                       help="Overrides the automatic suggestion from the product type above."/>
             </div>
         </field>
     </record>

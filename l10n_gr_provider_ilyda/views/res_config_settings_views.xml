@@ -8,13 +8,11 @@
         <field name="arch" type="xml">
             <setting name="l10n_gr_prov_auto_setting" position="after">
                 <setting string="ILYDA Credentials" name="l10n_gr_prov_ilyda_setting"
-                         help="X-Auth-Key issued by ILYDA support. Username/password only if agreed as the authentication method."
+                         help="Username and Password issued by ILYDA support (Basic Authentication)."
                          invisible="l10n_gr_prov_provider != 'ilyda'">
-                    <field name="l10n_gr_prov_ilyda_auth_key" password="True"
-                           placeholder="X-Auth-Key"/>
-                    <field name="l10n_gr_prov_ilyda_username" placeholder="Username (optional)"/>
+                    <field name="l10n_gr_prov_ilyda_username" placeholder="Username"/>
                     <field name="l10n_gr_prov_ilyda_password" password="True"
-                           placeholder="Password (optional)"/>
+                           placeholder="Password"/>
                 </setting>
             </setting>
         </field>
