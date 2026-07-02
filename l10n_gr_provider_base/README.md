@@ -1,6 +1,6 @@
 # l10n_gr_provider_base — Greece E-Invoicing Provider Base
 
-**Version:** 1.6 | **Odoo:** 19 | **License:** LGPL-3
+**Version:** 1.7 | **Odoo:** 19 | **License:** LGPL-3
 
 Provider-agnostic base for issuing sales documents through a licensed Greek
 e-invoicing provider (Υ.ΠΑ.Η.Ε.Σ.), as required by the 2026 B2B e-invoicing
@@ -164,6 +164,26 @@ myDATA QR code when `l10n_gr_prov_mark` is set. It shows:
 ---
 
 ## Changelog
+
+### 1.7 — Ψηφιακή Διακίνηση, tax net, v2.0.1 labels
+- **Ψηφιακή Διακίνηση (dispatch lifecycle)**: new menu (Λογιστική → Ψηφιακή
+  Διακίνηση) with the ΔΑ list + recipient wizard (Επιβεβαίωση Παραλαβής /
+  Απόρριψη via QR URL or MARK, direct to AADE using the l10n_gr_edi
+  credentials). Delivery status + lifecycle history on the ΔΑ form, polled by
+  cron every 30'. Issuer + recipient roles; RegisterTransfer (carrier) deferred.
+- **Journal-driven tax net**: cross-border journals (1.2/2.2/1.3/2.3) auto-apply
+  their 0% tax + Απαλλαγή ΦΠΑ reason on lines and restrict the Φόροι dropdown;
+  domestic journals offer only the valid GR rates.
+- **Classification defaults**: derived from the v2.0.1 map per (inv type ×
+  product type) with a sparse override menu; retail types prefer the retail E3
+  codes (E3_561_003); product-template overrides are now type-aware.
+- **v2.0.1 label refresh**: VAT exemptions renumbered to ν.5144/2024 articles,
+  Χαρτόσημο → Ψηφιακό Τέλος Συναλλαγής, official §8.4/8.5/8.7 wording,
+  Σκοπός Διακίνησης table §8.14 (codes 6/15/16/17 blocked as non-sendable).
+- Extra taxes: category-first UI on one row, fixed-rate categories
+  auto-calculate and lock the amount.
+- Dispatch types now include the buyer (AADE: counterpart mandatory).
+- Classification fields moved to the line detail form (Προβολή).
 
 ### 1.6 — myDATA v2.0.1
 - **Data refresh to myDATA v2.0.1**: `gr_mydata.py` regenerated from the

@@ -25,6 +25,8 @@ from odoo.addons.l10n_gr_provider_base.models.gr_mydata import (
     PAYMENT_METHOD_MAP,
     PROVIDER_SUBMITTABLE_TYPES,
     TYPES_DISPATCH,
+    MOVE_PURPOSE_NOT_SENDABLE,
+    WITHHOLDING_CATEGORY_SELECTION,
 )
 
 _logger = logging.getLogger(__name__)
@@ -184,6 +186,12 @@ class AccountMove(models.Model):
                 'Invoice type %s cannot be submitted through the e-invoicing provider '
                 '(only 1.1–11.5 are allowed). Use an accounting/ERP journal instead.',
                 inv_type))
+        if (inv_type in TYPES_DISPATCH
+                and self.l10n_gr_prov_move_purpose in MOVE_PURPOSE_NOT_SENDABLE):
+            errors.append(_(
+                'Ο Σκοπός Διακίνησης %s δεν γίνεται δεκτός από το myDATA στην τρέχουσα '
+                'έκδοση (§8.14) — επιλέξτε άλλον σκοπό.',
+                self.l10n_gr_prov_move_purpose))
         lines = self._l10n_gr_prov_ilyda_lines()
         if not lines:
             errors.append(_('The document has no product lines.'))
@@ -376,14 +384,44 @@ class AccountMove(models.Model):
         } for (cat, cls_type), amount in cls_totals.items()]
 
         # ── Totals ────────────────────────────────────────────────────────────
+        # Withholding is an EN16931 doc-level allowance (BT-107) at Z/0%, so both
+        # total systems land on the same gross (ILYDA rule BG-22-MISMATCH):
+        #   BT-109 = lines net + charges − withheld; BT-112 = BT-109 + VAT;
+        #   BT-115 = BT-112 (BR-CO-16, paid=rounding=0);
+        #   ET-25  = net + VAT + fees/stamp/other − withheld == BT-112.
+        # (cf. examples_bundle/test_b2b_allowance_aadeData.json)
         total_net = _r2(sum(b[0] for b in vat_buckets.values()))
         total_vat = _r2(sum(b[1] for b in vat_buckets.values()))
-        total_gross = _r2(total_net + total_vat)
         withholding = _r2(self.l10n_gr_prov_withholding_amount or 0.0)
         stamp_duty = _r2(self.l10n_gr_prov_stamp_duty_amount or 0.0)
         fees = _r2(self.l10n_gr_prov_fees_amount or 0.0)
         other_taxes = _r2(self.l10n_gr_prov_other_taxes_amount or 0.0)
-        amount_due = _r2(total_gross - withholding + stamp_duty + fees + other_taxes)
+        extra_charges = _r2(stamp_duty + fees + other_taxes)
+        total_without_vat = _r2(total_net + extra_charges - withholding)  # BT-109
+        total_with_vat = _r2(total_without_vat + total_vat)               # BT-112
+        amount_due = total_with_vat                                       # BT-115
+        aade_gross = _r2(total_net + total_vat + extra_charges - withholding)  # ET-25
+
+        # Withholding allowance: EN16931 mirror of taxTotals taxType=1, plus a
+        # Z/0% VAT breakdown with negative taxable (as in ILYDA's example).
+        doc_level_allowances = []
+        if withholding:
+            wh_label = dict(WITHHOLDING_CATEGORY_SELECTION).get(
+                self.l10n_gr_prov_withholding_category, 'Παρακρατούμενος Φόρος')
+            doc_level_allowances.append({
+                'amount': withholding,
+                'reason': wh_label,
+                'vatCategoryCode': 'Z',
+                'vatRate': 0,
+            })
+            vat_breakdowns.append({
+                'categoryCode': 'Z',
+                'categoryRate': 0,
+                'categoryTaxableAmount': -withholding,
+                'categoryTaxAmount': 0,
+                'exemptionReasonCode': None,
+                'exemptionReasonText': None,
+            })
 
         exchange_rate = 0.0
         if self.currency_id and self.currency_id.name != 'EUR':
@@ -437,20 +475,20 @@ class AccountMove(models.Model):
 
         doc_total = {
             'invoiceLinesNetAmountSum': total_net,
-            'invoiceTotalWithoutVat': total_net,
+            'invoiceTotalWithoutVat': total_without_vat,
             'invoiceTotalVatAmount': total_vat,
-            'invoiceTotalAmountWithVat': total_gross,
+            'invoiceTotalAmountWithVat': total_with_vat,
             'invoiceTotalVatAmountInAccountingCurrency': None,
             'amountDueForPayment': amount_due,
             'paidAmount': 0.0,
             'roundingAmount': 0.0,
-            'documentLevelAllowancesSum': 0.0,
+            'documentLevelAllowancesSum': withholding,
             'documentLevelChargesSum': doc_charges_sum,
             'exchangeRate': exchange_rate,
             'aadeDocTotals': {
                 'aadeTotalNetValue': total_net,
                 'aadeTotalVatAmount': total_vat,
-                'aadeTotalGrossValue': total_gross,
+                'aadeTotalGrossValue': aade_gross,
                 'aadeTotalWitheldAmount': withholding,
                 'aadeTotalFeesAmount': fees,
                 'aadeTotalStampDutyAmount': stamp_duty,
@@ -557,20 +595,20 @@ class AccountMove(models.Model):
             'invoiceLines': invoice_lines,
             'vatBreakdowns': vat_breakdowns,
             'docTotal': doc_total,
-            'docLevelAllowances': None,
+            'docLevelAllowances': doc_level_allowances or None,
             'docLevelCharges': doc_level_charges or None,
             'aadeData': aade_data,
         }
 
-        # Payment method — forbidden for dispatch notes (9.3)
-        if inv_type != '9.3':
+        # Payment method — forbidden for dispatch notes (9.x/10.x)
+        if inv_type not in TYPES_DISPATCH:
             method = self.l10n_gr_edi_payment_method or '5'
             ilyda_type, method_info = PAYMENT_METHOD_MAP.get(method, (5, 'Επί Πιστώσει'))
-            # gross amount is correct: paymentMethods.amount = total payable incl. VAT
+            # amount = myDATA gross (net + VAT + charges − withheld) = actual payable
             payload['paymentMethods'] = [{
                 'type': ilyda_type,
                 'paymentMethodInfo': method_info,
-                'amount': amount_due,
+                'amount': aade_gross,
             }]
             _TERMS = {
                 '1': 'ΤΡΑΠΕΖΙΚΗ ΜΕΤΑΦΟΡΑ', '2': 'ΤΡΑΠΕΖΙΚΗ ΜΕΤΑΦΟΡΑ',
@@ -638,7 +676,12 @@ class AccountMove(models.Model):
 
     @staticmethod
     def _l10n_gr_prov_ilyda_format_error(error):
-        text = f"{error.get('code')}: {error.get('defaultMessage')}"
+        # AADE business errors often carry the real reason in aadeMessage only
+        message = error.get('defaultMessage') or error.get('aadeMessage') or ''
+        aade = error.get('aadeMessage')
+        if aade and aade != message:
+            message = f'{message} ({aade})' if message else aade
+        text = f"{error.get('code')}: {message}".strip()
         fields = error.get('errorFields') or []
         if fields:
             details = ', '.join(

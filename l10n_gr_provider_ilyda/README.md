@@ -1,6 +1,6 @@
 # l10n_gr_provider_ilyda — ILYDA Driver
 
-**Version:** 1.6 | **Odoo:** 19 | **License:** LGPL-3  
+**Version:** 1.7 | **Odoo:** 19 | **License:** LGPL-3  
 **API ref:** ILYDA "Οδηγίες υλοποίησης eInvoicing" v1.0.6
 
 Driver implementing the ILYDA Y.PA.H.E.S. eInvoicing API for the
@@ -242,6 +242,18 @@ Before submission the driver checks:
 ---
 
 ## Changelog
+
+### 1.7 — Withholding totals, error clarity
+- **Withholding (BR-CO-16 / MDP-0081 / BG-22 fixes)**: withheld tax is now an
+  EN16931 doc-level allowance (BT-107) at Z/0%%, so BT-109/BT-112 and the
+  myDATA gross (ET-25) agree; extra vatBreakdowns entry with negative taxable,
+  as in ILYDA's own reference example.
+- Doc-level charges (Ψηφιακό Τέλος/Τέλη/Λοιποί Φόροι) included in BT-109/112.
+- paymentMethods amount = myDATA gross (net + VAT + charges − withheld).
+- Error messages now include AADE's `aadeMessage` (no more blank "204:").
+- Pre-send guard for non-sendable Σκοπός Διακίνησης codes (6/15/16/17).
+- Dispatch payloads: buyer block included; payment method skipped for all
+  dispatch types (9.x/10.x).
 
 ### 1.6 — myDATA v2.0.1
 - Aligned with the v2.0.1 data refresh in `l10n_gr_provider_base` (new types,

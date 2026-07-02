@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Delivery lifecycle on the ΔΑ form (E-Invoicing tab) -->
+    <record id="view_move_form_l10n_gr_prov_dispatch" model="ir.ui.view">
+        <field name="name">account.move.form.l10n.gr.prov.dispatch</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="view_move_form_l10n_gr_prov"/>
+        <field name="arch" type="xml">
+            <xpath expr="//group[@name='l10n_gr_prov_dispatch_group']" position="after">
+                <group string="Ψηφιακή Διακίνηση"
+                       invisible="not l10n_gr_prov_is_dispatch or not l10n_gr_prov_mark">
+                    <field name="l10n_gr_prov_is_dispatch" invisible="1"/>
+                    <group>
+                        <field name="l10n_gr_prov_delivery_status" readonly="1"/>
+                        <button name="action_l10n_gr_prov_refresh_delivery_status"
+                                type="object" string="Ανανέωση Κατάστασης"
+                                class="btn-secondary" colspan="2"/>
+                    </group>
+                    <field name="l10n_gr_prov_delivery_event_ids" nolabel="1" colspan="2" readonly="1">
+                        <list>
+                            <field name="event_timestamp"/>
+                            <field name="event_type"/>
+                            <field name="actor_vat"/>
+                            <field name="mark"/>
+                            <field name="details"/>
+                        </list>
+                    </field>
+                </group>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Recipient wizard: confirm receipt / reject an incoming ΔΑ -->
+    <record id="view_l10n_gr_prov_delivery_wizard_form" model="ir.ui.view">
+        <field name="name">l10n.gr.prov.delivery.wizard.form</field>
+        <field name="model">l10n.gr.prov.delivery.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Παραλαβή / Απόρριψη Δελτίου Αποστολής">
+                <group>
+                    <field name="action" widget="radio"/>
+                    <field name="qr_url" class="border rounded bg-light px-2"/>
+                    <field name="invoice_mark" invisible="action != 'reject'"/>
+                    <field name="outcome" invisible="action != 'confirm'"
+                           required="action == 'confirm'"/>
+                    <field name="delivered_without_recipient"
+                           invisible="action != 'confirm'"/>
+                    <field name="rejection_reason" invisible="action != 'reject'"/>
+                </group>
+                <footer>
+                    <button name="action_send" type="object"
+                            string="Καταχώρηση στην AADE" class="btn-primary"/>
+                    <button string="Άκυρο" special="cancel" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_l10n_gr_prov_delivery_wizard" model="ir.actions.act_window">
+        <field name="name">Παραλαβή / Απόρριψη ΔΑ</field>
+        <field name="res_model">l10n.gr.prov.delivery.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <!-- Δελτία Αποστολής list -->
+    <record id="action_l10n_gr_prov_dispatch_notes" model="ir.actions.act_window">
+        <field name="name">Δελτία Αποστολής</field>
+        <field name="res_model">account.move</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('journal_id.l10n_gr_edi_inv_type_default', 'in', ('9.1', '9.2', '9.3', '10.1', '10.2')), ('move_type', '=', 'out_invoice')]</field>
+        <field name="context">{'default_move_type': 'out_invoice'}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Δεν υπάρχουν Δελτία Αποστολής</p>
+            <p>Εκδώστε ΔΑ από τα ημερολόγια διακίνησης (ΔΑ, ΔΑΣ, ΣΔΑ, ΔΠΠ, ΔΠΠΜ).</p>
+        </field>
+    </record>
+
+    <!-- Delivery status column on the invoice list (optional) -->
+    <record id="view_move_tree_l10n_gr_prov_dispatch" model="ir.ui.view">
+        <field name="name">account.move.list.l10n.gr.prov.dispatch</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="view_move_tree_l10n_gr_prov"/>
+        <field name="arch" type="xml">
+            <field name="l10n_gr_prov_state" position="after">
+                <field name="l10n_gr_prov_delivery_status" optional="hide" widget="badge"
+                       decoration-success="l10n_gr_prov_delivery_status == 'Completed'"
+                       decoration-info="l10n_gr_prov_delivery_status in ('Registered', 'InTransit')"
+                       decoration-warning="l10n_gr_prov_delivery_status == 'DeliveredByCarrier'"
+                       decoration-danger="l10n_gr_prov_delivery_status in ('Rejected', 'FailedDelivery')"/>
+            </field>
+        </field>
+    </record>
+
+    <!-- Menu: Ψηφιακή Διακίνηση -->
+    <menuitem id="menu_l10n_gr_prov_dispatch_root"
+              name="Ψηφιακή Διακίνηση"
+              parent="account.menu_finance"
+              sequence="40"/>
+    <menuitem id="menu_l10n_gr_prov_dispatch_notes"
+              name="Δελτία Αποστολής"
+              parent="menu_l10n_gr_prov_dispatch_root"
+              action="action_l10n_gr_prov_dispatch_notes"
+              sequence="10"/>
+    <menuitem id="menu_l10n_gr_prov_delivery_wizard"
+              name="Παραλαβή / Απόρριψη ΔΑ"
+              parent="menu_l10n_gr_prov_dispatch_root"
+              action="action_l10n_gr_prov_delivery_wizard"
+              sequence="20"/>
+
+    <!-- Poll open dispatches every 30 minutes -->
+    <record id="cron_l10n_gr_prov_poll_delivery" model="ir.cron">
+        <field name="name">GR Provider: Poll Delivery Note Status</field>
+        <field name="model_id" ref="account.model_account_move"/>
+        <field name="state">code</field>
+        <field name="code">model._l10n_gr_prov_cron_poll_delivery()</field>
+        <field name="interval_number">30</field>
+        <field name="interval_type">minutes</field>
+        <field name="active" eval="True"/>
+    </record>
+
+</odoo>

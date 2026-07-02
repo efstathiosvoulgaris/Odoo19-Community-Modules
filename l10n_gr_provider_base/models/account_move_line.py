@@ -3,7 +3,7 @@ from odoo import api, fields, models, _
 from odoo.exceptions import ValidationError
 from .gr_mydata import (
     CLS_CATEGORIES, CLS_TYPES, VAT_EXEMPTION_CODES,
-    valid_cls_categories, valid_cls_types,
+    valid_cls_categories, valid_cls_types, preferred_e3, INV_TYPE_ZERO_TAX,
 )
 
 
@@ -75,6 +75,27 @@ class AccountMoveLine(models.Model):
                     e3=e3, t=inv_type, cat=cat))
 
     @api.onchange('product_id')
+    def _onchange_l10n_gr_prov_zero_tax(self):
+        """Cross-border journals (1.2/2.2/1.3/2.3): force the mapped 0% tax and
+        the Απαλλαγή ΦΠΑ reason on product lines (mapping confirmed with user)."""
+        for line in self:
+            move = line.move_id
+            if move.company_id.country_code != 'GR' or not line.product_id:
+                continue
+            zero = INV_TYPE_ZERO_TAX.get(line._l10n_gr_prov_inv_type())
+            if not zero:
+                continue
+            tax_name, exemption = zero
+            tax = self.env['account.tax'].search([
+                ('type_tax_use', '=', 'sale'),
+                ('company_id', 'parent_of', move.company_id.id),
+                ('name', '=', tax_name),
+            ], limit=1)
+            if tax:
+                line.tax_ids = [(6, 0, tax.ids)]
+            line.l10n_gr_prov_vat_exemption = exemption
+
+    @api.onchange('product_id')
     def _onchange_l10n_gr_prov_cls_from_product(self):
         """Fill line classification from the defaults table (override → derived).
 
@@ -89,17 +110,23 @@ class AccountMoveLine(models.Model):
             if not inv_type:
                 continue
             tmpl = line.product_id.product_tmpl_id
-            # product-level explicit override always wins
-            if tmpl.l10n_gr_prov_cls_category:
-                line.l10n_gr_prov_cls_category = tmpl.l10n_gr_prov_cls_category
-                if tmpl.l10n_gr_prov_cls_type:
-                    line.l10n_gr_prov_cls_type = tmpl.l10n_gr_prov_cls_type
-                continue
             # Fall back to 'goods' when the product has no Greek type set —
             # goods is the overwhelmingly common case, so a line is never blank.
             ptype = tmpl.l10n_gr_prov_product_type_gr or 'goods'
             cat, e3 = self.env['l10n.gr.prov.cls.default'].get_default(
                 inv_type, ptype, move.company_id.id)
+            # Product-template overrides win, but only when valid for this
+            # invoice type (a fixed domestic E3 is wrong on 1.2/1.3); missing
+            # or invalid pieces fall back to the map derivation.
+            tmpl_cat = tmpl.l10n_gr_prov_cls_category
+            if tmpl_cat and tmpl_cat in valid_cls_categories(inv_type):
+                cat = tmpl_cat
+                valid = valid_cls_types(inv_type, cat)
+                tmpl_e3 = tmpl.l10n_gr_prov_cls_type
+                if tmpl_e3 and tmpl_e3 in valid:
+                    e3 = tmpl_e3
+                else:
+                    e3 = preferred_e3(inv_type, valid) or False
             if cat:
                 line.l10n_gr_prov_cls_category = cat
                 line.l10n_gr_prov_cls_type = e3

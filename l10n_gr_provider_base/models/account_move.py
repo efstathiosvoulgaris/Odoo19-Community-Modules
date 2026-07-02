@@ -7,9 +7,11 @@ from odoo import api, fields, models, _
 from odoo.exceptions import UserError
 from .gr_mydata import (
     WITHHOLDING_CATEGORY_SELECTION, WITHHOLDING_CATEGORY_RATE,
-    FEES_CATEGORY_SELECTION, OTHER_TAXES_CATEGORY_SELECTION,
-    STAMP_DUTY_CATEGORY_SELECTION,
+    FEES_CATEGORY_SELECTION, FEES_CATEGORY_RATE,
+    OTHER_TAXES_CATEGORY_SELECTION, OTHER_TAXES_CATEGORY_RATE,
+    STAMP_DUTY_CATEGORY_SELECTION, STAMP_DUTY_CATEGORY_RATE,
     partner_class, journal_types_for_class,
+    INV_TYPE_ZERO_TAX, DOMESTIC_TAX_RATES, DOMESTIC_ZERO_TAX_NAMES, TYPES_DISPATCH,
 )
 
 _logger = logging.getLogger(__name__)
@@ -77,30 +79,33 @@ class AccountMove(models.Model):
     l10n_gr_prov_b2g_status = fields.Char(string='B2G Status', copy=False)
 
     # ── Dispatch note (9.3) ───────────────────────────────────────────────────
+    # v2.0.1 §8.14 — codes 6/15/16/17 exist in the schema but are marked
+    # «δεν είναι δυνατή η αποστολή» (blocked at ILYDA validation).
     l10n_gr_prov_move_purpose = fields.Selection(
         selection=[
-            ('1', '1 - Πώληση'),
-            ('2', '2 - Πώληση για Λογαριασμό Τρίτων'),
-            ('3', '3 - Δειγματισμός'),
-            ('4', '4 - Έκθεση'),
-            ('5', '5 - Επιστροφή'),
-            ('6', '6 - Φύλαξη'),
-            ('7', '7 - Επεξεργασία - Συναρμολόγηση'),
-            ('8', '8 - Μεταξύ Εγκαταστάσεων Οντότητας'),
-            ('9', '9 - Μεταφορά Αδρανών Στοιχείων Ενεργητικού'),
-            ('10', '10 - Παρακαταθήκη'),
-            ('11', '11 - Πώληση Αδρανών Στοιχείων Ενεργητικού'),
-            ('12', '12 - Παραγωγή Παγίων - Αυτοπαράδοση'),
-            ('13', '13 - Παραλαβή / Επιστροφή Εμπορευμάτων'),
-            ('14', '14 - Εκτελωνισμός'),
-            ('15', '15 - Αποστολή / Εισαγωγή'),
-            ('16', '16 - Εισαγωγή'),
-            ('17', '17 - Εξαγωγή'),
-            ('18', '18 - Δηλωτικό Αποστολής'),
+            ('1',  '1 - Πώληση'),
+            ('2',  '2 - Πώληση για Λογαριασμό Τρίτων'),
+            ('3',  '3 - Δειγματισμός'),
+            ('4',  '4 - Έκθεση'),
+            ('5',  '5 - Επιστροφή'),
+            ('6',  '6 - Φύλαξη (μη αποδεκτό προς αποστολή)'),
+            ('7',  '7 - Επεξεργασία / Συναρμολόγηση'),
+            ('8',  '8 - Μεταξύ Εγκαταστάσεων Οντότητας'),
+            ('9',  '9 - Αγορά'),
+            ('10', '10 - Εφοδιασμός πλοίων και αεροσκαφών'),
+            ('11', '11 - Δωρεάν διάθεση'),
+            ('12', '12 - Εγγύηση'),
+            ('13', '13 - Χρησιδανεισμός'),
+            ('14', '14 - Αποθήκευση σε Τρίτους'),
+            ('15', '15 - Επιστροφή από Φύλαξη (μη αποδεκτό προς αποστολή)'),
+            ('16', '16 - Ανακύκλωση (μη αποδεκτό προς αποστολή)'),
+            ('17', '17 - Καταστροφή άχρηστου υλικού (μη αποδεκτό προς αποστολή)'),
+            ('18', '18 - Διακίνηση Παγίων (Ενδοδιακίνηση)'),
             ('19', '19 - Λοιπές Διακινήσεις'),
+            ('20', '20 - Μεταφορές / Ταχυμεταφορές'),
         ],
-        string='Σκοπός Διακίνησης (9.3)', copy=False, default='1',
-        help='Mandatory for dispatch notes (type 9.3). Σκοπός Διακίνησης per myDATA.'
+        string='Σκοπός Διακίνησης', copy=False, default='1',
+        help='Mandatory for dispatch notes (9.x). Σκοπός Διακίνησης per myDATA v2.0.1 §8.14.'
     )
 
     # ── myDATA invoice fields (clean-slate, no l10n_gr_edi dependency) ───────
@@ -120,57 +125,85 @@ class AccountMove(models.Model):
         help='Auto-calculated from the selected AADE category rate × net total. '
              'Editable for variable-rate categories.',
     )
-    l10n_gr_prov_stamp_duty_amount = fields.Monetary(
-        string='Χαρτόσημο',
-        currency_field='currency_id',
-        copy=False,
-        help='Stamp duty (χαρτόσημο). Enter the amount if applicable; '
-             'the provider will validate legality.',
-    )
     l10n_gr_prov_stamp_duty_category = fields.Selection(
         selection=STAMP_DUTY_CATEGORY_SELECTION,
-        string='Χαρτόσημο (κατηγορία ΑΑΔΕ)',
+        string='Ψηφιακό Τέλος Συναλλαγής (κατηγορία ΑΑΔΕ)',
         copy=False,
-        help='AADE stamp duty category (§8.6). Required when a stamp duty amount is set.',
+        help='AADE digital transaction fee category (v2.0.1 §8.6, πρώην χαρτόσημο). '
+             'Categories 1–3 auto-calculate the amount.',
     )
-    l10n_gr_prov_fees_amount = fields.Monetary(
-        string='Τέλη',
+    l10n_gr_prov_stamp_duty_amount = fields.Monetary(
+        string='Ψηφιακό Τέλος Συναλλαγής (ποσό)',
         currency_field='currency_id',
-        copy=False,
-        help='Other fees (τέλη) not included in invoice lines.',
+        compute='_compute_l10n_gr_prov_stamp_duty_amount',
+        store=True, readonly=False, copy=False,
+        help='Auto-calculated for fixed-rate categories (1,2,3); manual otherwise.',
     )
     l10n_gr_prov_fees_category = fields.Selection(
         selection=FEES_CATEGORY_SELECTION,
         string='Τέλη (κατηγορία ΑΑΔΕ)',
         copy=False,
-        help='AADE fees category (§8.7). Required when a fees amount is set.',
+        help='AADE fees category (§8.7). Percentage categories auto-calculate the amount.',
     )
-    l10n_gr_prov_other_taxes_amount = fields.Monetary(
-        string='Λοιποί Φόροι',
+    l10n_gr_prov_fees_amount = fields.Monetary(
+        string='Τέλη (ποσό)',
         currency_field='currency_id',
-        copy=False,
-        help='Other taxes (λοιποί φόροι) not included in invoice lines.',
+        compute='_compute_l10n_gr_prov_fees_amount',
+        store=True, readonly=False, copy=False,
+        help='Auto-calculated for percentage categories; manual for fixed-€/unit ones.',
     )
     l10n_gr_prov_other_taxes_category = fields.Selection(
         selection=OTHER_TAXES_CATEGORY_SELECTION,
         string='Λοιποί Φόροι (κατηγορία ΑΑΔΕ)',
         copy=False,
-        help='AADE other taxes category (§8.5). Required when an other taxes amount is set.',
+        help='AADE other taxes category (§8.5). Percentage categories auto-calculate the amount.',
     )
+    l10n_gr_prov_other_taxes_amount = fields.Monetary(
+        string='Λοιποί Φόροι (ποσό)',
+        currency_field='currency_id',
+        compute='_compute_l10n_gr_prov_other_taxes_amount',
+        store=True, readonly=False, copy=False,
+        help='Auto-calculated for percentage categories; manual for fixed-€/unit ones.',
+    )
+
+    def _l10n_gr_prov_apply_rate(self, cat_field, amount_field, rate_map):
+        """Amount = net × category rate; 0 when no category; untouched (manual)
+        when the category has no rate in the map."""
+        for move in self:
+            cat = move[cat_field]
+            rate = rate_map.get(cat, 0.0)
+            if not cat:
+                move[amount_field] = 0.0
+            elif rate:
+                net = Decimal(str(move.amount_untaxed))
+                move[amount_field] = float(
+                    (net * Decimal(str(rate))).quantize(Decimal('0.01'), ROUND_HALF_UP)
+                )
+            # else: manual category → leave user value
 
     @api.depends('l10n_gr_prov_withholding_category', 'amount_untaxed')
     def _compute_l10n_gr_prov_withholding_amount(self):
-        for move in self:
-            cat = move.l10n_gr_prov_withholding_category
-            rate = WITHHOLDING_CATEGORY_RATE.get(cat, 0.0)
-            if not cat:
-                move.l10n_gr_prov_withholding_amount = 0.0
-            elif rate:
-                net = Decimal(str(move.amount_untaxed))
-                move.l10n_gr_prov_withholding_amount = float(
-                    (net * Decimal(str(rate))).quantize(Decimal('0.01'), ROUND_HALF_UP)
-                )
-            # else: rate == 0.0 (manual categories 11,14,15,16,17) → leave user value
+        self._l10n_gr_prov_apply_rate(
+            'l10n_gr_prov_withholding_category', 'l10n_gr_prov_withholding_amount',
+            WITHHOLDING_CATEGORY_RATE)
+
+    @api.depends('l10n_gr_prov_stamp_duty_category', 'amount_untaxed')
+    def _compute_l10n_gr_prov_stamp_duty_amount(self):
+        self._l10n_gr_prov_apply_rate(
+            'l10n_gr_prov_stamp_duty_category', 'l10n_gr_prov_stamp_duty_amount',
+            STAMP_DUTY_CATEGORY_RATE)
+
+    @api.depends('l10n_gr_prov_fees_category', 'amount_untaxed')
+    def _compute_l10n_gr_prov_fees_amount(self):
+        self._l10n_gr_prov_apply_rate(
+            'l10n_gr_prov_fees_category', 'l10n_gr_prov_fees_amount',
+            FEES_CATEGORY_RATE)
+
+    @api.depends('l10n_gr_prov_other_taxes_category', 'amount_untaxed')
+    def _compute_l10n_gr_prov_other_taxes_amount(self):
+        self._l10n_gr_prov_apply_rate(
+            'l10n_gr_prov_other_taxes_category', 'l10n_gr_prov_other_taxes_amount',
+            OTHER_TAXES_CATEGORY_RATE)
 
     @api.depends('partner_id', 'l10n_gr_prov_b2g')
     def _compute_l10n_gr_prov_buyer_ref(self):
@@ -218,6 +251,37 @@ class AccountMove(models.Model):
                 lambda j: not j.l10n_gr_edi_inv_type_default
                 or j.l10n_gr_edi_inv_type_default in valid
             )
+
+    # ── Journal-driven tax net ────────────────────────────────────────────────
+    # Cross-border journals (1.2/2.2/1.3/2.3) → only their mapped 0% tax;
+    # domestic GR journals → standard + island rates + domestic 0% specials;
+    # dispatch / non-GR / purchase → no extra restriction beyond core's.
+    l10n_gr_prov_suitable_tax_ids = fields.Many2many(
+        'account.tax', compute='_compute_l10n_gr_prov_suitable_tax_ids')
+
+    @api.depends('journal_id.l10n_gr_edi_inv_type_default', 'company_id')
+    def _compute_l10n_gr_prov_suitable_tax_ids(self):
+        Tax = self.env['account.tax']
+        for move in self:
+            is_sale = move.is_sale_document(include_receipts=True)
+            base = [
+                ('type_tax_use', '=', 'sale' if is_sale else 'purchase'),
+                ('company_id', 'parent_of', move.company_id.id),
+            ]
+            inv_type = move.journal_id.l10n_gr_edi_inv_type_default
+            if (not is_sale
+                    or not move.company_id._l10n_gr_prov_active()
+                    or not inv_type or inv_type in TYPES_DISPATCH):
+                move.l10n_gr_prov_suitable_tax_ids = Tax.search(base)
+            elif inv_type in INV_TYPE_ZERO_TAX:
+                move.l10n_gr_prov_suitable_tax_ids = Tax.search(
+                    base + [('name', '=', INV_TYPE_ZERO_TAX[inv_type][0])])
+            else:
+                move.l10n_gr_prov_suitable_tax_ids = Tax.search(base + [
+                    '|',
+                    ('amount', 'in', DOMESTIC_TAX_RATES),
+                    ('name', 'in', DOMESTIC_ZERO_TAX_NAMES),
+                ])
 
     l10n_gr_prov_applicable = fields.Boolean(
         compute='_compute_l10n_gr_prov_applicable')
