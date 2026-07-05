@@ -166,6 +166,26 @@
                 </page>
             </notebook>
 
+            <!-- Πληρωμές: second tab, right after the invoice lines -->
+            <xpath expr="//page[@name='invoice_tab']" position="after">
+                <page string="Πληρωμές" name="l10n_gr_prov_payments"
+                      invisible="not l10n_gr_prov_applicable or l10n_gr_prov_is_dispatch and not l10n_gr_prov_journal_delivery_note">
+                    <group string="Τρόποι Πληρωμής myDATA">
+                        <field name="l10n_gr_prov_payment_ids" nolabel="1" colspan="2"
+                               readonly="l10n_gr_prov_mark">
+                            <list editable="bottom">
+                                <field name="payment_type"/>
+                                <field name="amount" class="fw-bold text-primary"/>
+                                <field name="info" optional="show"/>
+                                <field name="tip_amount" optional="hide"/>
+                                <field name="transaction_id" optional="hide"/>
+                                <field name="currency_id" column_invisible="1"/>
+                            </list>
+                        </field>
+                    </group>
+                </page>
+            </xpath>
+
             <!-- Journal-driven tax net: the Φόροι dropdown offers only the taxes
                  valid for the journal's myDATA type (cross-border → its 0% tax). -->
             <xpath expr="//field[@name='invoice_line_ids']" position="before">

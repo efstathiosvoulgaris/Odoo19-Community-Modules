@@ -318,6 +318,16 @@ class AccountMove(models.Model):
         )
         if queue:
             queue.write({'l10n_gr_prov_state': 'to_send'})
+        # Seed one payment line (core selection, full payable) when none exist.
+        for move in queue:
+            inv_type = move.journal_id.l10n_gr_edi_inv_type_default
+            if (not move.l10n_gr_prov_payment_ids
+                    and inv_type not in TYPES_DISPATCH
+                    and move.move_type in ('out_invoice', 'out_refund')):
+                move.l10n_gr_prov_payment_ids = [(0, 0, {
+                    'payment_type': move.l10n_gr_edi_payment_method or '5',
+                    'amount': move._l10n_gr_prov_payable(),
+                })]
         return posted
 
     # ── Actions ───────────────────────────────────────────────────────────────

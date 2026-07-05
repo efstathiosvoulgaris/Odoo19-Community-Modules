@@ -253,6 +253,10 @@ Before submission the driver checks:
   rejected by myDATA v2.0.x (MPD-0100).
 - `otherMovePurposeTitle` for σκοπός διακίνησης 19; numeric validation for
   shipping branches.
+- Multiple `paymentMethods` from the payment lines table (AADE type sent
+  directly per ILYDA ET-63, with tipAmount/transactionId); validation that
+  the amounts sum to the payable; legacy single-method fallback when the
+  table is empty.
 
 ### 1.7 — Withholding totals, error clarity
 - **Withholding (BR-CO-16 / MDP-0081 / BG-22 fixes)**: withheld tax is now an

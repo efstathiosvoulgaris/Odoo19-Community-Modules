@@ -183,6 +183,12 @@ myDATA QR code when `l10n_gr_prov_mark` is set. It shows:
   taxes, €/τεμ fees) default the labeled amount on selection, editable.
 - Clear message when AADE dev does not know a MARK (provider-test MARKs
   are not registered in mydataapidev).
+- **Τρόποι Πληρωμής (§5.2/§8.12)**: multiple payment methods per document
+  (types 1–8 incl. Άμεσες Πληρωμές IRIS) with amount, info, tip and
+  transaction id, on a dedicated «Πληρωμές» tab. One line is auto-seeded on
+  post from the myDATA payment method for the full payable; new lines
+  default to the remainder. POS Α.1155 signature fields deferred until a
+  POS provider integration exists.
 
 ### 1.7 — Ψηφιακή Διακίνηση, tax net, v2.0.1 labels
 - **Ψηφιακή Διακίνηση (dispatch lifecycle)**: new menu (Λογιστική → Ψηφιακή

@@ -5,3 +5,4 @@ access_l10n_gr_prov_delivery_event_user,l10n.gr.prov.delivery.event user,model_l
 access_l10n_gr_prov_delivery_wizard_user,l10n.gr.prov.delivery.wizard user,model_l10n_gr_prov_delivery_wizard,account.group_account_invoice,1,1,1,1
 access_l10n_gr_prov_vehicle_user,l10n.gr.prov.vehicle user,model_l10n_gr_prov_vehicle,account.group_account_invoice,1,1,1,0
 access_l10n_gr_prov_vehicle_manager,l10n.gr.prov.vehicle manager,model_l10n_gr_prov_vehicle,account.group_account_manager,1,1,1,1
+access_l10n_gr_prov_payment_user,l10n.gr.prov.payment user,model_l10n_gr_prov_payment,account.group_account_invoice,1,1,1,1

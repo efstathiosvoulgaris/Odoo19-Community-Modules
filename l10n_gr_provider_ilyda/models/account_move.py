@@ -198,6 +198,15 @@ class AccountMove(models.Model):
                 errors.append(_(
                     'Η εγκατάσταση διακίνησης "%s" πρέπει να είναι αριθμός '
                     '(κωδικός εγκατάστασης ΑΑΔΕ).', branch))
+        # Payment lines must cover the payable exactly (tips are on top)
+        if self.l10n_gr_prov_payment_ids and inv_type not in TYPES_DISPATCH:
+            paid = sum(self.l10n_gr_prov_payment_ids.mapped('amount'))
+            payable = self._l10n_gr_prov_payable()
+            if abs(paid - payable) > 0.01:
+                errors.append(_(
+                    'Οι Τρόποι Πληρωμής αθροίζουν %(paid).2f αλλά το πληρωτέο '
+                    'είναι %(due).2f — διορθώστε τα ποσά στην καρτέλα '
+                    'myDATA Φόροι & Πληρωμές.', paid=paid, due=payable))
         lines = self._l10n_gr_prov_ilyda_lines()
         if not lines:
             errors.append(_('The document has no product lines.'))
@@ -635,22 +644,37 @@ class AccountMove(models.Model):
             'aadeData': aade_data,
         }
 
-        # Payment method — forbidden for dispatch notes (9.x/10.x)
+        # Payment methods — forbidden for dispatch notes (9.x/10.x)
         if inv_type not in TYPES_DISPATCH:
-            method = self.l10n_gr_edi_payment_method or '5'
-            ilyda_type, method_info = PAYMENT_METHOD_MAP.get(method, (5, 'Επί Πιστώσει'))
-            # amount = myDATA gross (net + VAT + charges − withheld) = actual payable
-            payload['paymentMethods'] = [{
-                'type': ilyda_type,
-                'paymentMethodInfo': method_info,
-                'amount': aade_gross,
-            }]
             _TERMS = {
                 '1': 'ΤΡΑΠΕΖΙΚΗ ΜΕΤΑΦΟΡΑ', '2': 'ΤΡΑΠΕΖΙΚΗ ΜΕΤΑΦΟΡΑ',
                 '3': 'ΜΕΤΡΗΤΑ', '4': 'ΕΠΙΤΑΓΗ', '5': 'ΕΠΙ ΠΙΣΤΩΣΕΙ',
-                '6': 'WEB BANKING', '7': 'POS / e-POS',
+                '6': 'WEB BANKING', '7': 'POS / e-POS', '8': 'IRIS',
             }
-            payload['paymentTerms'] = _TERMS.get(method, 'ΕΠΙ ΠΙΣΤΩΣΕΙ')
+            pay_lines = self.l10n_gr_prov_payment_ids
+            if pay_lines:
+                labels = dict(pay_lines._fields['payment_type'].selection)
+                payload['paymentMethods'] = [{
+                    'type': int(p.payment_type),   # AADE code 1-8 (ILYDA ET-63)
+                    'paymentMethodInfo': p.info
+                        or labels[p.payment_type].split(' - ', 1)[1],
+                    'amount': _r2(p.amount),
+                    **({'tipAmount': _r2(p.tip_amount)} if p.tip_amount else {}),
+                    **({'transactionId': p.transaction_id} if p.transaction_id else {}),
+                } for p in pay_lines]
+                main = max(pay_lines, key=lambda p: p.amount)
+                payload['paymentTerms'] = _TERMS.get(main.payment_type, 'ΕΠΙ ΠΙΣΤΩΣΕΙ')
+            else:
+                # legacy single-method fallback (old drafts, cron sends)
+                method = self.l10n_gr_edi_payment_method or '5'
+                ilyda_type, method_info = PAYMENT_METHOD_MAP.get(method, (5, 'Επί Πιστώσει'))
+                # amount = myDATA gross (net + VAT + charges − withheld) = actual payable
+                payload['paymentMethods'] = [{
+                    'type': ilyda_type,
+                    'paymentMethodInfo': method_info,
+                    'amount': aade_gross,
+                }]
+                payload['paymentTerms'] = _TERMS.get(method, 'ΕΠΙ ΠΙΣΤΩΣΕΙ')
 
         # Credit note: reference the reversed invoice
         if self.move_type == 'out_refund' and self.reversed_entry_id \
