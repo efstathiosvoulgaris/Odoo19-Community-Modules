@@ -10,6 +10,7 @@
                 <field name="l10n_gr_edi_inv_type_default"
                        invisible="type not in ('sale', 'purchase')"
                        string="Προεπιλογή Τύπου myDATA"/>
+                <field name="l10n_gr_prov_delivery_note" invisible="type != 'sale'"/>
             </field>
         </field>
     </record>

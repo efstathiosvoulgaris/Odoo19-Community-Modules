@@ -31,10 +31,69 @@
             </header>
 
             <notebook position="inside">
-                <page string="E-Invoicing Provider" name="l10n_gr_prov"
-                      invisible="not l10n_gr_prov_applicable">
 
-                    <!-- myDATA invoice classification -->
+                <!-- Tab 1: Ψηφιακή Διακίνηση (dispatch journals only) -->
+                <page string="Ψηφιακή Διακίνηση" name="l10n_gr_prov_dispatch"
+                      invisible="not l10n_gr_prov_applicable or not l10n_gr_prov_is_dispatch">
+                    <field name="l10n_gr_prov_is_dispatch" invisible="1"/>
+                    <field name="l10n_gr_prov_journal_delivery_note" invisible="1"/>
+                    <group name="l10n_gr_prov_dispatch_group" string="Στοιχεία Διακίνησης">
+                        <group>
+                            <field name="l10n_gr_prov_move_purpose"
+                                   class="border rounded bg-light px-2"
+                                   readonly="l10n_gr_prov_mark"/>
+                            <field name="l10n_gr_prov_other_move_purpose"
+                                   class="border rounded bg-light px-2"
+                                   invisible="l10n_gr_prov_move_purpose != '19'"
+                                   required="l10n_gr_prov_move_purpose == '19'"
+                                   readonly="l10n_gr_prov_mark"/>
+                            <field name="l10n_gr_prov_dispatch_datetime"
+                                   class="border rounded bg-light px-2"
+                                   readonly="l10n_gr_prov_mark"/>
+                        </group>
+                        <group>
+                            <field name="l10n_gr_prov_vehicle_id"
+                                   class="border rounded bg-light px-2"
+                                   options="{'no_open': True}"
+                                   readonly="l10n_gr_prov_mark"/>
+                            <field name="l10n_gr_prov_start_shipping_branch"
+                                   class="border rounded bg-light px-2"
+                                   readonly="l10n_gr_prov_mark"/>
+                            <field name="l10n_gr_prov_complete_shipping_branch"
+                                   class="border rounded bg-light px-2"
+                                   readonly="l10n_gr_prov_mark"/>
+                        </group>
+                    </group>
+                </page>
+
+                <!-- Tab 2: Κατάσταση & Νόμιμες Σημάνσεις -->
+                <page string="Κατάσταση &amp; Σημάνσεις" name="l10n_gr_prov"
+                      invisible="not l10n_gr_prov_applicable">
+                    <group>
+                        <group string="Status">
+                            <field name="l10n_gr_prov_state" readonly="1"/>
+                            <field name="l10n_gr_prov_send_datetime" readonly="1"/>
+                            <field name="l10n_gr_prov_error" readonly="1"
+                                   invisible="not l10n_gr_prov_error"/>
+                            <field name="l10n_gr_prov_previously_submitted" readonly="1"
+                                   invisible="not l10n_gr_prov_previously_submitted"/>
+                            <field name="l10n_gr_prov_pdf_uploaded" readonly="1"/>
+                        </group>
+                        <group string="Legal Markings (A.1035/2020)">
+                            <field name="l10n_gr_prov_mark" readonly="1"/>
+                            <field name="l10n_gr_prov_invoice_id" readonly="1"/>
+                            <field name="l10n_gr_prov_verification_hash" readonly="1"/>
+                            <field name="l10n_gr_prov_invoice_identifier" readonly="1"/>
+                            <field name="l10n_gr_prov_qr_url" widget="url" readonly="1"/>
+                            <field name="l10n_gr_prov_provider_url" widget="url" readonly="1"/>
+                        </group>
+                    </group>
+                </page>
+
+                <!-- Tab 3: myDATA extra taxes (not on dispatch notes) -->
+                <!-- hidden on pure dispatch notes (9.x/10.x); shown on ΤΔΑ/ΠΤΔΑ -->
+                <page string="myDATA Φόροι" name="l10n_gr_prov_taxes"
+                      invisible="not l10n_gr_prov_applicable or (l10n_gr_prov_is_dispatch and not l10n_gr_prov_journal_delivery_note)">
                     <group string="myDATA">
                         <group>
                             <!-- category + amount on one row; amount is locked for
@@ -73,30 +132,11 @@
                             </div>
                         </group>
                     </group>
+                </page>
 
-                    <group>
-                        <group string="Status">
-                            <field name="l10n_gr_prov_state" readonly="1"/>
-                            <field name="l10n_gr_prov_send_datetime" readonly="1"/>
-                            <field name="l10n_gr_prov_error" readonly="1"
-                                   invisible="not l10n_gr_prov_error"/>
-                            <field name="l10n_gr_prov_previously_submitted" readonly="1"
-                                   invisible="not l10n_gr_prov_previously_submitted"/>
-                            <field name="l10n_gr_prov_pdf_uploaded" readonly="1"/>
-                        </group>
-                        <group string="Legal Markings (A.1035/2020)">
-                            <field name="l10n_gr_prov_mark" readonly="1"/>
-                            <field name="l10n_gr_prov_invoice_id" readonly="1"/>
-                            <field name="l10n_gr_prov_verification_hash" readonly="1"/>
-                            <field name="l10n_gr_prov_invoice_identifier" readonly="1"/>
-                            <field name="l10n_gr_prov_qr_url" widget="url" readonly="1"/>
-                            <field name="l10n_gr_prov_provider_url" widget="url" readonly="1"/>
-                        </group>
-                    </group>
-                    <group name="l10n_gr_prov_dispatch_group" string="Δελτίο Αποστολής (9.3)"
-                           invisible="l10n_gr_edi_inv_type != '9.3'">
-                        <field name="l10n_gr_prov_move_purpose" readonly="l10n_gr_prov_mark"/>
-                    </group>
+                <!-- Tab 4: B2G (checkbox reveals the rest) -->
+                <page string="B2G" name="l10n_gr_prov_b2g"
+                      invisible="not l10n_gr_prov_applicable">
                     <group string="B2G — Public Contracts (Peppol)">
                         <group>
                             <field name="l10n_gr_prov_b2g" readonly="l10n_gr_prov_mark"/>

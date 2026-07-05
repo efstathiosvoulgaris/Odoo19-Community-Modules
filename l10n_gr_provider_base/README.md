@@ -1,6 +1,6 @@
 # l10n_gr_provider_base — Greece E-Invoicing Provider Base
 
-**Version:** 1.7 | **Odoo:** 19 | **License:** LGPL-3
+**Version:** 1.8 | **Odoo:** 19 | **License:** LGPL-3
 
 Provider-agnostic base for issuing sales documents through a licensed Greek
 e-invoicing provider (Υ.ΠΑ.Η.Ε.Σ.), as required by the 2026 B2B e-invoicing
@@ -164,6 +164,25 @@ myDATA QR code when `l10n_gr_prov_mark` is set. It shows:
 ---
 
 ## Changelog
+
+### 1.8 — ΤΔΑ/ΠΤΔΑ, dispatch planning data, UI tabs
+- **Τιμολόγιο–Δελτίο Αποστολής (ΤΔΑ) & Πιστωτικό ΤΔΑ**: new journal flag
+  «Τιμολόγιο – Δελτίο Αποστολής» (`isDeliveryNote`) with ready-made journals
+  ΤΔΑ (1.1) and ΠΤΔΑ (5.1). Combined documents send full invoice data plus
+  στοιχεία διακίνησης and take part in the delivery lifecycle (status,
+  polling, Δελτία Αποστολής list). Σκοπός Διακίνησης defaults to 1 (Πώληση) /
+  5 (Επιστροφή on credit notes).
+- **Στοιχεία Διακίνησης (planned data, §5.3)**: Έναρξη Αποστολής
+  (datetime, auto-defaults to now), Αριθμός Μεταφορικού Μέσου as a reusable
+  vehicle list (Οχήματα), εγκαταστάσεις έναρξης/ολοκλήρωσης, Τίτλος Λοιπής
+  Αιτίας for σκοπός 19. Vehicle sent via `aadeVehicleNumber`
+  (`otherTransportDetails` is deprecated in myDATA v2.0.x).
+- **Invoice form split into 4 tabs**: Ψηφιακή Διακίνηση / Κατάσταση &
+  Σημάνσεις / myDATA Φόροι / B2G (checkbox reveals the B2G fields).
+- Fixed-amount Λοιποί Φόροι/Τέλη categories (hotel & short-term-rental
+  taxes, €/τεμ fees) default the labeled amount on selection, editable.
+- Clear message when AADE dev does not know a MARK (provider-test MARKs
+  are not registered in mydataapidev).
 
 ### 1.7 — Ψηφιακή Διακίνηση, tax net, v2.0.1 labels
 - **Ψηφιακή Διακίνηση (dispatch lifecycle)**: new menu (Λογιστική → Ψηφιακή

@@ -1,6 +1,6 @@
 # l10n_gr_provider_ilyda — ILYDA Driver
 
-**Version:** 1.7 | **Odoo:** 19 | **License:** LGPL-3  
+**Version:** 1.8 | **Odoo:** 19 | **License:** LGPL-3  
 **API ref:** ILYDA "Οδηγίες υλοποίησης eInvoicing" v1.0.6
 
 Driver implementing the ILYDA Y.PA.H.E.S. eInvoicing API for the
@@ -242,6 +242,17 @@ Before submission the driver checks:
 ---
 
 ## Changelog
+
+### 1.8 — Combined invoice + delivery note (ΤΔΑ/ΠΤΔΑ)
+- Documents on «Τιμολόγιο – Δελτίο Αποστολής» journals send
+  `isDeliveryNote: true` with aadeMovePurpose, otherDeliveryNoteHeader
+  (loading/delivery addresses, shipping branches) and per-row
+  itemDescr/quantity/measurementUnit (MDP-0028).
+- Planned dispatch data: `aadeDispatchDate`/`aadeDispatchTime`
+  (Europe/Athens) and `aadeVehicleNumber` — `otherTransportDetails` is
+  rejected by myDATA v2.0.x (MPD-0100).
+- `otherMovePurposeTitle` for σκοπός διακίνησης 19; numeric validation for
+  shipping branches.
 
 ### 1.7 — Withholding totals, error clarity
 - **Withholding (BR-CO-16 / MDP-0081 / BG-22 fixes)**: withheld tax is now an

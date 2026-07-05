@@ -13,7 +13,7 @@ import unicodedata
 
 import requests
 
-from odoo import models, _
+from odoo import fields, models, _
 from odoo.exceptions import UserError
 from odoo.addons.l10n_gr_provider_base.models.gr_mydata import (
     VAT_CATEGORY_MAP,
@@ -186,12 +186,18 @@ class AccountMove(models.Model):
                 'Invoice type %s cannot be submitted through the e-invoicing provider '
                 '(only 1.1–11.5 are allowed). Use an accounting/ERP journal instead.',
                 inv_type))
-        if (inv_type in TYPES_DISPATCH
+        if ((inv_type in TYPES_DISPATCH or self.journal_id.l10n_gr_prov_delivery_note)
                 and self.l10n_gr_prov_move_purpose in MOVE_PURPOSE_NOT_SENDABLE):
             errors.append(_(
                 'Ο Σκοπός Διακίνησης %s δεν γίνεται δεκτός από το myDATA στην τρέχουσα '
                 'έκδοση (§8.14) — επιλέξτε άλλον σκοπό.',
                 self.l10n_gr_prov_move_purpose))
+        for branch in (self.l10n_gr_prov_start_shipping_branch,
+                       self.l10n_gr_prov_complete_shipping_branch):
+            if branch and not branch.isdigit():
+                errors.append(_(
+                    'Η εγκατάσταση διακίνησης "%s" πρέπει να είναι αριθμός '
+                    '(κωδικός εγκατάστασης ΑΑΔΕ).', branch))
         lines = self._l10n_gr_prov_ilyda_lines()
         if not lines:
             errors.append(_('The document has no product lines.'))
@@ -352,7 +358,9 @@ class AccountMove(models.Model):
             }
             if exemption:
                 row_type['vatExemptionCategory'] = int(exemption)
-            if inv_type == '9.3':
+            # dispatch rows need item description/quantity/unit — also on
+            # combined invoice+ΔΑ documents (isDeliveryNote journals)
+            if inv_type == '9.3' or self.journal_id.l10n_gr_prov_delivery_note:
                 row_type['itemDescr'] = (line.product_id.name or line.name or '')[:200]
                 row_type['quantity'] = line.quantity
                 row_type['measurementUnit'] = 1  # ponytail: no UoM mapping yet
@@ -557,8 +565,29 @@ class AccountMove(models.Model):
         if tax_totals:
             aade_data['taxTotals'] = tax_totals
 
-        if inv_type == '9.3':
-            aade_data['aadeMovePurpose'] = int(self.l10n_gr_prov_move_purpose or '1')
+        # Dispatch data: pure ΔΑ (9.3) or combined invoice+ΔΑ (ΤΔΑ/ΠΤΔΑ journals)
+        is_delivery_note = self.journal_id.l10n_gr_prov_delivery_note
+        if inv_type == '9.3' or is_delivery_note:
+            if is_delivery_note:
+                aade_data['isDeliveryNote'] = True
+            aade_data['aadeMovePurpose'] = int(
+                self.l10n_gr_prov_move_purpose
+                or ('5' if self.move_type == 'out_refund' else '1'))
+            if self.l10n_gr_prov_move_purpose == '19' and self.l10n_gr_prov_other_move_purpose:
+                aade_data['otherMovePurposeTitle'] = self.l10n_gr_prov_other_move_purpose
+            # Planned dispatch data (§5.3: estimates; actuals via RegisterTransfer)
+            if self.l10n_gr_prov_dispatch_datetime:
+                local = fields.Datetime.context_timestamp(
+                    self.with_context(tz='Europe/Athens'),
+                    self.l10n_gr_prov_dispatch_datetime)
+                aade_data['aadeDispatchDate'] = f'{local.date()}T00:00:00'
+                aade_data['aadeDispatchTime'] = local.strftime('%Y-%m-%dT%H:%M:%S')
+            else:
+                aade_data['aadeDispatchDate'] = f'{self.invoice_date}T00:00:00'
+            # v2.0.1: otherTransportDetails is deprecated (MPD-0100) — the
+            # planned vehicle goes in the header field instead
+            if self.l10n_gr_prov_vehicle_id:
+                aade_data['aadeVehicleNumber'] = self.l10n_gr_prov_vehicle_id.name
             ship = self.partner_shipping_id or partner
             aade_data['otherDeliveryNoteHeader'] = {
                 'loadingAddress': {
@@ -574,6 +603,12 @@ class AccountMove(models.Model):
                     'city': ship.city or '',
                 },
             }
+            if self.l10n_gr_prov_start_shipping_branch:
+                aade_data['otherDeliveryNoteHeader']['startShippingBranch'] = \
+                    int(self.l10n_gr_prov_start_shipping_branch)
+            if self.l10n_gr_prov_complete_shipping_branch:
+                aade_data['otherDeliveryNoteHeader']['completeShippingBranch'] = \
+                    int(self.l10n_gr_prov_complete_shipping_branch)
 
         if inv_type in TYPES_NEED_CORRELATED and self.reversed_entry_id \
                 and self.reversed_entry_id.l10n_gr_prov_mark:

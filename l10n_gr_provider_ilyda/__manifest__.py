@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Greece - E-Invoicing Provider: ILYDA',
-    'version': '1.7',
+    'version': '1.8',
     'category': 'Accounting/Localizations',
     'summary': 'ILYDA (vs.gr) driver for the Greek e-invoicing provider base',
     'description': (

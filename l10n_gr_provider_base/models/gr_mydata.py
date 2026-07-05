@@ -1219,6 +1219,18 @@ OTHER_TAXES_CATEGORY_RATE = {
     '14': 0.80, '15': 0.20,
 }
 
+# Fixed-€ categories (per night / room / item): the € in the label is placed
+# as a *default* in the amount field on selection — editable, since the real
+# amount is the unit fee × quantity (nights, rooms, pieces).
+FEES_CATEGORY_FIXED = {
+    '8': 0.07, '16': 0.04, '17': 0.08,           # €/τεμ
+}
+OTHER_TAXES_CATEGORY_FIXED = {
+    '6': 0.50, '7': 1.50, '8': 3.00, '9': 4.00, '10': 0.50,       # ανά διανυκτέρευση
+    '20': 1.50, '21': 3.00, '22': 7.00, '23': 10.00, '24': 1.50,  # ανά Δωμ./Διαμ.
+    '25': 1.50, '26': 10.00, '27': 10.00, '28': 0.50, '29': 4.00, '30': 4.00,
+}
+
 # ── AADE extra-tax category selections (§8.4–8.7) ────────────────────────────
 
 # taxType=1: Παρακρατούμενοι Φόροι (v2.0.1 §8.4)

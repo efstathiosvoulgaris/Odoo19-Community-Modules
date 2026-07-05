@@ -7,8 +7,8 @@ from odoo import api, fields, models, _
 from odoo.exceptions import UserError
 from .gr_mydata import (
     WITHHOLDING_CATEGORY_SELECTION, WITHHOLDING_CATEGORY_RATE,
-    FEES_CATEGORY_SELECTION, FEES_CATEGORY_RATE,
-    OTHER_TAXES_CATEGORY_SELECTION, OTHER_TAXES_CATEGORY_RATE,
+    FEES_CATEGORY_SELECTION, FEES_CATEGORY_RATE, FEES_CATEGORY_FIXED,
+    OTHER_TAXES_CATEGORY_SELECTION, OTHER_TAXES_CATEGORY_RATE, OTHER_TAXES_CATEGORY_FIXED,
     STAMP_DUTY_CATEGORY_SELECTION, STAMP_DUTY_CATEGORY_RATE,
     partner_class, journal_types_for_class,
     INV_TYPE_ZERO_TAX, DOMESTIC_TAX_RATES, DOMESTIC_ZERO_TAX_NAMES, TYPES_DISPATCH,
@@ -204,6 +204,20 @@ class AccountMove(models.Model):
         self._l10n_gr_prov_apply_rate(
             'l10n_gr_prov_other_taxes_category', 'l10n_gr_prov_other_taxes_amount',
             OTHER_TAXES_CATEGORY_RATE)
+
+    # Fixed-€ categories (hotel/room taxes, €/τεμ fees): default the label's
+    # amount on selection; stays editable (real amount = unit × nights/pieces).
+    @api.onchange('l10n_gr_prov_fees_category')
+    def _onchange_l10n_gr_prov_fees_fixed(self):
+        fixed = FEES_CATEGORY_FIXED.get(self.l10n_gr_prov_fees_category)
+        if fixed:
+            self.l10n_gr_prov_fees_amount = fixed
+
+    @api.onchange('l10n_gr_prov_other_taxes_category')
+    def _onchange_l10n_gr_prov_other_taxes_fixed(self):
+        fixed = OTHER_TAXES_CATEGORY_FIXED.get(self.l10n_gr_prov_other_taxes_category)
+        if fixed:
+            self.l10n_gr_prov_other_taxes_amount = fixed
 
     @api.depends('partner_id', 'l10n_gr_prov_b2g')
     def _compute_l10n_gr_prov_buyer_ref(self):

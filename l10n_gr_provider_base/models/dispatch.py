@@ -55,6 +55,12 @@ def _aade_dispatch_request(company, endpoint, xml_body=None, params=None, method
             resp = requests.get(url, params=params, headers=headers, timeout=30)
         else:
             resp = requests.post(url, data=xml_body, params=params, headers=headers, timeout=30)
+        if resp.status_code == 404:
+            raise UserError(_(
+                'Το ΜΑΡΚ δεν βρέθηκε στο περιβάλλον AADE myDATA (%s). '
+                'Προσοχή: ΜΑΡΚ που εκδόθηκαν μέσω του test περιβάλλοντος του παρόχου '
+                'δεν υπάρχουν στο dev περιβάλλον της ΑΑΔΕ.',
+                'dev' if company.l10n_gr_edi_test_env else 'production'))
         resp.raise_for_status()
         _logger.info('AADE dispatch response: %s', resp.text[:2000])
         return etree.fromstring(resp.content)
@@ -97,6 +103,22 @@ class L10nGrProvDeliveryEvent(models.Model):
     details = fields.Char('Λεπτομέρειες')
 
 
+class L10nGrProvVehicle(models.Model):
+    """Reusable vehicle plates for dispatch documents (Οχήματα)."""
+    _name = 'l10n.gr.prov.vehicle'
+    _description = 'Όχημα Διακίνησης'
+    _order = 'name'
+
+    name = fields.Char(string='Αριθμός Μεταφορικού Μέσου', size=50, required=True)
+    company_id = fields.Many2one(
+        'res.company', default=lambda self: self.env.company)
+
+    _sql_constraints = [
+        ('name_company_uniq', 'unique(name, company_id)',
+         'Το όχημα υπάρχει ήδη.'),
+    ]
+
+
 class AccountMove(models.Model):
     _inherit = 'account.move'
 
@@ -106,12 +128,42 @@ class AccountMove(models.Model):
         'l10n.gr.prov.delivery.event', 'move_id', string='Ιστορικό Διακίνησης')
     l10n_gr_prov_is_dispatch = fields.Boolean(
         compute='_compute_l10n_gr_prov_is_dispatch')
+    l10n_gr_prov_journal_delivery_note = fields.Boolean(
+        related='journal_id.l10n_gr_prov_delivery_note')
+    # Planned dispatch data (§5.3 v2.0.1 — estimates; actuals come via RegisterTransfer)
+    l10n_gr_prov_dispatch_datetime = fields.Datetime(
+        string='Έναρξη Αποστολής', copy=False)
+    l10n_gr_prov_vehicle_id = fields.Many2one(
+        'l10n.gr.prov.vehicle', string='Αριθμός Μεταφορικού Μέσου', copy=False,
+        check_company=True)
+    l10n_gr_prov_start_shipping_branch = fields.Char(
+        string='Εγκατάσταση Έναρξης (Εκδότη)', copy=False,
+        help='Αριθμός εγκατάστασης ΑΑΔΕ. Κενό = έδρα.')
+    l10n_gr_prov_complete_shipping_branch = fields.Char(
+        string='Εγκατάσταση Ολοκλήρωσης (Λήπτη)', copy=False,
+        help='Αριθμός εγκατάστασης ΑΑΔΕ. Κενό = έδρα.')
+    l10n_gr_prov_other_move_purpose = fields.Char(
+        string='Τίτλος Λοιπής Αιτίας Διακίνησης', copy=False,
+        help='Συμπληρώνεται μόνο όταν ο Σκοπός Διακίνησης είναι 19 - Λοιπές Διακινήσεις.')
 
-    @api.depends('journal_id.l10n_gr_edi_inv_type_default')
+    @api.depends('journal_id.l10n_gr_edi_inv_type_default',
+                 'journal_id.l10n_gr_prov_delivery_note')
     def _compute_l10n_gr_prov_is_dispatch(self):
         for move in self:
             move.l10n_gr_prov_is_dispatch = (
-                move.journal_id.l10n_gr_edi_inv_type_default in TYPES_DISPATCH)
+                move.journal_id.l10n_gr_edi_inv_type_default in TYPES_DISPATCH
+                or move.journal_id.l10n_gr_prov_delivery_note)
+
+    @api.onchange('journal_id')
+    def _onchange_l10n_gr_prov_move_purpose_default(self):
+        if self.l10n_gr_prov_is_dispatch:
+            if not self.l10n_gr_prov_move_purpose:
+                # ΠΤΔΑ (credit + dispatch) → 5 Επιστροφή, otherwise 1 Πώληση
+                self.l10n_gr_prov_move_purpose = (
+                    '5' if self.move_type == 'out_refund' else '1')
+            # dispatch start defaults to "now" until marked
+            if not self.l10n_gr_prov_mark:
+                self.l10n_gr_prov_dispatch_datetime = fields.Datetime.now()
 
     def action_l10n_gr_prov_refresh_delivery_status(self):
         for move in self:
@@ -156,7 +208,9 @@ class AccountMove(models.Model):
         moves = self.search([
             ('state', '=', 'posted'),
             ('l10n_gr_prov_mark', '!=', False),
+            '|',
             ('journal_id.l10n_gr_edi_inv_type_default', 'in', list(TYPES_DISPATCH)),
+            ('journal_id.l10n_gr_prov_delivery_note', '=', True),
             '|',
             ('l10n_gr_prov_delivery_status', 'in', list(DELIVERY_STATES_OPEN)),
             ('l10n_gr_prov_delivery_status', '=', False),

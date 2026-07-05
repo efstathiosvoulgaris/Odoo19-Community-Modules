@@ -68,7 +68,7 @@
         <field name="name">Δελτία Αποστολής</field>
         <field name="res_model">account.move</field>
         <field name="view_mode">list,form</field>
-        <field name="domain">[('journal_id.l10n_gr_edi_inv_type_default', 'in', ('9.1', '9.2', '9.3', '10.1', '10.2')), ('move_type', '=', 'out_invoice')]</field>
+        <field name="domain">['|', ('journal_id.l10n_gr_edi_inv_type_default', 'in', ('9.1', '9.2', '9.3', '10.1', '10.2')), ('journal_id.l10n_gr_prov_delivery_note', '=', True), ('move_type', 'in', ('out_invoice', 'out_refund'))]</field>
         <field name="context">{'default_move_type': 'out_invoice'}</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">Δεν υπάρχουν Δελτία Αποστολής</p>

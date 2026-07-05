@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Greece - E-Invoicing Provider (Base)',
-    'version': '1.7',
+    'version': '1.8',
     'category': 'Accounting/Localizations',
     'summary': 'Issue invoices through a licensed Greek e-invoicing provider (Y.PA.H.E.S.)',
     'description': (

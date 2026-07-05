@@ -31,7 +31,9 @@ GR_JOURNALS = [
     ('gr_j_2_4',   'ΤΠΥ / Συμπληρωματικό',                      'ΤΠΥΣ', 'sale',     '2.4'),
     ('gr_j_3_1',   'Τίτλος Κτήσης (μη υπόχρεος)',                'ΤΚ1',  'sale',     '3.1'),
     ('gr_j_3_2',   'Τίτλος Κτήσης (αρνούμενος)',                 'ΤΚ2',  'sale',     '3.2'),
+    ('gr_j_1_1_dn', 'Τιμολόγιο – Δελτίο Αποστολής',             'ΤΔΑ',  'sale',     '1.1'),
     ('gr_j_5_1',   'Πιστωτικό Τιμολόγιο (Συσχετισμένο)',        'ΠΙΣΤ', 'sale',     '5.1'),
+    ('gr_j_5_1_dn', 'Πιστωτικό Τιμολόγιο – Δελτίο Αποστολής',   'ΠΤΔΑ', 'sale',     '5.1'),
     ('gr_j_5_2',   'Πιστωτικό Τιμολόγιο (Μη Συσχετισμένο)',     'ΠΙΜΣ', 'sale',     '5.2'),
     ('gr_j_6_1',   'Στοιχείο Αυτοπαράδοσης',                    'ΑΥΠ',  'sale',     '6.1'),
     ('gr_j_6_2',   'Στοιχείο Ιδιοχρησιμοποίησης',               'ΙΔΧ',  'sale',     '6.2'),
@@ -75,9 +77,19 @@ GR_JOURNALS = [
     ('gr_j_17_6',  'Λοιπές Εγγραφές Εξόδων – Φορολογική Βάση', 'ΛΕΞΦ', 'purchase', '17.6'),
 ]
 
+# Journals whose documents are invoice + delivery note combined
+# (isDeliveryNote=true in myDATA: ΤΔΑ = 1.1, ΠΤΔΑ = 5.1 with dispatch data).
+DELIVERY_NOTE_JOURNALS = frozenset({'gr_j_1_1_dn', 'gr_j_5_1_dn'})
+
 
 class AccountJournal(models.Model):
     _inherit = 'account.journal'
+
+    l10n_gr_prov_delivery_note = fields.Boolean(
+        string='Τιμολόγιο – Δελτίο Αποστολής',
+        help='Τα παραστατικά αυτού του ημερολογίου είναι και δελτία αποστολής '
+             '(isDeliveryNote): αποστέλλονται με στοιχεία διακίνησης.',
+    )
 
     l10n_gr_edi_inv_type_default = fields.Selection(
         selection=INVOICE_TYPES_SELECTION + _EXTRA_SELECTION,
@@ -96,6 +108,7 @@ class AccountJournal(models.Model):
                 'type': jtype,
                 'show_on_dashboard': False,
                 'l10n_gr_edi_inv_type_default': inv_type,
+                'l10n_gr_prov_delivery_note': xmlid in DELIVERY_NOTE_JOURNALS,
             }
             for xmlid, name, code, jtype, inv_type in GR_JOURNALS
         }
@@ -124,6 +137,7 @@ class AccountJournal(models.Model):
                 'company_id': company.id,
                 'show_on_dashboard': False,
                 'l10n_gr_edi_inv_type_default': inv_type,
+                'l10n_gr_prov_delivery_note': xmlid in DELIVERY_NOTE_JOURNALS,
                 'alias_name': temp_alias,
             })
             if journal.alias_id:
