@@ -13,6 +13,10 @@
                 many2many_tags widget; vat is a plain Char and always present.
             -->
             <field name="gemh" position="after">
+                <field name="l10n_gr_prov_doy" string="ΔΟΥ"
+                       invisible="country_code != 'GR'"/>
+                <field name="l10n_gr_prov_activity" string="Δραστηριότητα"
+                       invisible="country_code != 'GR'"/>
                 <field name="l10n_gr_prov_aaht" string="ΑΑΗΤ"
                        placeholder="π.χ. 1234.Ε00123.0001"
                        invisible="country_code != 'GR'"/>

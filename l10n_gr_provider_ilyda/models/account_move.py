@@ -198,6 +198,13 @@ class AccountMove(models.Model):
                 errors.append(_(
                     'Η εγκατάσταση διακίνησης "%s" πρέπει να είναι αριθμός '
                     '(κωδικός εγκατάστασης ΑΑΔΕ).', branch))
+        if inv_type in ('9.1', '10.1'):
+            corr = self.l10n_gr_edi_correlation_id
+            if not corr or not corr.l10n_gr_prov_mark:
+                errors.append(_(
+                    'Ο τύπος %s είναι συσχετιζόμενο δελτίο — επιλέξτε το '
+                    'συσχετιζόμενο παραστατικό (με MARK) στο πεδίο '
+                    '«Correlated Invoice».', inv_type))
         # Payment lines must cover the payable exactly (tips are on top)
         if self.l10n_gr_prov_payment_ids and inv_type not in TYPES_DISPATCH:
             paid = sum(self.l10n_gr_prov_payment_ids.mapped('amount'))
@@ -300,6 +307,10 @@ class AccountMove(models.Model):
             vat_amount = _r2(line.price_total - line.price_subtotal)
             tax = line.tax_ids[:1]
             rate = tax.amount if tax else 0.0
+            if inv_type in TYPES_DISPATCH:
+                # dispatch notes carry no values (MDP-0011..0015): zero the
+                # money side, keep quantities/descriptions
+                net = vat_amount = rate = 0.0
 
             aade_vat_cat, category_code = _vat_category(tax, inv_type)
 
@@ -323,7 +334,8 @@ class AccountMove(models.Model):
             }] if not no_cls and line.l10n_gr_prov_cls_category and line.l10n_gr_prov_cls_type else []
 
             discount_pct = line.discount or 0.0
-            discount_amount = _r2(line.price_unit * line.quantity * discount_pct / 100.0)
+            discount_amount = 0.0 if inv_type in TYPES_DISPATCH else _r2(
+                line.price_unit * line.quantity * discount_pct / 100.0)
 
             line_vals = {
                 'lineNumber': number,
@@ -369,7 +381,7 @@ class AccountMove(models.Model):
                 row_type['vatExemptionCategory'] = int(exemption)
             # dispatch rows need item description/quantity/unit — also on
             # combined invoice+ΔΑ documents (isDeliveryNote journals)
-            if inv_type == '9.3' or self.journal_id.l10n_gr_prov_delivery_note:
+            if inv_type in TYPES_DISPATCH or self.journal_id.l10n_gr_prov_delivery_note:
                 row_type['itemDescr'] = (line.product_id.name or line.name or '')[:200]
                 row_type['quantity'] = line.quantity
                 row_type['measurementUnit'] = 1  # ponytail: no UoM mapping yet
@@ -574,9 +586,9 @@ class AccountMove(models.Model):
         if tax_totals:
             aade_data['taxTotals'] = tax_totals
 
-        # Dispatch data: pure ΔΑ (9.3) or combined invoice+ΔΑ (ΤΔΑ/ΠΤΔΑ journals)
+        # Dispatch data: pure ΔΑ (9.x/10.x) or combined invoice+ΔΑ (ΤΔΑ/ΠΤΔΑ journals)
         is_delivery_note = self.journal_id.l10n_gr_prov_delivery_note
-        if inv_type == '9.3' or is_delivery_note:
+        if inv_type in TYPES_DISPATCH or is_delivery_note:
             if is_delivery_note:
                 aade_data['isDeliveryNote'] = True
             aade_data['aadeMovePurpose'] = int(
@@ -598,19 +610,24 @@ class AccountMove(models.Model):
             if self.l10n_gr_prov_vehicle_id:
                 aade_data['aadeVehicleNumber'] = self.l10n_gr_prov_vehicle_id.name
             ship = self.partner_shipping_id or partner
+            load_addr = {
+                'street': company_partner.street or '',
+                'number': getattr(company_partner, 'arithmos_odou', None) or company_partner.street2 or '',
+                'postalCode': company_partner.zip or '',
+                'city': company_partner.city or '',
+            }
+            deliver_addr = {
+                'street': ship.street or '',
+                'number': getattr(ship, 'arithmos_odou', None) or ship.street2 or '',
+                'postalCode': ship.zip or '',
+                'city': ship.city or '',
+            }
+            # Return (σκοπός 5): goods travel back — swap the addresses
+            if aade_data['aadeMovePurpose'] == 5:
+                load_addr, deliver_addr = deliver_addr, load_addr
             aade_data['otherDeliveryNoteHeader'] = {
-                'loadingAddress': {
-                    'street': company_partner.street or '',
-                    'number': getattr(company_partner, 'arithmos_odou', None) or company_partner.street2 or '',
-                    'postalCode': company_partner.zip or '',
-                    'city': company_partner.city or '',
-                },
-                'deliveryAddress': {
-                    'street': ship.street or '',
-                    'number': getattr(ship, 'arithmos_odou', None) or ship.street2 or '',
-                    'postalCode': ship.zip or '',
-                    'city': ship.city or '',
-                },
+                'loadingAddress': load_addr,
+                'deliveryAddress': deliver_addr,
             }
             if self.l10n_gr_prov_start_shipping_branch:
                 aade_data['otherDeliveryNoteHeader']['startShippingBranch'] = \
@@ -619,10 +636,14 @@ class AccountMove(models.Model):
                 aade_data['otherDeliveryNoteHeader']['completeShippingBranch'] = \
                     int(self.l10n_gr_prov_complete_shipping_branch)
 
-        if inv_type in TYPES_NEED_CORRELATED and self.reversed_entry_id \
-                and self.reversed_entry_id.l10n_gr_prov_mark:
+        # Correlated MARK: credit notes via the reversal link, everything else
+        # (9.1/10.1, ΔΑ→ΤΙΜ follow-ups) via the myDATA correlation field.
+        correlated = ((self.reversed_entry_id
+                       if inv_type in TYPES_NEED_CORRELATED else None)
+                      or self.l10n_gr_edi_correlation_id)
+        if correlated and correlated.l10n_gr_prov_mark:
             aade_data['correlatedInvoices'] = [
-                int(self.reversed_entry_id.l10n_gr_prov_mark)
+                int(correlated.l10n_gr_prov_mark)
             ]
 
         payload = {

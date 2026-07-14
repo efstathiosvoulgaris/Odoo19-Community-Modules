@@ -4,6 +4,7 @@ from odoo.exceptions import ValidationError
 from .gr_mydata import (
     CLS_CATEGORIES, CLS_TYPES, VAT_EXEMPTION_CODES,
     valid_cls_categories, valid_cls_types, preferred_e3, INV_TYPE_ZERO_TAX,
+    TYPES_DISPATCH,
 )
 
 
@@ -94,6 +95,16 @@ class AccountMoveLine(models.Model):
             if tax:
                 line.tax_ids = [(6, 0, tax.ids)]
             line.l10n_gr_prov_vat_exemption = exemption
+
+    @api.onchange('product_id')
+    def _onchange_l10n_gr_prov_dispatch_zero_price(self):
+        """Pure dispatch notes (9.x/10.x) carry no values — default lines to 0.
+        (Converting to ΤΙΜ re-prices from the product.)"""
+        for line in self:
+            if (line.product_id
+                    and line._l10n_gr_prov_inv_type() in TYPES_DISPATCH
+                    and not line.move_id.journal_id.l10n_gr_prov_delivery_note):
+                line.price_unit = 0.0
 
     @api.onchange('product_id')
     def _onchange_l10n_gr_prov_cls_from_product(self):

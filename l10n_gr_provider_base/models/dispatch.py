@@ -165,6 +165,55 @@ class AccountMove(models.Model):
             if not self.l10n_gr_prov_mark:
                 self.l10n_gr_prov_dispatch_datetime = fields.Datetime.now()
 
+    # ── ΔΑ follow-up documents (correlation routine) ──────────────────────────
+    def _l10n_gr_prov_copy_correlated(self, inv_type, extra_defaults=None):
+        """Copy this marked ΔΑ to the journal of `inv_type`, correlated to it."""
+        self.ensure_one()
+        if not self.l10n_gr_prov_mark:
+            raise UserError(_('Το %s δεν έχει MARK — στείλτε το πρώτα.', self.name))
+        journal = self.env['account.journal'].search([
+            ('company_id', '=', self.company_id.id),
+            ('type', '=', 'sale'),
+            ('l10n_gr_edi_inv_type_default', '=', inv_type),
+            ('l10n_gr_prov_delivery_note', '=', False),
+        ], limit=1)
+        if not journal:
+            raise UserError(_(
+                'Δεν βρέθηκε ημερολόγιο πωλήσεων με τύπο myDATA %s.', inv_type))
+        new_move = self.copy(default={
+            'journal_id': journal.id,
+            'invoice_date': fields.Date.context_today(self),
+            'l10n_gr_edi_correlation_id': self.id,
+            # copy() keeps the stored myDATA type of the source — force the target's
+            'l10n_gr_edi_inv_type': inv_type,
+            **(extra_defaults or {}),
+        })
+        # copy() keeps the source classifications (e.g. category3 from a ΔΑ) —
+        # rederive them for the target document type
+        product_lines = new_move.invoice_line_ids.filtered(
+            lambda l: l.display_type == 'product' and l.product_id)
+        product_lines.write({
+            'l10n_gr_prov_cls_category': False, 'l10n_gr_prov_cls_type': False})
+        product_lines._onchange_l10n_gr_prov_cls_from_product()
+        # ΔΑ lines default to 0 — re-price from the product on the invoice
+        if inv_type == '1.1':
+            product_lines._compute_price_unit()
+        return {
+            'type': 'ir.actions.act_window',
+            'res_model': 'account.move',
+            'res_id': new_move.id,
+            'view_mode': 'form',
+        }
+
+    def action_l10n_gr_prov_create_invoice(self):
+        """ΔΑ → ΤΙΜ (1.1) referencing the ΔΑ MARK in correlatedInvoices."""
+        return self._l10n_gr_prov_copy_correlated('1.1')
+
+    def action_l10n_gr_prov_create_return(self):
+        """ΔΑ → Δελτίο Επιστροφής: correlated ΔΑΣ (9.1) with σκοπός 5."""
+        return self._l10n_gr_prov_copy_correlated(
+            '9.1', {'l10n_gr_prov_move_purpose': '5'})
+
     def action_l10n_gr_prov_refresh_delivery_status(self):
         for move in self:
             if not move.l10n_gr_prov_mark:

@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import base64
 import logging
+import unicodedata
 from decimal import Decimal, ROUND_HALF_UP
 
 from odoo import api, fields, models, _
@@ -12,6 +13,7 @@ from .gr_mydata import (
     STAMP_DUTY_CATEGORY_SELECTION, STAMP_DUTY_CATEGORY_RATE,
     partner_class, journal_types_for_class,
     INV_TYPE_ZERO_TAX, DOMESTIC_TAX_RATES, DOMESTIC_ZERO_TAX_NAMES, TYPES_DISPATCH,
+    VAT_EXEMPTION_CODES,
 )
 
 _logger = logging.getLogger(__name__)
@@ -445,6 +447,51 @@ class AccountMove(models.Model):
                 _logger.warning('B2G status poll failed for %s: %s', move.name, e)
 
     # ── Report helper: QR image as base64 PNG ─────────────────────────────────
+    # ── Report helpers (custom Greek PDF) ─────────────────────────────────────
+    def _get_name_invoice_report(self):
+        self.ensure_one()
+        if (self.country_code == 'GR'
+                and self.journal_id.l10n_gr_edi_inv_type_default
+                and self.company_id._l10n_gr_prov_active()):
+            return 'l10n_gr_provider_base.report_invoice_document_gr'
+        return super()._get_name_invoice_report()
+
+    def _l10n_gr_prov_report_title(self):
+        """Greek document title, e.g. 'ΤΙΜΟΛΟΓΙΟ ΠΩΛΗΣΗΣ' (caps drop the τόνοι)."""
+        self.ensure_one()
+        name = (self.journal_id.name or 'ΠΑΡΑΣΤΑΤΙΚΟ').upper()
+        nfd = unicodedata.normalize('NFD', name)
+        return unicodedata.normalize(
+            'NFC', ''.join(c for c in nfd if c != '\\u0301'))  # drop τόνοι
+
+    def _l10n_gr_prov_report_is_dispatch_only(self):
+        """True for pure dispatch notes (9.x/10.x): no values are printed."""
+        self.ensure_one()
+        return (self.journal_id.l10n_gr_edi_inv_type_default in TYPES_DISPATCH
+                and not self.journal_id.l10n_gr_prov_delivery_note)
+
+    def _l10n_gr_prov_vat_analysis(self):
+        """Per-rate VAT buckets: [{'rate', 'net', 'vat', 'gross', 'exemption'}]."""
+        self.ensure_one()
+        buckets = {}
+        for line in self.invoice_line_ids.filtered(
+                lambda l: l.display_type == 'product'):
+            tax = line.tax_ids[:1]
+            rate = tax.amount if tax else 0.0
+            exemption = line.l10n_gr_prov_vat_exemption if not rate else False
+            bucket = buckets.setdefault((rate, exemption), [0.0, 0.0])
+            bucket[0] += line.price_subtotal
+            bucket[1] += line.price_total - line.price_subtotal
+        labels = dict(VAT_EXEMPTION_CODES)
+        return [{
+            'rate': rate,
+            'net': round(net, 2),
+            'vat': round(vat, 2),
+            'gross': round(net + vat, 2),
+            'exemption': labels.get(exemption, '') if exemption else '',
+        } for (rate, exemption), (net, vat)
+          in sorted(buckets.items(), key=lambda kv: -kv[0][0])]
+
     def _l10n_gr_prov_qr_image(self):
         self.ensure_one()
         if not self.l10n_gr_prov_qr_url:
