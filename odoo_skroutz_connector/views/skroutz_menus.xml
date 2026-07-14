@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <!-- Skroutz top-level menu under eCommerce -->
+    <!-- Skroutz top-level menu under Sales -->
     <menuitem
         id="menu_skroutz_root"
         name="Skroutz"
-        parent="website_sale.menu_ecommerce"
+        parent="sale.sale_menu_root"
         sequence="99"/>
 
     <!-- Skroutz > Orders -->

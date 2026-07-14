@@ -1,13 +1,14 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Skroutz Connector',
-    'version': '1.5',
+    'version': '1.6',
     'category': 'eCommerce',
     'summary': 'Skroutz XML feed, order webhook and order management API',
     'description': (
         'Changelog\n'
         '---------\n'
-        '* 1.5 — Manual "Create Sale Order" button replaces auto-create on accept.\n'
+        '* 1.6 — Skroutz menu moved from Website > eCommerce to Sales.\n'
+        '        Create Sale Order moved to the header next to Accept/Reject/Sync.\n'        '* 1.5 — Manual "Create Sale Order" button replaces auto-create on accept.\n'
         '        Accept skips wizard for standard orders (no pickup options from API).\n'
         '        Standard orders use /dispatched endpoint; FBS orders use /tracking_details.\n'
         '        fulfilled_by_skroutz field stored from webhook payload.\n'
