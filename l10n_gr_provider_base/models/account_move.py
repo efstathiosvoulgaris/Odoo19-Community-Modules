@@ -446,13 +446,10 @@ class AccountMove(models.Model):
             except Exception as e:
                 _logger.warning('B2G status poll failed for %s: %s', move.name, e)
 
-    # ── Report helper: QR image as base64 PNG ─────────────────────────────────
     # ── Report helpers (custom Greek PDF) ─────────────────────────────────────
     def _get_name_invoice_report(self):
         self.ensure_one()
-        if (self.country_code == 'GR'
-                and self.journal_id.l10n_gr_edi_inv_type_default
-                and self.company_id._l10n_gr_prov_active()):
+        if self.l10n_gr_prov_applicable and self.journal_id.l10n_gr_edi_inv_type_default:
             return 'l10n_gr_provider_base.report_invoice_document_gr'
         return super()._get_name_invoice_report()
 
@@ -460,15 +457,8 @@ class AccountMove(models.Model):
         """Greek document title, e.g. 'ΤΙΜΟΛΟΓΙΟ ΠΩΛΗΣΗΣ' (caps drop the τόνοι)."""
         self.ensure_one()
         name = (self.journal_id.name or 'ΠΑΡΑΣΤΑΤΙΚΟ').upper()
-        nfd = unicodedata.normalize('NFD', name)
-        return unicodedata.normalize(
-            'NFC', ''.join(c for c in nfd if c != '\\u0301'))  # drop τόνοι
-
-    def _l10n_gr_prov_report_is_dispatch_only(self):
-        """True for pure dispatch notes (9.x/10.x): no values are printed."""
-        self.ensure_one()
-        return (self.journal_id.l10n_gr_edi_inv_type_default in TYPES_DISPATCH
-                and not self.journal_id.l10n_gr_prov_delivery_note)
+        return ''.join(c for c in unicodedata.normalize('NFD', name)
+                       if not unicodedata.combining(c))
 
     def _l10n_gr_prov_vat_analysis(self):
         """Per-rate VAT buckets: [{'rate', 'net', 'vat', 'gross', 'exemption'}]."""

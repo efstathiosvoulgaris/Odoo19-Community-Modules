@@ -10,10 +10,11 @@
         <t t-set="company" t-value="o.company_id"/>
         <t t-set="seller" t-value="company.partner_id"/>
         <t t-set="buyer" t-value="o.commercial_partner_id"/>
-        <t t-set="dispatch_only" t-value="o._l10n_gr_prov_report_is_dispatch_only()"/>
+        <t t-set="dispatch_only" t-value="o.l10n_gr_prov_is_dispatch_only"/>
         <t t-set="is_dispatch" t-value="o.l10n_gr_prov_is_dispatch"/>
         <t t-set="prov_qr" t-value="o._l10n_gr_prov_qr_image()"/>
         <t t-set="vat_rows" t-value="o._l10n_gr_prov_vat_analysis()"/>
+        <t t-set="mono" t-value="{'widget': 'monetary', 'display_currency': o.currency_id}"/>
 
         <!-- div.article: required by the PDF pipeline (charset wrap + attachment ids) -->
         <div class="article" data-oe-model="account.move" t-att-data-oe-id="o.id"
@@ -170,7 +171,7 @@
                                     t-out="'%g' % (line.tax_ids[:1].amount if line.tax_ids else 0)"/>
                                 <td style="padding: 1mm;" class="text-end"
                                     t-out="line.price_subtotal"
-                                    t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                                    t-options="mono"/>
                             </t>
                         </tr>
                         <tr t-elif="line.display_type == 'line_section'">
@@ -199,11 +200,11 @@
                             <tr t-foreach="vat_rows" t-as="vr">
                                 <td style="border: 0.3pt solid #999; padding: 1mm;" t-out="'{:g}%'.format(vr['rate'])"/>
                                 <td style="border: 0.3pt solid #999; padding: 1mm;" class="text-end"
-                                    t-out="vr['net']" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                                    t-out="vr['net']" t-options="mono"/>
                                 <td style="border: 0.3pt solid #999; padding: 1mm;" class="text-end"
-                                    t-out="vr['vat']" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                                    t-out="vr['vat']" t-options="mono"/>
                                 <td style="border: 0.3pt solid #999; padding: 1mm;" class="text-end"
-                                    t-out="vr['gross']" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                                    t-out="vr['gross']" t-options="mono"/>
                             </tr>
                         </tbody>
                     </table>
@@ -220,38 +221,30 @@
                         <tr>
                             <td>Σύνολο Καθαρής Αξίας</td>
                             <td class="text-end" t-out="o.amount_untaxed"
-                                t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                                t-options="mono"/>
                         </tr>
                         <tr>
                             <td>ΦΠΑ</td>
                             <td class="text-end" t-out="o.amount_tax"
-                                t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                                t-options="mono"/>
                         </tr>
-                        <tr t-if="o.l10n_gr_prov_stamp_duty_amount">
-                            <td>Ψηφιακό Τέλος Συναλλαγής</td>
-                            <td class="text-end" t-out="o.l10n_gr_prov_stamp_duty_amount"
-                                t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
-                        </tr>
-                        <tr t-if="o.l10n_gr_prov_fees_amount">
-                            <td>Τέλη</td>
-                            <td class="text-end" t-out="o.l10n_gr_prov_fees_amount"
-                                t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
-                        </tr>
-                        <tr t-if="o.l10n_gr_prov_other_taxes_amount">
-                            <td>Λοιποί Φόροι</td>
-                            <td class="text-end" t-out="o.l10n_gr_prov_other_taxes_amount"
-                                t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                        <tr t-foreach="[('Ψηφιακό Τέλος Συναλλαγής', o.l10n_gr_prov_stamp_duty_amount),
+                                        ('Τέλη', o.l10n_gr_prov_fees_amount),
+                                        ('Λοιποί Φόροι', o.l10n_gr_prov_other_taxes_amount)]"
+                            t-as="extra" t-if="extra[1]">
+                            <td t-out="extra[0]"/>
+                            <td class="text-end" t-out="extra[1]" t-options="mono"/>
                         </tr>
                         <tr t-if="o.l10n_gr_prov_withholding_amount">
                             <td>Κρατήσεις / Παρακράτηση</td>
-                            <td class="text-end"
-                                t-out="'-' + o.currency_id.format(o.l10n_gr_prov_withholding_amount)"/>
+                            <td class="text-end" t-out="-o.l10n_gr_prov_withholding_amount"
+                                t-options="mono"/>
                         </tr>
                         <tr style="border-top: 1pt solid #111; font-weight: bold; font-size: 11pt;">
                             <td style="padding-top: 1mm;">ΠΛΗΡΩΤΕΟ</td>
                             <td class="text-end" style="padding-top: 1mm;"
                                 t-out="o._l10n_gr_prov_payable()"
-                                t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                                t-options="mono"/>
                         </tr>
                     </table>
                 </div>
@@ -264,7 +257,7 @@
                 <t t-if="o.l10n_gr_prov_payment_ids">
                     <span t-foreach="o.l10n_gr_prov_payment_ids" t-as="p" style="font-size: 8.5pt;">
                         <span t-field="p.payment_type"/>:
-                        <strong t-out="p.amount" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                        <strong t-out="p.amount" t-options="mono"/>
                         <t t-if="p.info"> (<span t-out="p.info"/>)</t>
                         <t t-if="not p_last">&#160;&#160;•&#160;&#160;</t>
                     </span>

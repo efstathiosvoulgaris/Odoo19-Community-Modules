@@ -55,8 +55,8 @@ class AccountMove(models.Model):
     @api.onchange('l10n_gr_prov_payment_ids')
     def _onchange_l10n_gr_prov_payment_remainder(self):
         """Default a new payment line's amount to the unassigned remainder."""
+        payable = self._l10n_gr_prov_payable()
+        assigned = sum(self.l10n_gr_prov_payment_ids.mapped('amount'))
         for line in self.l10n_gr_prov_payment_ids:
             if not line.amount:
-                others = sum(p.amount for p in self.l10n_gr_prov_payment_ids
-                             if p is not line)
-                line.amount = max(self._l10n_gr_prov_payable() - others, 0.0)
+                line.amount = max(payable - assigned, 0.0)

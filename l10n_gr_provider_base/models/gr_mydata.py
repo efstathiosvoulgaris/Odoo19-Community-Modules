@@ -99,6 +99,8 @@ TYPES_NO_CLASSIFICATION = frozenset()
 TYPES_CREDIT = frozenset({'5.1', '5.2', '11.4', '13.31', '14.31'})
 TYPES_CORRELATED_CREDIT = frozenset({'5.1'})
 TYPES_NEED_CORRELATED = frozenset({'5.1', '1.6', '2.4', '9.1', '10.1'})
+# correlated dispatch advices — need a MARK of the referenced document
+TYPES_DISPATCH_CORRELATED = TYPES_DISPATCH & TYPES_NEED_CORRELATED
 
 # ── Partner-class → invoice-type net ─────────────────────────────────────────
 # The invoice type lives on the journal (l10n_gr_edi_inv_type_default). The user

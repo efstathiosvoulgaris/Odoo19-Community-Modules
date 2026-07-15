@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from odoo import api, fields, models
 from odoo.addons.l10n_gr_edi.models.preferred_classification import CLASSIFICATION_MAP
+from .gr_mydata import TYPES_DISPATCH_CORRELATED
 
 # Invoice types added in myDATA API v1.0.9/1.0.10, missing from core l10n_gr_edi.
 # Classification data from syndiasmoi_xaraktirismwn_v1.0.10.xlsx:
@@ -64,7 +65,7 @@ class AccountMove(models.Model):
         # Correlated dispatch advices (9.1/10.1) need the correlated invoice too
         super()._compute_l10n_gr_edi_need_fields()
         for move in self:
-            if move.l10n_gr_edi_inv_type in ('9.1', '10.1'):
+            if move.l10n_gr_edi_inv_type in TYPES_DISPATCH_CORRELATED:
                 move.l10n_gr_edi_need_correlated = True
 
     @api.depends('journal_id', 'journal_id.l10n_gr_edi_inv_type_default',

@@ -128,8 +128,9 @@ class AccountMove(models.Model):
         'l10n.gr.prov.delivery.event', 'move_id', string='Ιστορικό Διακίνησης')
     l10n_gr_prov_is_dispatch = fields.Boolean(
         compute='_compute_l10n_gr_prov_is_dispatch')
-    l10n_gr_prov_journal_delivery_note = fields.Boolean(
-        related='journal_id.l10n_gr_prov_delivery_note')
+    # pure dispatch note (9.x/10.x, not a combined ΤΔΑ/ΠΤΔΑ): carries no values
+    l10n_gr_prov_is_dispatch_only = fields.Boolean(
+        compute='_compute_l10n_gr_prov_is_dispatch')
     # Planned dispatch data (§5.3 v2.0.1 — estimates; actuals come via RegisterTransfer)
     l10n_gr_prov_dispatch_datetime = fields.Datetime(
         string='Έναρξη Αποστολής', copy=False)
@@ -145,14 +146,29 @@ class AccountMove(models.Model):
     l10n_gr_prov_other_move_purpose = fields.Char(
         string='Τίτλος Λοιπής Αιτίας Διακίνησης', copy=False,
         help='Συμπληρώνεται μόνο όταν ο Σκοπός Διακίνησης είναι 19 - Λοιπές Διακινήσεις.')
+    # Αντίστροφη Διακίνηση (§5.3, only accepted for type 9.3): the recipient
+    # issues the ΔΑ that the supplier did not.
+    l10n_gr_prov_reverse_delivery = fields.Boolean(
+        string='Αντίστροφη Διακίνηση', copy=False)
+    l10n_gr_prov_reverse_purpose = fields.Selection(
+        selection=[
+            ('1', '1 - Μη Υπόχρεος Έκδοσης'),
+            ('2', '2 - Άρνηση Έκδοσης / Εκ Παραδρομής Μη Έκδοση'),
+            ('3', '3 - Ενδοκοινοτική Απόκτηση'),
+            ('4', '4 - Απόκτηση Τρίτη Χώρα'),
+            ('5', '5 - Αντιστροφή Υποχρέωσης'),
+        ],
+        string='Αιτία Αντίστροφης Διακίνησης', copy=False,
+        help='Αιτία έκδοσης αντίστροφης διακίνησης (§8.21). Μόνο για τύπο 9.3.')
 
     @api.depends('journal_id.l10n_gr_edi_inv_type_default',
                  'journal_id.l10n_gr_prov_delivery_note')
     def _compute_l10n_gr_prov_is_dispatch(self):
         for move in self:
-            move.l10n_gr_prov_is_dispatch = (
-                move.journal_id.l10n_gr_edi_inv_type_default in TYPES_DISPATCH
-                or move.journal_id.l10n_gr_prov_delivery_note)
+            is_type = move.journal_id.l10n_gr_edi_inv_type_default in TYPES_DISPATCH
+            delivery_note = move.journal_id.l10n_gr_prov_delivery_note
+            move.l10n_gr_prov_is_dispatch = is_type or delivery_note
+            move.l10n_gr_prov_is_dispatch_only = is_type and not delivery_note
 
     @api.onchange('journal_id')
     def _onchange_l10n_gr_prov_move_purpose_default(self):
@@ -209,10 +225,13 @@ class AccountMove(models.Model):
         """ΔΑ → ΤΙΜ (1.1) referencing the ΔΑ MARK in correlatedInvoices."""
         return self._l10n_gr_prov_copy_correlated('1.1')
 
-    def action_l10n_gr_prov_create_return(self):
-        """ΔΑ → Δελτίο Επιστροφής: correlated ΔΑΣ (9.1) with σκοπός 5."""
-        return self._l10n_gr_prov_copy_correlated(
-            '9.1', {'l10n_gr_prov_move_purpose': '5'})
+    def action_l10n_gr_prov_create_reverse(self):
+        """ΔΑ → Αντίστροφη Διακίνηση: a 9.3 ΔΑ with reverseDeliveryNote=true
+        (the recipient issues the note the supplier did not, §5.3/§8.21)."""
+        return self._l10n_gr_prov_copy_correlated('9.3', {
+            'l10n_gr_prov_reverse_delivery': True,
+            'l10n_gr_prov_reverse_purpose': '1',
+        })
 
     def action_l10n_gr_prov_refresh_delivery_status(self):
         for move in self:

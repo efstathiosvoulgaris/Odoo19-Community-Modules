@@ -25,6 +25,7 @@ from odoo.addons.l10n_gr_provider_base.models.gr_mydata import (
     PAYMENT_METHOD_MAP,
     PROVIDER_SUBMITTABLE_TYPES,
     TYPES_DISPATCH,
+    TYPES_DISPATCH_CORRELATED,
     MOVE_PURPOSE_NOT_SENDABLE,
     WITHHOLDING_CATEGORY_SELECTION,
 )
@@ -186,7 +187,7 @@ class AccountMove(models.Model):
                 'Invoice type %s cannot be submitted through the e-invoicing provider '
                 '(only 1.1–11.5 are allowed). Use an accounting/ERP journal instead.',
                 inv_type))
-        if ((inv_type in TYPES_DISPATCH or self.journal_id.l10n_gr_prov_delivery_note)
+        if (self.l10n_gr_prov_is_dispatch
                 and self.l10n_gr_prov_move_purpose in MOVE_PURPOSE_NOT_SENDABLE):
             errors.append(_(
                 'Ο Σκοπός Διακίνησης %s δεν γίνεται δεκτός από το myDATA στην τρέχουσα '
@@ -198,7 +199,7 @@ class AccountMove(models.Model):
                 errors.append(_(
                     'Η εγκατάσταση διακίνησης "%s" πρέπει να είναι αριθμός '
                     '(κωδικός εγκατάστασης ΑΑΔΕ).', branch))
-        if inv_type in ('9.1', '10.1'):
+        if inv_type in TYPES_DISPATCH_CORRELATED:
             corr = self.l10n_gr_edi_correlation_id
             if not corr or not corr.l10n_gr_prov_mark:
                 errors.append(_(
@@ -295,8 +296,10 @@ class AccountMove(models.Model):
         partner = self.commercial_partner_id
         lines = self._l10n_gr_prov_ilyda_lines()
         inv_type = self._l10n_gr_prov_ilyda_inv_type()
+        is_dispatch_type = inv_type in TYPES_DISPATCH
+        is_delivery_note = self.journal_id.l10n_gr_prov_delivery_note
         no_vat = inv_type in TYPES_NO_VAT
-        no_cls = inv_type in TYPES_NO_CLASSIFICATION or inv_type in TYPES_DISPATCH
+        no_cls = inv_type in TYPES_NO_CLASSIFICATION or is_dispatch_type
 
         # ── Lines, VAT breakdown buckets, classifications ────────────────────
         invoice_lines, row_types = [], []
@@ -307,7 +310,7 @@ class AccountMove(models.Model):
             vat_amount = _r2(line.price_total - line.price_subtotal)
             tax = line.tax_ids[:1]
             rate = tax.amount if tax else 0.0
-            if inv_type in TYPES_DISPATCH:
+            if is_dispatch_type:
                 # dispatch notes carry no values (MDP-0011..0015): zero the
                 # money side, keep quantities/descriptions
                 net = vat_amount = rate = 0.0
@@ -334,7 +337,7 @@ class AccountMove(models.Model):
             }] if not no_cls and line.l10n_gr_prov_cls_category and line.l10n_gr_prov_cls_type else []
 
             discount_pct = line.discount or 0.0
-            discount_amount = 0.0 if inv_type in TYPES_DISPATCH else _r2(
+            discount_amount = 0.0 if is_dispatch_type else _r2(
                 line.price_unit * line.quantity * discount_pct / 100.0)
 
             line_vals = {
@@ -381,7 +384,7 @@ class AccountMove(models.Model):
                 row_type['vatExemptionCategory'] = int(exemption)
             # dispatch rows need item description/quantity/unit — also on
             # combined invoice+ΔΑ documents (isDeliveryNote journals)
-            if inv_type in TYPES_DISPATCH or self.journal_id.l10n_gr_prov_delivery_note:
+            if is_dispatch_type or is_delivery_note:
                 row_type['itemDescr'] = (line.product_id.name or line.name or '')[:200]
                 row_type['quantity'] = line.quantity
                 row_type['measurementUnit'] = 1  # ponytail: no UoM mapping yet
@@ -587,8 +590,7 @@ class AccountMove(models.Model):
             aade_data['taxTotals'] = tax_totals
 
         # Dispatch data: pure ΔΑ (9.x/10.x) or combined invoice+ΔΑ (ΤΔΑ/ΠΤΔΑ journals)
-        is_delivery_note = self.journal_id.l10n_gr_prov_delivery_note
-        if inv_type in TYPES_DISPATCH or is_delivery_note:
+        if is_dispatch_type or is_delivery_note:
             if is_delivery_note:
                 aade_data['isDeliveryNote'] = True
             aade_data['aadeMovePurpose'] = int(
@@ -596,6 +598,11 @@ class AccountMove(models.Model):
                 or ('5' if self.move_type == 'out_refund' else '1'))
             if self.l10n_gr_prov_move_purpose == '19' and self.l10n_gr_prov_other_move_purpose:
                 aade_data['otherMovePurposeTitle'] = self.l10n_gr_prov_other_move_purpose
+            # Αντίστροφη Διακίνηση — accepted only for 9.3 (§5.3/§8.21)
+            if inv_type == '9.3' and self.l10n_gr_prov_reverse_delivery:
+                aade_data['reverseDeliveryNote'] = True
+                aade_data['reverseDeliveryNotePurpose'] = int(
+                    self.l10n_gr_prov_reverse_purpose or '1')
             # Planned dispatch data (§5.3: estimates; actuals via RegisterTransfer)
             if self.l10n_gr_prov_dispatch_datetime:
                 local = fields.Datetime.context_timestamp(
@@ -638,10 +645,14 @@ class AccountMove(models.Model):
 
         # Correlated MARK: credit notes via the reversal link, everything else
         # (9.1/10.1, ΔΑ→ΤΙΜ follow-ups) via the myDATA correlation field.
+        # Forbidden for plain dispatch notes (MDP-0090): 9.2/9.3/10.2 — only the
+        # correlated dispatch types (9.1/10.1) accept it.
+        correlated_forbidden = (
+            is_dispatch_type and inv_type not in TYPES_DISPATCH_CORRELATED)
         correlated = ((self.reversed_entry_id
                        if inv_type in TYPES_NEED_CORRELATED else None)
                       or self.l10n_gr_edi_correlation_id)
-        if correlated and correlated.l10n_gr_prov_mark:
+        if correlated and correlated.l10n_gr_prov_mark and not correlated_forbidden:
             aade_data['correlatedInvoices'] = [
                 int(correlated.l10n_gr_prov_mark)
             ]

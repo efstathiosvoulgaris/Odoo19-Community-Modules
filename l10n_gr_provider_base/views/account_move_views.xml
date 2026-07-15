@@ -44,10 +44,10 @@
                 <!-- ΔΑ follow-ups: only on pure marked dispatch notes -->
                 <button name="action_l10n_gr_prov_create_invoice" type="object"
                         string="Δημιουργία Τιμολογίου"
-                        invisible="not l10n_gr_prov_is_dispatch or l10n_gr_prov_journal_delivery_note or not l10n_gr_prov_mark"/>
-                <button name="action_l10n_gr_prov_create_return" type="object"
-                        string="Δελτίο Επιστροφής"
-                        invisible="not l10n_gr_prov_is_dispatch or l10n_gr_prov_journal_delivery_note or not l10n_gr_prov_mark"/>
+                        invisible="not l10n_gr_prov_is_dispatch_only or not l10n_gr_prov_mark"/>
+                <button name="action_l10n_gr_prov_create_reverse" type="object"
+                        string="Αντίστροφη Διακίνηση"
+                        invisible="not l10n_gr_prov_is_dispatch_only or not l10n_gr_prov_mark"/>
             </header>
 
             <notebook position="inside">
@@ -56,7 +56,7 @@
                 <page string="Ψηφιακή Διακίνηση" name="l10n_gr_prov_dispatch"
                       invisible="not l10n_gr_prov_applicable or not l10n_gr_prov_is_dispatch">
                     <field name="l10n_gr_prov_is_dispatch" invisible="1"/>
-                    <field name="l10n_gr_prov_journal_delivery_note" invisible="1"/>
+                    <field name="l10n_gr_prov_is_dispatch_only" invisible="1"/>
                     <group name="l10n_gr_prov_dispatch_group" string="Στοιχεία Διακίνησης">
                         <group>
                             <field name="l10n_gr_prov_move_purpose"
@@ -81,6 +81,16 @@
                                    readonly="l10n_gr_prov_mark"/>
                             <field name="l10n_gr_prov_complete_shipping_branch"
                                    class="border rounded bg-light px-2"
+                                   readonly="l10n_gr_prov_mark"/>
+                            <!-- Αντίστροφη Διακίνηση — only accepted for type 9.3 -->
+                            <field name="l10n_gr_edi_inv_type" invisible="1"/>
+                            <field name="l10n_gr_prov_reverse_delivery"
+                                   invisible="l10n_gr_edi_inv_type != '9.3'"
+                                   readonly="l10n_gr_prov_mark"/>
+                            <field name="l10n_gr_prov_reverse_purpose"
+                                   class="border rounded bg-light px-2"
+                                   invisible="not l10n_gr_prov_reverse_delivery"
+                                   required="l10n_gr_prov_reverse_delivery"
                                    readonly="l10n_gr_prov_mark"/>
                         </group>
                     </group>
@@ -113,7 +123,7 @@
                 <!-- Tab 3: myDATA extra taxes (not on dispatch notes) -->
                 <!-- hidden on pure dispatch notes (9.x/10.x); shown on ΤΔΑ/ΠΤΔΑ -->
                 <page string="myDATA Φόροι" name="l10n_gr_prov_taxes"
-                      invisible="not l10n_gr_prov_applicable or (l10n_gr_prov_is_dispatch and not l10n_gr_prov_journal_delivery_note)">
+                      invisible="not l10n_gr_prov_applicable or l10n_gr_prov_is_dispatch_only">
                     <group string="myDATA">
                         <group>
                             <!-- category + amount on one row; amount is locked for
@@ -189,7 +199,7 @@
             <!-- Πληρωμές: second tab, right after the invoice lines -->
             <xpath expr="//page[@name='invoice_tab']" position="after">
                 <page string="Πληρωμές" name="l10n_gr_prov_payments"
-                      invisible="not l10n_gr_prov_applicable or l10n_gr_prov_is_dispatch and not l10n_gr_prov_journal_delivery_note">
+                      invisible="not l10n_gr_prov_applicable or l10n_gr_prov_is_dispatch_only">
                     <group string="Τρόποι Πληρωμής myDATA">
                         <field name="l10n_gr_prov_payment_ids" nolabel="1" colspan="2"
                                readonly="l10n_gr_prov_mark">
