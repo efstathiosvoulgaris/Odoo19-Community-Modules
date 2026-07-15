@@ -47,10 +47,14 @@ class AccountMoveLine(models.Model):
             if not inv_type or not cat:
                 continue
             valid = valid_cls_types(inv_type, cat)
-            if len(valid) == 1:
-                line.l10n_gr_prov_cls_type = next(iter(valid))
-            elif line.l10n_gr_prov_cls_type and line.l10n_gr_prov_cls_type not in valid:
+            e3 = line.l10n_gr_prov_cls_type
+            # Fill the preferred E3 whenever the category needs one and the
+            # current value is empty or invalid (category*_95/category3 take
+            # none, so valid is empty and E3 is cleared).
+            if not valid:
                 line.l10n_gr_prov_cls_type = False
+            elif not e3 or e3 not in valid:
+                line.l10n_gr_prov_cls_type = preferred_e3(inv_type, valid)
 
     @api.constrains('l10n_gr_prov_cls_category', 'l10n_gr_prov_cls_type')
     def _check_l10n_gr_prov_classification(self):

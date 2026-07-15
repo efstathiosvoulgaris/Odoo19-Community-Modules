@@ -37,6 +37,29 @@
                 <attribute name="invisible">1</attribute>
             </xpath>
 
+            <!-- Hide vendor-bill plumbing on GR myDATA docs (Τίτλος Κτήσης etc.):
+                 Auto-Complete, Recipient Bank, Payment Reference are irrelevant.
+                 OR-ed with the core move_type guards so other forms are unchanged. -->
+            <xpath expr="//label[@name='invoice_vendor_bill_id_label']" position="attributes">
+                <attribute name="invisible">l10n_gr_prov_applicable or state != 'draft' or move_type not in ('in_invoice', 'in_refund')</attribute>
+            </xpath>
+            <xpath expr="//field[@name='invoice_vendor_bill_id']" position="attributes">
+                <attribute name="invisible">l10n_gr_prov_applicable or state != 'draft' or move_type not in ('in_invoice', 'in_refund')</attribute>
+            </xpath>
+            <xpath expr="//field[@name='payment_reference']" position="attributes">
+                <attribute name="invisible">l10n_gr_prov_applicable or move_type not in ('in_invoice', 'in_refund', 'in_receipt')</attribute>
+            </xpath>
+            <!-- Second Auto-Complete added by the Purchase app for purchase users -->
+            <xpath expr="//label[@for='purchase_vendor_bill_id']" position="attributes">
+                <attribute name="invisible">l10n_gr_prov_applicable or state != 'draft' or move_type not in ('in_invoice', 'in_refund')</attribute>
+            </xpath>
+            <xpath expr="//field[@name='purchase_vendor_bill_id']" position="attributes">
+                <attribute name="invisible">l10n_gr_prov_applicable or state != 'draft' or move_type not in ('in_invoice', 'in_refund')</attribute>
+            </xpath>
+            <xpath expr="//field[@name='partner_bank_id']" position="attributes">
+                <attribute name="invisible">l10n_gr_prov_applicable or move_type not in ('in_invoice', 'in_refund', 'in_receipt')</attribute>
+            </xpath>
+
             <header position="inside">
                 <button name="action_l10n_gr_prov_send" type="object"
                         string="Send to Provider" class="btn-primary"
@@ -92,6 +115,12 @@
                                    invisible="not l10n_gr_prov_reverse_delivery"
                                    required="l10n_gr_prov_reverse_delivery"
                                    readonly="l10n_gr_prov_mark"/>
+                            <!-- Δελτίο Ποσοτικής Παραλαβής — receipt side (10.1/10.2) -->
+                            <field name="l10n_gr_prov_receiving_purpose"
+                                   class="border rounded bg-light px-2"
+                                   invisible="l10n_gr_edi_inv_type not in ['10.1', '10.2']"
+                                   required="l10n_gr_edi_inv_type in ['10.1', '10.2']"
+                                   readonly="l10n_gr_prov_mark"/>
                         </group>
                     </group>
                 </page>
@@ -124,6 +153,12 @@
                 <!-- hidden on pure dispatch notes (9.x/10.x); shown on ΤΔΑ/ΠΤΔΑ -->
                 <page string="myDATA Φόροι" name="l10n_gr_prov_taxes"
                       invisible="not l10n_gr_prov_applicable or l10n_gr_prov_is_dispatch_only">
+                    <group string="Εστίαση" invisible="l10n_gr_edi_inv_type != '8.6'">
+                        <field name="l10n_gr_prov_table_aa"
+                               class="border rounded bg-light px-2"
+                               required="l10n_gr_edi_inv_type == '8.6'"
+                               readonly="l10n_gr_prov_mark"/>
+                    </group>
                     <group string="myDATA">
                         <group>
                             <!-- category + amount on one row; amount is locked for

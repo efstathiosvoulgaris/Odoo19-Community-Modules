@@ -26,8 +26,13 @@ from odoo.addons.l10n_gr_provider_base.models.gr_mydata import (
     PROVIDER_SUBMITTABLE_TYPES,
     TYPES_DISPATCH,
     TYPES_DISPATCH_CORRELATED,
+    TYPES_RECEIPT,
+    TYPES_SELF_BILLED,
     MOVE_PURPOSE_NOT_SENDABLE,
     WITHHOLDING_CATEGORY_SELECTION,
+    valid_cls_types,
+    valid_cls_categories,
+    preferred_e3,
 )
 
 _logger = logging.getLogger(__name__)
@@ -199,6 +204,9 @@ class AccountMove(models.Model):
                 errors.append(_(
                     'Η εγκατάσταση διακίνησης "%s" πρέπει να είναι αριθμός '
                     '(κωδικός εγκατάστασης ΑΑΔΕ).', branch))
+        if inv_type == '8.6' and not self.l10n_gr_prov_table_aa:
+            errors.append(_(
+                'Το Δελτίο Παραγγελίας Εστίασης (8.6) απαιτεί ΑΑ Τραπεζιού.'))
         if inv_type in TYPES_DISPATCH_CORRELATED:
             corr = self.l10n_gr_edi_correlation_id
             if not corr or not corr.l10n_gr_prov_mark:
@@ -206,6 +214,16 @@ class AccountMove(models.Model):
                     'Ο τύπος %s είναι συσχετιζόμενο δελτίο — επιλέξτε το '
                     'συσχετιζόμενο παραστατικό (με MARK) στο πεδίο '
                     '«Correlated Invoice».', inv_type))
+            # 10.1 (ILYDA err 320): the correlated document must be a delivery
+            # note (9.x / ΤΔΑ) or a 10.2 — not an invoice.
+            elif inv_type == '10.1':
+                corr_type = corr.l10n_gr_edi_inv_type
+                if not (corr_type in TYPES_DISPATCH
+                        or corr.journal_id.l10n_gr_prov_delivery_note):
+                    errors.append(_(
+                        'Το συσχετιζόμενο παραστατικό του Δελτίου Ποσοτικής '
+                        'Παραλαβής (10.1) πρέπει να είναι Δελτίο Αποστολής '
+                        '(9.1/9.2/9.3) ή 10.2 — όχι τιμολόγιο.'))
         # Payment lines must cover the payable exactly (tips are on top)
         if self.l10n_gr_prov_payment_ids and inv_type not in TYPES_DISPATCH:
             paid = sum(self.l10n_gr_prov_payment_ids.mapped('amount'))
@@ -218,8 +236,11 @@ class AccountMove(models.Model):
         lines = self._l10n_gr_prov_ilyda_lines()
         if not lines:
             errors.append(_('The document has no product lines.'))
-        # Dispatch types (9.x/10.x) classify with category3 only, no E3 code.
-        no_cls = inv_type in TYPES_NO_CLASSIFICATION or inv_type in TYPES_DISPATCH
+        # Dispatch types (9.x/10.x) classify with category3 only; associate
+        # types (1.6/2.4 — CLASSIFICATION_MAP sentinel, no valid categories)
+        # inherit their classification from the correlated invoice.
+        no_cls = (inv_type in TYPES_NO_CLASSIFICATION or inv_type in TYPES_DISPATCH
+                  or not valid_cls_categories(inv_type))
         no_vat = inv_type in TYPES_NO_VAT
         for line in lines:
             line_label = line.name or line.product_id.display_name
@@ -239,13 +260,14 @@ class AccountMove(models.Model):
                     errors.append(_(
                         'Line "%s": 0%% VAT requires a VAT Exemption Reason '
                         '(set on the line in the invoice).', line_label))
-        # Counterpart required for B2B types; forbidden for retail/no-VAT types
-        if (self.is_sale_document()
+        # Counterpart required for B2B types (and self-billed 3.1/3.2, whose
+        # counterpart is the individual's ΑΦΜ); forbidden for retail/no-VAT types
+        if ((self.is_sale_document() or inv_type in TYPES_SELF_BILLED)
                 and inv_type not in TYPES_NO_BUYER
                 and not self.commercial_partner_id.vat):
             errors.append(_(
-                'Invoice type %s requires a customer with a VAT number (counterpart is mandatory). '
-                'Use an 11.x journal for retail sales without a VAT customer.', inv_type))
+                'Invoice type %s requires a counterpart with a VAT/ΑΦΜ number '
+                '(mandatory). Set the ΑΦΜ on the vendor/customer.', inv_type))
         if self.move_type == 'out_refund' and self.reversed_entry_id \
                 and not self.reversed_entry_id.l10n_gr_prov_mark:
             errors.append(_(
@@ -299,7 +321,8 @@ class AccountMove(models.Model):
         is_dispatch_type = inv_type in TYPES_DISPATCH
         is_delivery_note = self.journal_id.l10n_gr_prov_delivery_note
         no_vat = inv_type in TYPES_NO_VAT
-        no_cls = inv_type in TYPES_NO_CLASSIFICATION or is_dispatch_type
+        no_cls = (inv_type in TYPES_NO_CLASSIFICATION or is_dispatch_type
+                  or not valid_cls_categories(inv_type))
 
         # ── Lines, VAT breakdown buckets, classifications ────────────────────
         invoice_lines, row_types = [], []
@@ -314,6 +337,10 @@ class AccountMove(models.Model):
                 # dispatch notes carry no values (MDP-0011..0015): zero the
                 # money side, keep quantities/descriptions
                 net = vat_amount = rate = 0.0
+            elif no_vat:
+                # no-VAT types (e.g. 3.1/3.2 Τίτλος Κτήσης): line VAT must be 0
+                # even if the line carries a tax (MDP-0014); net stays real.
+                vat_amount = rate = 0.0
 
             aade_vat_cat, category_code = _vat_category(tax, inv_type)
 
@@ -326,15 +353,28 @@ class AccountMove(models.Model):
             bucket[0] += net
             bucket[1] += vat_amount
 
-            if not no_cls and line.l10n_gr_prov_cls_category and line.l10n_gr_prov_cls_type:
-                cls_key = (line.l10n_gr_prov_cls_category, line.l10n_gr_prov_cls_type)
-                cls_totals[cls_key] = _r2(cls_totals.get(cls_key, 0.0) + net)
-
-            line_cls = [{
-                'classificationCategory': line.l10n_gr_prov_cls_category,
-                'classificationType': line.l10n_gr_prov_cls_type,
-                'amount': net,
-            }] if not no_cls and line.l10n_gr_prov_cls_category and line.l10n_gr_prov_cls_type else []
+            # E3 code is sent only when valid for this type+category; the
+            # category*_95 groups (e.g. 8.6 restaurant orders) take none.
+            cls_cat = line.l10n_gr_prov_cls_category
+            cls_type = line.l10n_gr_prov_cls_type
+            valid = valid_cls_types(inv_type, cls_cat) if cls_cat else frozenset()
+            if cls_type and cls_type not in valid:
+                cls_type = False
+            # Category needs an E3 but the line has none (created off the onchange
+            # path, e.g. a copy): fall back to the preferred code (MDP-0001).
+            if not cls_type and valid:
+                cls_type = preferred_e3(inv_type, valid)
+            # category2_* are expense categories (e.g. 3.1 Τίτλος Κτήσης) and
+            # must go in expensesClassification; category1_*/category3 are income.
+            is_expense_cls = bool(cls_cat) and cls_cat.startswith('category2')
+            line_cls = []
+            if not no_cls and cls_cat:
+                cls_totals[(cls_cat, cls_type)] = _r2(
+                    cls_totals.get((cls_cat, cls_type), 0.0) + net)
+                entry = {'classificationCategory': cls_cat, 'amount': net}
+                if cls_type:
+                    entry['classificationType'] = cls_type
+                line_cls = [entry]
 
             discount_pct = line.discount or 0.0
             discount_amount = 0.0 if is_dispatch_type else _r2(
@@ -382,14 +422,18 @@ class AccountMove(models.Model):
             }
             if exemption:
                 row_type['vatExemptionCategory'] = int(exemption)
-            # dispatch rows need item description/quantity/unit — also on
-            # combined invoice+ΔΑ documents (isDeliveryNote journals)
-            if is_dispatch_type or is_delivery_note:
+            # dispatch rows AND restaurant order notes (8.6) need item
+            # description/quantity/unit — also on combined invoice+ΔΑ documents
+            if is_dispatch_type or is_delivery_note or inv_type == '8.6':
                 row_type['itemDescr'] = (line.product_id.name or line.name or '')[:200]
                 row_type['quantity'] = line.quantity
                 row_type['measurementUnit'] = 1  # ponytail: no UoM mapping yet
+            # myDATA requires document- and row-level classification to match
+            # (MDP-0004/0006). 3.1/3.2 forbid row-level *income* (MDP-0040), but
+            # their expense classification must be present at the row too.
             if line_cls:
-                row_type['incomeClassification'] = line_cls
+                row_type['expensesClassification' if is_expense_cls
+                         else 'incomeClassification'] = line_cls
             row_types.append(row_type)
 
         # VAT breakdowns
@@ -409,11 +453,13 @@ class AccountMove(models.Model):
                 },
             })
 
-        income_classifications = [{
-            'classificationCategory': cat,
-            'classificationType': cls_type,
-            'amount': amount,
-        } for (cat, cls_type), amount in cls_totals.items()]
+        income_classifications, expenses_classifications = [], []
+        for (cat, cls_type), amount in cls_totals.items():
+            entry = {'classificationCategory': cat, 'amount': amount}
+            if cls_type:
+                entry['classificationType'] = cls_type
+            (expenses_classifications if cat.startswith('category2')
+             else income_classifications).append(entry)
 
         # ── Totals ────────────────────────────────────────────────────────────
         # Withholding is an EN16931 doc-level allowance (BT-107) at Z/0%, so both
@@ -584,13 +630,25 @@ class AccountMove(models.Model):
             'aadeInvoiceTypeCode': inv_type,
             'invoiceRowTypes': row_types,
         }
+        if inv_type == '8.6' and self.l10n_gr_prov_table_aa:
+            aade_data['tableAA'] = self.l10n_gr_prov_table_aa
         if income_classifications:
             aade_data['incomeClassifications'] = income_classifications
+        if expenses_classifications:
+            aade_data['expensesClassifications'] = expenses_classifications
         if tax_totals:
             aade_data['taxTotals'] = tax_totals
 
         # Dispatch data: pure ΔΑ (9.x/10.x) or combined invoice+ΔΑ (ΤΔΑ/ΠΤΔΑ journals)
-        if is_dispatch_type or is_delivery_note:
+        if inv_type in TYPES_RECEIPT:
+            # Δελτίο Ποσοτικής Παραλαβής (10.1/10.2): receipt side — movePurpose,
+            # dispatchDate and otherDeliveryNoteHeader are forbidden; only the
+            # receivingNotePurpose is sent (MDP-0107/0108/0111/0116).
+            # Unprefixed on AadeData, like its sibling reverseDeliveryNotePurpose
+            # (the aade-prefixed name is rejected as unknown by ILYDA).
+            aade_data['receivingNotePurpose'] = int(
+                self.l10n_gr_prov_receiving_purpose or '1')
+        elif is_dispatch_type or is_delivery_note:
             if is_delivery_note:
                 aade_data['isDeliveryNote'] = True
             aade_data['aadeMovePurpose'] = int(

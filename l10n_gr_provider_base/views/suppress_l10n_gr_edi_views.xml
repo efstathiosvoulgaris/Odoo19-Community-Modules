@@ -17,6 +17,18 @@
                 </attribute>
             </button>
 
+            <!-- Hide core myDATA MARK/status fields on docs WE transmit; keep
+                 them on plain vendor bills where the mark is entered manually. -->
+            <field name="l10n_gr_edi_mark" position="attributes">
+                <attribute name="invisible">l10n_gr_prov_applicable or not (l10n_gr_edi_enable_view_mydata and (l10n_gr_edi_mark or move_type in ('in_invoice', 'in_refund', 'in_receipt')))</attribute>
+            </field>
+            <field name="l10n_gr_edi_cls_mark" position="attributes">
+                <attribute name="invisible">l10n_gr_prov_applicable or not (l10n_gr_edi_enable_view_mydata and l10n_gr_edi_cls_mark)</attribute>
+            </field>
+            <field name="l10n_gr_edi_state" position="attributes">
+                <attribute name="invisible">l10n_gr_prov_applicable or not (l10n_gr_edi_enable_view_mydata and l10n_gr_edi_state)</attribute>
+            </field>
+
             <!-- Hide l10n_gr_edi line classification columns — we show our own -->
             <field name="l10n_gr_edi_cls_category" position="attributes">
                 <attribute name="column_invisible">1</attribute>

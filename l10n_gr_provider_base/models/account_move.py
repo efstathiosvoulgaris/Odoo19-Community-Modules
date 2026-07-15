@@ -13,7 +13,7 @@ from .gr_mydata import (
     STAMP_DUTY_CATEGORY_SELECTION, STAMP_DUTY_CATEGORY_RATE,
     partner_class, journal_types_for_class,
     INV_TYPE_ZERO_TAX, DOMESTIC_TAX_RATES, DOMESTIC_ZERO_TAX_NAMES, TYPES_DISPATCH,
-    VAT_EXEMPTION_CODES,
+    VAT_EXEMPTION_CODES, TYPES_SELF_BILLED, TYPES_POS_ONLY,
 )
 
 _logger = logging.getLogger(__name__)
@@ -109,6 +109,11 @@ class AccountMove(models.Model):
         string='Σκοπός Διακίνησης', copy=False, default='1',
         help='Mandatory for dispatch notes (9.x). Σκοπός Διακίνησης per myDATA v2.0.1 §8.14.'
     )
+
+    # Δελτίο Παραγγελίας Εστίασης (8.6): table number, mandatory for the type
+    l10n_gr_prov_table_aa = fields.Char(
+        string='ΑΑ Τραπεζιού', size=50, copy=False,
+        help='Αριθμός τραπεζιού — υποχρεωτικό για Δελτίο Παραγγελίας Εστίασης (8.6).')
 
     # ── myDATA invoice fields (clean-slate, no l10n_gr_edi dependency) ───────
     # inv_type and payment_method come from l10n_gr_edi_inv_type / l10n_gr_edi_payment_method
@@ -302,14 +307,29 @@ class AccountMove(models.Model):
     l10n_gr_prov_applicable = fields.Boolean(
         compute='_compute_l10n_gr_prov_applicable')
 
-    @api.depends('move_type', 'company_id.l10n_gr_prov_provider', 'country_code')
+    @api.depends('move_type', 'company_id.l10n_gr_prov_provider', 'country_code',
+                 'journal_id.l10n_gr_edi_inv_type_default')
     def _compute_l10n_gr_prov_applicable(self):
         for move in self:
+            # Self-billing types (3.1/3.2) are vendor bills we still transmit;
+            # every other purchase document is issued by the supplier, not us.
+            self_billed = (
+                move.is_purchase_document(include_receipts=True)
+                and move.journal_id.l10n_gr_edi_inv_type_default in TYPES_SELF_BILLED)
             move.l10n_gr_prov_applicable = (
-                move.is_sale_document(include_receipts=True)
+                (move.is_sale_document(include_receipts=True) or self_billed)
                 and move.country_code == 'GR'
                 and move.company_id._l10n_gr_prov_active()
             )
+
+    @api.model
+    def _get_suitable_journal_ids(self, move_type, company=False):
+        """Drop POS/restaurant journals (8.4/8.5/8.6) from the invoice journal
+        picker — those documents come from the cash register / ordering system,
+        not manual invoicing. The journals still exist for that future flow."""
+        journals = super()._get_suitable_journal_ids(move_type, company)
+        return journals.filtered(
+            lambda j: j.l10n_gr_edi_inv_type_default not in TYPES_POS_ONLY)
 
     # ── Posting hook: queue, never call the network inside the posting tx ────
     def _post(self, soft=True):
@@ -348,6 +368,17 @@ class AccountMove(models.Model):
         for move in self:
             if move.l10n_gr_prov_b2g and move.l10n_gr_prov_invoice_id:
                 move._l10n_gr_prov_dispatch('poll_b2g_status')
+
+    def button_draft(self):
+        """A transmitted document can't go back to draft — its MARK is live at
+        AADE. Reversal is a credit note (5.1), not a reset."""
+        stuck = self.filtered(lambda m: m.l10n_gr_prov_mark)
+        if stuck:
+            raise UserError(_(
+                'Έχει αποσταλεί στην ΑΑΔΕ (MARK %s) και δεν επαναφέρεται σε '
+                'πρόχειρο. Για ακύρωση/επιστροφή εκδώστε Πιστωτικό Τιμολόγιο (5.1).',
+                ', '.join(stuck.mapped('l10n_gr_prov_mark'))))
+        return super().button_draft()
 
     # ── Core dispatch to the configured driver ────────────────────────────────
     def _l10n_gr_prov_dispatch(self, operation):

@@ -83,16 +83,30 @@ PROVIDER_SUBMITTABLE_TYPES = frozenset({
 # Dispatch types (9.x/10.x) are NOT here — AADE: counterpart is mandatory
 # for delivery notes (the goods always have a recipient).
 TYPES_NO_BUYER = frozenset({
-    '3.1', '3.2', '6.1', '6.2', '7.1', '8.1', '8.2',
+    # 3.1/3.2 (Τίτλος Κτήσης) DO require the counterpart (the individual's ΑΦΜ)
+    # — ILYDA error 204 — so they are intentionally NOT listed here.
+    '6.1', '6.2', '7.1', '8.1', '8.2',
     '8.4', '8.5', '8.6',
     '11.1', '11.2', '11.3', '11.4', '11.5', '17.3', '17.4',
 })
 TYPES_NO_VAT = frozenset({
-    '3.1', '3.2', '6.1', '6.2', '7.1', '8.1', '8.2',
-    '8.4', '8.5', '8.6', '9.1', '9.2', '9.3', '10.1', '10.2',
+    # 6.1/6.2 (self-supply/self-use) are deemed supplies — VAT IS due, so they
+    # must NOT be here (AADE MDP-0050 rejects vatCategory 8 for them).
+    # 8.6 (Δελτίο Παραγγελίας Εστίασης) carries real VAT too (restaurant order).
+    '3.1', '3.2', '7.1', '8.1', '8.2',
+    '8.4', '8.5', '9.1', '9.2', '9.3', '10.1', '10.2',
     '17.3', '17.4',
 })
 TYPES_DISPATCH = frozenset({'9.1', '9.2', '9.3', '10.1', '10.2'})
+# Δελτίο Ποσοτικής Παραλαβής — receipt side: forbid movePurpose/dispatchDate/
+# otherDeliveryNoteHeader, require receivingNotePurpose instead (MDP-0107..0116)
+TYPES_RECEIPT = frozenset({'10.1', '10.2'})
+# Τίτλος Κτήσης — self-billing: we issue & transmit it, but it's OUR expense, so
+# it lives on the purchase side (in_invoice, expensesClassification category2_*).
+TYPES_SELF_BILLED = frozenset({'3.1', '3.2'})
+# POS receipts (8.4/8.5) and restaurant order notes (8.6) are issued by the cash
+# register / ordering system, never typed by hand — hidden from the journal picker.
+TYPES_POS_ONLY = frozenset({'8.4', '8.5', '8.6'})
 # §8.14: schema-valid but not accepted for submission in the current version
 MOVE_PURPOSE_NOT_SENDABLE = frozenset({'6', '15', '16', '17'})
 TYPES_NO_CLASSIFICATION = frozenset()
@@ -1366,10 +1380,16 @@ def default_classification(inv_type, product_type):
     cats = valid_cls_categories(inv_type)
     if not cats:
         return (None, None)
-    cat = PT_CATEGORY.get(product_type)
-    if cat not in cats:
-        income = sorted(c for c in cats if c.startswith('category1_'))
-        cat = income[0] if income else sorted(cats)[0]
+    if inv_type in TYPES_SELF_BILLED:
+        # Τίτλος Κτήσης is our expense — 3.2's map also lists income (category1_*)
+        # categories, but for self-billing we must classify as expense.
+        expense = sorted(c for c in cats if c.startswith('category2_'))
+        cat = expense[0] if expense else sorted(cats)[0]
+    else:
+        cat = PT_CATEGORY.get(product_type)
+        if cat not in cats:
+            income = sorted(c for c in cats if c.startswith('category1_'))
+            cat = income[0] if income else sorted(cats)[0]
     return (cat, preferred_e3(inv_type, valid_cls_types(inv_type, cat)))
 
 

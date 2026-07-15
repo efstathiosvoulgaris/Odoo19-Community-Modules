@@ -160,6 +160,13 @@ class AccountMove(models.Model):
         ],
         string='Αιτία Αντίστροφης Διακίνησης', copy=False,
         help='Αιτία έκδοσης αντίστροφης διακίνησης (§8.21). Μόνο για τύπο 9.3.')
+    # Δελτίο Ποσοτικής Παραλαβής (10.1/10.2). AADE code — not enumerated in the
+    # provided ILYDA/myDATA v2.0.1 docs, so kept as a free numeric code.
+    # ponytail: Char not Selection — no sourced enum to model; user sets the code.
+    l10n_gr_prov_receiving_purpose = fields.Char(
+        string='Σκοπός Παραλαβής', size=2, copy=False, default='1',
+        help='Κωδικός σκοπού ποσοτικής παραλαβής (receivingNotePurpose). '
+             'Υποχρεωτικό μόνο για τύπους 10.1/10.2.')
 
     @api.depends('journal_id.l10n_gr_edi_inv_type_default',
                  'journal_id.l10n_gr_prov_delivery_note')

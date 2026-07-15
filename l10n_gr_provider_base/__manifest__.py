@@ -34,6 +34,7 @@
     'license': 'LGPL-3',
     'depends': [
         'account',
+        'purchase',
         'l10n_gr_edi',
         'l10n_gr_partner',
     ],
