@@ -5,302 +5,311 @@
          Custom Greek invoice / dispatch-note PDF (fully custom layout).
          Selected via account.move._get_name_invoice_report() for GR myDATA
          journals; other documents keep the standard Odoo report.
+
+         Layout rules (so PDF == HTML preview and space is FIXED):
+         - table-based columns only (wkhtmltopdf 0.12.6 has no flexbox, so
+           Bootstrap row/col diverge between browser preview and the PDF);
+         - each section has a fixed height, so lines are the only dynamic part;
+         - the provider/QR footer is position:fixed → pinned to every page bottom
+           (paperformat reserves 34mm at the bottom for it).
          ══════════════════════════════════════════════════════════════════════ -->
     <template id="report_invoice_document_gr">
         <t t-set="company" t-value="o.company_id"/>
         <t t-set="seller" t-value="company.partner_id"/>
         <t t-set="buyer" t-value="o.commercial_partner_id"/>
+        <t t-set="ship" t-value="o.partner_shipping_id or buyer"/>
         <t t-set="dispatch_only" t-value="o.l10n_gr_prov_is_dispatch_only"/>
         <t t-set="is_dispatch" t-value="o.l10n_gr_prov_is_dispatch"/>
         <t t-set="prov_qr" t-value="o._l10n_gr_prov_qr_image()"/>
         <t t-set="vat_rows" t-value="o._l10n_gr_prov_vat_analysis()"/>
         <t t-set="mono" t-value="{'widget': 'monetary', 'display_currency': o.currency_id}"/>
+        <t t-set="box" t-value="'border: 1pt solid #666; border-radius: 1mm; padding: 2mm; overflow: hidden;'"/>
+        <t t-set="lbl" t-value="'font-weight: bold; font-size: 7.5pt; color: #555; border-bottom: 0.5pt solid #ccc; margin-bottom: 1mm; text-transform: uppercase;'"/>
 
         <!-- div.article: required by the PDF pipeline (charset wrap + attachment ids) -->
         <div class="article" data-oe-model="account.move" t-att-data-oe-id="o.id"
              t-att-data-oe-lang="o.env.lang">
-        <div class="page" style="font-size: 9pt; color: #111;">
 
-            <!-- ═══ Section 1: ΕΚΔΟΤΗΣ — logo + company details ═══════════ -->
-            <div class="row mb-2 pb-2" style="border-bottom: 1pt solid #111;">
-                <div class="col-3">
-                    <img t-if="company.logo" t-att-src="image_data_uri(company.logo)"
-                         style="max-height: 22mm; max-width: 100%;" alt="Logo"/>
-                </div>
-                <div class="col-9">
-                    <div style="font-size: 14pt; font-weight: bold;" t-out="seller.name"/>
-                    <div t-if="seller.l10n_gr_prov_activity" class="fst-italic"
-                         t-out="seller.l10n_gr_prov_activity"/>
-                    <div>
-                        <span t-out="' '.join(filter(None, [seller.street, seller.street2]))"/>,
-                        <span t-out="' '.join(filter(None, [seller.zip, seller.city]))"/>
-                    </div>
-                    <div>
-                        <strong>ΑΦΜ:</strong> <span t-out="seller.vat or ''"/>
-                        <t t-if="seller.l10n_gr_prov_doy">
-                            &#160;•&#160;<strong>ΔΟΥ:</strong> <span t-out="seller.l10n_gr_prov_doy"/>
-                        </t>
-                        <t t-if="'gemh' in seller._fields and seller.gemh">
-                            &#160;•&#160;<strong>ΓΕΜΗ:</strong> <span t-out="seller.gemh"/>
-                        </t>
-                    </div>
-                    <div style="font-size: 8pt;">
-                        <t t-if="seller.phone">Τηλ: <span t-out="seller.phone"/>&#160;•&#160;</t>
-                        <t t-if="seller.email"><span t-out="seller.email"/>&#160;•&#160;</t>
-                        <t t-if="seller.website"><span t-out="seller.website"/></t>
-                    </div>
-                </div>
-            </div>
-
-            <!-- ═══ Section 2: ΠΕΛΑΤΗΣ | ΠΑΡΑΣΤΑΤΙΚΟ ══════════════════════ -->
-            <div class="row mb-2">
-                <div class="col-6">
-                    <div style="border: 0.5pt solid #666; border-radius: 1mm; padding: 2mm; height: 100%; min-height: 30mm;">
-                        <div style="font-weight: bold; font-size: 8pt; color: #555; border-bottom: 0.5pt solid #ccc; margin-bottom: 1mm;">ΣΤΟΙΧΕΙΑ ΠΕΛΑΤΗ</div>
-                        <div style="font-weight: bold;" t-out="buyer.name"/>
-                        <div t-if="buyer.l10n_gr_prov_activity" t-out="buyer.l10n_gr_prov_activity"/>
-                        <div t-out="' '.join(filter(None, [buyer.street, buyer.street2]))"/>
-                        <div t-out="', '.join(filter(None, [buyer.zip, buyer.city, buyer.country_id.name if buyer.country_id.code != 'GR' else '']))"/>
-                        <div>
-                            <t t-if="buyer.vat"><strong>ΑΦΜ:</strong> <span t-out="buyer.vat"/></t>
-                            <t t-if="buyer.l10n_gr_prov_doy">
-                                &#160;•&#160;<strong>ΔΟΥ:</strong> <span t-out="buyer.l10n_gr_prov_doy"/>
-                            </t>
-                            <t t-if="buyer.phone">&#160;•&#160;Τηλ: <span t-out="buyer.phone"/></t>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-6">
-                    <div style="border: 1.5pt solid #111; border-radius: 1mm; padding: 2mm; height: 100%; min-height: 30mm;">
-                        <div class="text-center" style="font-size: 11pt; font-weight: bold; letter-spacing: 0.5pt; border-bottom: 0.5pt solid #ccc; padding-bottom: 1mm; margin-bottom: 1mm;"
-                             t-out="o._l10n_gr_prov_report_title()"/>
-                        <table class="w-100" style="font-size: 9pt;">
-                            <tr>
-                                <td style="width: 45%;"><strong>Σειρά / Αριθμός</strong></td>
-                                <td class="text-end" t-out="o.name"/>
-                            </tr>
-                            <tr>
-                                <td><strong>Ημερομηνία</strong></td>
-                                <td class="text-end"><span t-field="o.invoice_date"/></td>
-                            </tr>
-                            <tr t-if="o.l10n_gr_prov_send_datetime">
-                                <td><strong>Ώρα Έκδοσης</strong></td>
-                                <td class="text-end">
-                                    <span t-field="o.l10n_gr_prov_send_datetime"
-                                          t-options='{"format": "HH:mm"}'/>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td><strong>Τύπος myDATA</strong></td>
-                                <td class="text-end" t-out="o.journal_id.l10n_gr_edi_inv_type_default or o.l10n_gr_edi_inv_type or ''"/>
-                            </tr>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <!-- ═══ Section 3: ΔΙΑΚΙΝΗΣΗ (full width, dispatch docs only) ═ -->
-            <div class="row mb-2" t-if="is_dispatch">
-                <div class="col-12">
-                    <div style="border: 0.5pt solid #666; border-radius: 1mm; padding: 2mm;">
-                        <div style="font-weight: bold; font-size: 8pt; color: #555; border-bottom: 0.5pt solid #ccc; margin-bottom: 1mm;">ΣΤΟΙΧΕΙΑ ΔΙΑΚΙΝΗΣΗΣ</div>
-                        <div class="row" style="font-size: 8.5pt;">
-                            <div class="col-4">
-                                <div><strong>Σκοπός:</strong> <span t-field="o.l10n_gr_prov_move_purpose"/></div>
-                                <div t-if="o.l10n_gr_prov_dispatch_datetime">
-                                    <strong>Έναρξη Αποστολής:</strong>
-                                    <span t-field="o.l10n_gr_prov_dispatch_datetime"/>
-                                </div>
-                                <div t-if="o.l10n_gr_prov_vehicle_id">
-                                    <strong>Μεταφορικό Μέσο:</strong>
-                                    <span t-out="o.l10n_gr_prov_vehicle_id.name"/>
-                                </div>
-                            </div>
-                            <div class="col-4">
-                                <div><strong>Φόρτωση:</strong></div>
-                                <div t-out="', '.join(filter(None, [seller.street, seller.zip, seller.city]))"/>
-                            </div>
-                            <div class="col-4">
-                                <div><strong>Παράδοση:</strong></div>
-                                <div t-out="', '.join(filter(None, [(o.partner_shipping_id or buyer).street, (o.partner_shipping_id or buyer).zip, (o.partner_shipping_id or buyer).city]))"/>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Correlated document -->
-            <div t-if="o.l10n_gr_edi_correlation_id or o.reversed_entry_id" class="mb-1" style="font-size: 8.5pt;">
-                <t t-set="corr" t-value="o.l10n_gr_edi_correlation_id or o.reversed_entry_id"/>
-                <strong>Συσχετιζόμενο παραστατικό:</strong>
-                <span t-out="corr.name"/>
-                <t t-if="corr.l10n_gr_prov_mark"> (ΜΑΡΚ <span t-out="corr.l10n_gr_prov_mark"/>)</t>
-            </div>
-
-            <!-- ── Lines ─────────────────────────────────────────────────── -->
-            <table class="w-100 mb-2" style="border-collapse: collapse;">
-                <thead>
-                    <tr style="background-color: #222; color: white; font-size: 8.5pt;">
-                        <th style="padding: 1.5mm; width: 7mm;">Α/Α</th>
-                        <th style="padding: 1.5mm; width: 24mm;">Κωδικός</th>
-                        <th style="padding: 1.5mm;">Περιγραφή</th>
-                        <th style="padding: 1.5mm; width: 14mm;" class="text-end">Ποσ.</th>
-                        <t t-if="not dispatch_only">
-                            <th style="padding: 1.5mm; width: 18mm;" class="text-end">Τιμή Μον.</th>
-                            <th style="padding: 1.5mm; width: 12mm;" class="text-end">Έκπτ.%</th>
-                            <th style="padding: 1.5mm; width: 12mm;" class="text-end">ΦΠΑ%</th>
-                            <th style="padding: 1.5mm; width: 20mm;" class="text-end">Καθαρή Αξία</th>
-                        </t>
-                    </tr>
-                </thead>
-                <tbody>
-                    <t t-set="line_no" t-value="0"/>
-                    <t t-foreach="o.invoice_line_ids.filtered(lambda l: l.display_type in ('product', 'line_section', 'line_note'))" t-as="line">
-                        <tr t-if="line.display_type == 'product'" style="border-bottom: 0.3pt solid #ccc;">
-                            <t t-set="line_no" t-value="line_no + 1"/>
-                            <td style="padding: 1mm;" t-out="line_no"/>
-                            <td style="padding: 1mm;" t-out="line.product_id.default_code or ''"/>
-                            <td style="padding: 1mm;" t-out="line.name or line.product_id.name"/>
-                            <td style="padding: 1mm;" class="text-end" t-out="'%g' % line.quantity"/>
-                            <t t-if="not dispatch_only">
-                                <td style="padding: 1mm;" class="text-end"
-                                    t-out="line.price_unit" t-options='{"widget": "float", "precision": 2}'/>
-                                <td style="padding: 1mm;" class="text-end"
-                                    t-out="('%g' % line.discount) if line.discount else ''"/>
-                                <td style="padding: 1mm;" class="text-end"
-                                    t-out="'%g' % (line.tax_ids[:1].amount if line.tax_ids else 0)"/>
-                                <td style="padding: 1mm;" class="text-end"
-                                    t-out="line.price_subtotal"
-                                    t-options="mono"/>
-                            </t>
-                        </tr>
-                        <tr t-elif="line.display_type == 'line_section'">
-                            <td/><td colspan="7" style="padding: 1mm; font-weight: bold;" t-out="line.name"/>
-                        </tr>
-                        <tr t-else="">
-                            <td/><td colspan="7" style="padding: 1mm; font-style: italic;" t-out="line.name"/>
-                        </tr>
-                    </t>
-                </tbody>
-            </table>
-
-            <!-- ── Footer: VAT analysis + payments | totals ──────────────── -->
-            <div class="row" t-if="not dispatch_only">
-                <div class="col-7">
-                    <table style="border-collapse: collapse; font-size: 8.5pt; width: 95%;">
-                        <thead>
-                            <tr style="background-color: #eee; font-weight: bold;">
-                                <th style="border: 0.3pt solid #999; padding: 1mm;">Συντ. ΦΠΑ</th>
-                                <th style="border: 0.3pt solid #999; padding: 1mm;" class="text-end">Καθαρή Αξία</th>
-                                <th style="border: 0.3pt solid #999; padding: 1mm;" class="text-end">ΦΠΑ</th>
-                                <th style="border: 0.3pt solid #999; padding: 1mm;" class="text-end">Σύνολο</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr t-foreach="vat_rows" t-as="vr">
-                                <td style="border: 0.3pt solid #999; padding: 1mm;" t-out="'{:g}%'.format(vr['rate'])"/>
-                                <td style="border: 0.3pt solid #999; padding: 1mm;" class="text-end"
-                                    t-out="vr['net']" t-options="mono"/>
-                                <td style="border: 0.3pt solid #999; padding: 1mm;" class="text-end"
-                                    t-out="vr['vat']" t-options="mono"/>
-                                <td style="border: 0.3pt solid #999; padding: 1mm;" class="text-end"
-                                    t-out="vr['gross']" t-options="mono"/>
-                            </tr>
-                        </tbody>
-                    </table>
-                    <div t-foreach="[vr for vr in vat_rows if vr['exemption']]" t-as="vr"
-                         style="font-size: 7.5pt; margin-top: 0.5mm;">
-                        Απαλλαγή ΦΠΑ: <span t-out="vr['exemption']"/>
-                    </div>
-                    <div t-if="o.narration" class="mt-2" style="font-size: 8pt;">
-                        <span t-field="o.narration"/>
-                    </div>
-                </div>
-                <div class="col-5">
-                    <table class="w-100" style="font-size: 9.5pt;">
-                        <tr>
-                            <td>Σύνολο Καθαρής Αξίας</td>
-                            <td class="text-end" t-out="o.amount_untaxed"
-                                t-options="mono"/>
-                        </tr>
-                        <tr>
-                            <td>ΦΠΑ</td>
-                            <td class="text-end" t-out="o.amount_tax"
-                                t-options="mono"/>
-                        </tr>
-                        <tr t-foreach="[('Ψηφιακό Τέλος Συναλλαγής', o.l10n_gr_prov_stamp_duty_amount),
-                                        ('Τέλη', o.l10n_gr_prov_fees_amount),
-                                        ('Λοιποί Φόροι', o.l10n_gr_prov_other_taxes_amount)]"
-                            t-as="extra" t-if="extra[1]">
-                            <td t-out="extra[0]"/>
-                            <td class="text-end" t-out="extra[1]" t-options="mono"/>
-                        </tr>
-                        <tr t-if="o.l10n_gr_prov_withholding_amount">
-                            <td>Κρατήσεις / Παρακράτηση</td>
-                            <td class="text-end" t-out="-o.l10n_gr_prov_withholding_amount"
-                                t-options="mono"/>
-                        </tr>
-                        <tr style="border-top: 1pt solid #111; font-weight: bold; font-size: 11pt;">
-                            <td style="padding-top: 1mm;">ΠΛΗΡΩΤΕΟ</td>
-                            <td class="text-end" style="padding-top: 1mm;"
-                                t-out="o._l10n_gr_prov_payable()"
-                                t-options="mono"/>
-                        </tr>
-                    </table>
-                </div>
-            </div>
-
-            <!-- ── Τρόποι Πληρωμής (own band) ────────────────────────────── -->
-            <div t-if="not dispatch_only and (o.l10n_gr_prov_payment_ids or o.l10n_gr_edi_payment_method)"
-                 class="mt-2" style="border: 0.5pt solid #666; border-radius: 1mm; padding: 2mm;">
-                <div style="font-weight: bold; font-size: 8pt; color: #555; border-bottom: 0.5pt solid #ccc; margin-bottom: 1mm;">ΤΡΟΠΟΙ ΠΛΗΡΩΜΗΣ</div>
-                <t t-if="o.l10n_gr_prov_payment_ids">
-                    <span t-foreach="o.l10n_gr_prov_payment_ids" t-as="p" style="font-size: 8.5pt;">
-                        <span t-field="p.payment_type"/>:
-                        <strong t-out="p.amount" t-options="mono"/>
-                        <t t-if="p.info"> (<span t-out="p.info"/>)</t>
-                        <t t-if="not p_last">&#160;&#160;•&#160;&#160;</t>
-                    </span>
-                </t>
-                <span t-else="" style="font-size: 8.5pt;">
-                    <span t-field="o.l10n_gr_edi_payment_method"/>
-                </span>
-            </div>
-
-            <!-- ── Legal markings (Α.1035/2020 άρθ. 3 §7) ────────────────── -->
-            <div class="mt-3" style="border-top: 0.5pt solid #999; padding-top: 2mm;">
+            <!-- ═══ FOOTER — provider markings + QR. class="footer" so Odoo's PDF
+                 pipeline extracts it and wkhtmltopdf repeats it in the bottom
+                 margin on every page (position:fixed is dropped by wkhtmltopdf). ═══ -->
+            <div class="footer" style="border-top: 1pt solid #111; padding-top: 1.5mm; color: #111;">
                 <t t-if="o.l10n_gr_prov_mark">
-                    <div class="row">
-                        <div class="col-2">
-                            <img t-if="prov_qr" t-att-src="'data:image/png;base64,' + prov_qr"
-                                 style="width: 28mm; height: 28mm;" alt="Provider QR"/>
-                        </div>
-                        <div class="col-10" style="font-size: 7.5pt;">
-                            <div><strong>ΜΑΡΚ:</strong> <span t-out="o.l10n_gr_prov_mark"/></div>
-                            <div style="word-break: break-all;"><strong>Συμβολοσειρά Αυθεντικοποίησης:</strong> <span t-out="o.l10n_gr_prov_verification_hash"/></div>
-                            <div style="word-break: break-all;"><strong>Αναγνωριστικό Παραστατικού:</strong> <span t-out="o.l10n_gr_prov_invoice_identifier"/></div>
-                            <div t-if="o.l10n_gr_prov_provider_url"><strong>Πάροχος:</strong> <span t-out="o.l10n_gr_prov_provider_url"/></div>
-                            <div class="fst-italic">Ηλεκτρονική τιμολόγηση μέσω Παρόχου Υ.ΠΑ.Η.Ε.Σ. — Α.1035/2020</div>
-                        </div>
-                    </div>
+                    <table style="width: 100%; table-layout: fixed;">
+                        <tr style="vertical-align: top;">
+                            <td style="width: 26mm;">
+                                <img t-if="prov_qr" t-att-src="'data:image/png;base64,' + prov_qr"
+                                     style="width: 24mm; height: 24mm;" alt="QR"/>
+                            </td>
+                            <td style="font-size: 7pt; line-height: 1.3;">
+                                <div><strong>ΜΑΡΚ:</strong> <span t-out="o.l10n_gr_prov_mark"/></div>
+                                <div style="word-break: break-all;"><strong>Αυθεντικοποίηση:</strong>
+                                    <span t-out="o.l10n_gr_prov_verification_hash"/></div>
+                                <div style="word-break: break-all;"><strong>Αναγν. Παραστατικού:</strong>
+                                    <span t-out="o.l10n_gr_prov_invoice_identifier"/></div>
+                                <div t-if="o.l10n_gr_prov_provider_url"><strong>Πάροχος:</strong>
+                                    <span t-out="o.l10n_gr_prov_provider_url"/></div>
+                                <div class="fst-italic" style="color: #555;">Ηλεκτρονική τιμολόγηση μέσω
+                                    Παρόχου Υ.ΠΑ.Η.Ε.Σ. — Α.1035/2020</div>
+                            </td>
+                        </tr>
+                    </table>
                 </t>
                 <t t-else="">
-                    <div class="text-center fst-italic" style="font-size: 9pt; color: #888;">
+                    <div class="text-center fst-italic" style="font-size: 10pt; color: #888; padding-top: 8mm;">
                         ΠΡΟΣΧΕΔΙΟ — Δεν έχει διαβιβαστεί στο myDATA
                     </div>
                 </t>
             </div>
-        </div>
+
+            <div class="page" style="font-size: 9pt; color: #111;">
+
+                <!-- ═══ 1. ΕΚΔΟΤΗΣ — logo | company (fixed 24mm) ═══ -->
+                <table style="width: 100%; table-layout: fixed; border-bottom: 1pt solid #111;">
+                    <tr style="height: 24mm; vertical-align: middle;">
+                        <td style="width: 40mm;">
+                            <img t-if="company.logo" t-att-src="image_data_uri(company.logo)"
+                                 style="max-height: 22mm; max-width: 38mm;" alt="Logo"/>
+                        </td>
+                        <td>
+                            <div style="font-size: 14pt; font-weight: bold;" t-out="seller.name"/>
+                            <div t-if="seller.l10n_gr_prov_activity" class="fst-italic"
+                                 t-out="seller.l10n_gr_prov_activity"/>
+                            <div>
+                                <span t-out="' '.join(filter(None, [seller.street, seller.street2]))"/>,
+                                <span t-out="' '.join(filter(None, [seller.zip, seller.city]))"/>
+                            </div>
+                            <div>
+                                <strong>ΑΦΜ:</strong> <span t-out="seller.vat or ''"/>
+                                <t t-if="seller.l10n_gr_prov_doy">&#160;•&#160;<strong>ΔΟΥ:</strong>
+                                    <span t-out="seller.l10n_gr_prov_doy"/></t>
+                                <t t-if="'gemh' in seller._fields and seller.gemh">&#160;•&#160;<strong>ΓΕΜΗ:</strong>
+                                    <span t-out="seller.gemh"/></t>
+                            </div>
+                            <div style="font-size: 8pt;">
+                                <t t-if="seller.phone">Τηλ: <span t-out="seller.phone"/>&#160;•&#160;</t>
+                                <t t-if="seller.email"><span t-out="seller.email"/>&#160;•&#160;</t>
+                                <t t-if="seller.website"><span t-out="seller.website"/></t>
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+
+                <!-- ═══ 2. ΠΕΛΑΤΗΣ | ΠΑΡΑΣΤΑΤΙΚΟ (fixed 32mm) ═══ -->
+                <table style="width: 100%; table-layout: fixed; margin-top: 2mm;">
+                    <tr style="vertical-align: top;">
+                        <td style="width: 50%; padding-right: 1.5mm;">
+                            <div t-att-style="box + 'height: 38mm;'">
+                                <div t-att-style="lbl">Στοιχεία Πελάτη</div>
+                                <div style="font-weight: bold;" t-out="buyer.name"/>
+                                <div t-if="buyer.l10n_gr_prov_activity" t-out="buyer.l10n_gr_prov_activity"/>
+                                <div t-out="' '.join(filter(None, [buyer.street, buyer.street2]))"/>
+                                <div t-out="', '.join(filter(None, [buyer.zip, buyer.city, buyer.country_id.name if buyer.country_id.code != 'GR' else '']))"/>
+                                <div>
+                                    <t t-if="buyer.vat"><strong>ΑΦΜ:</strong> <span t-out="buyer.vat"/></t>
+                                    <t t-if="buyer.l10n_gr_prov_doy">&#160;•&#160;<strong>ΔΟΥ:</strong>
+                                        <span t-out="buyer.l10n_gr_prov_doy"/></t>
+                                </div>
+                                <div t-if="buyer.phone"><strong>Τηλ:</strong> <span t-out="buyer.phone"/></div>
+                            </div>
+                        </td>
+                        <td style="width: 50%; padding-left: 1.5mm;">
+                            <div t-att-style="'border: 1.5pt solid #111; border-radius: 1mm; padding: 2mm; height: 38mm; overflow: hidden;'">
+                                <div class="text-center" style="font-size: 11pt; font-weight: bold; letter-spacing: 0.3pt; border-bottom: 0.5pt solid #ccc; padding-bottom: 1mm; margin-bottom: 1mm;"
+                                     t-out="o._l10n_gr_prov_report_title()"/>
+                                <table style="width: 100%; font-size: 9pt;">
+                                    <tr>
+                                        <td style="width: 45%;"><strong>Σειρά / Αριθμός</strong></td>
+                                        <td class="text-end" t-out="o.name"/>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Ημερομηνία</strong></td>
+                                        <td class="text-end"><span t-field="o.invoice_date"/></td>
+                                    </tr>
+                                    <tr t-if="o.l10n_gr_prov_send_datetime">
+                                        <td><strong>Ώρα Έκδοσης</strong></td>
+                                        <td class="text-end"><span t-field="o.l10n_gr_prov_send_datetime"
+                                              t-options='{"format": "HH:mm"}'/></td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Τύπος myDATA</strong></td>
+                                        <td class="text-end" t-out="o.journal_id.l10n_gr_edi_inv_type_default or o.l10n_gr_edi_inv_type or ''"/>
+                                    </tr>
+                                    <tr t-if="o.l10n_gr_edi_correlation_id or o.reversed_entry_id">
+                                        <t t-set="corr" t-value="o.l10n_gr_edi_correlation_id or o.reversed_entry_id"/>
+                                        <td><strong>Συσχ/νο</strong></td>
+                                        <td class="text-end" style="font-size: 8pt;">
+                                            <span t-out="corr.name"/>
+                                            <t t-if="corr.l10n_gr_prov_mark"><br/>ΜΑΡΚ <span t-out="corr.l10n_gr_prov_mark"/></t>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+
+                <!-- ═══ 3. ΣΤΟΙΧΕΙΑ ΔΙΑΚΙΝΗΣΗΣ (fixed 20mm, dispatch docs only) ═══ -->
+                <div t-if="is_dispatch" t-att-style="box + 'height: 20mm; margin-top: 2mm;'">
+                    <div t-att-style="lbl">Στοιχεία Διακίνησης</div>
+                    <table style="width: 100%; table-layout: fixed; font-size: 8.5pt;">
+                        <tr style="vertical-align: top;">
+                            <td style="width: 34%;">
+                                <div><strong>Σκοπός:</strong> <span t-field="o.l10n_gr_prov_move_purpose"/></div>
+                                <div t-if="o.l10n_gr_prov_dispatch_datetime"><strong>Έναρξη:</strong>
+                                    <span t-field="o.l10n_gr_prov_dispatch_datetime"/></div>
+                                <div t-if="o.l10n_gr_prov_vehicle_id"><strong>Όχημα:</strong>
+                                    <span t-out="o.l10n_gr_prov_vehicle_id.name"/></div>
+                            </td>
+                            <td style="width: 33%;">
+                                <div><strong>Φόρτωση:</strong></div>
+                                <div t-out="', '.join(filter(None, [seller.street, seller.zip, seller.city]))"/>
+                            </td>
+                            <td style="width: 33%;">
+                                <div><strong>Παράδοση:</strong></div>
+                                <div t-out="', '.join(filter(None, [ship.street, ship.zip, ship.city]))"/>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+
+                <!-- ═══ 4. ΓΡΑΜΜΕΣ ═══ -->
+                <table style="width: 100%; border-collapse: collapse; margin-top: 2mm;">
+                    <thead>
+                        <tr style="background-color: #222; color: white; font-size: 8.5pt;">
+                            <th style="padding: 1.5mm; width: 7mm;">Α/Α</th>
+                            <th style="padding: 1.5mm; width: 24mm;">Κωδικός</th>
+                            <th style="padding: 1.5mm;">Περιγραφή</th>
+                            <th style="padding: 1.5mm; width: 14mm;" class="text-end">Ποσ.</th>
+                            <t t-if="not dispatch_only">
+                                <th style="padding: 1.5mm; width: 18mm;" class="text-end">Τιμή Μον.</th>
+                                <th style="padding: 1.5mm; width: 12mm;" class="text-end">Έκπτ.%</th>
+                                <th style="padding: 1.5mm; width: 12mm;" class="text-end">ΦΠΑ%</th>
+                                <th style="padding: 1.5mm; width: 20mm;" class="text-end">Καθαρή Αξία</th>
+                            </t>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <t t-set="line_no" t-value="0"/>
+                        <t t-foreach="o.invoice_line_ids.filtered(lambda l: l.display_type in ('product', 'line_section', 'line_note'))" t-as="line">
+                            <tr t-if="line.display_type == 'product'" style="border-bottom: 0.3pt solid #ccc;">
+                                <t t-set="line_no" t-value="line_no + 1"/>
+                                <td style="padding: 1mm;" t-out="line_no"/>
+                                <td style="padding: 1mm;" t-out="line.product_id.default_code or ''"/>
+                                <td style="padding: 1mm;" t-out="line.name or line.product_id.name"/>
+                                <td style="padding: 1mm;" class="text-end" t-out="'%g' % line.quantity"/>
+                                <t t-if="not dispatch_only">
+                                    <td style="padding: 1mm;" class="text-end"
+                                        t-out="line.price_unit" t-options='{"widget": "float", "precision": 2}'/>
+                                    <td style="padding: 1mm;" class="text-end"
+                                        t-out="('%g' % line.discount) if line.discount else ''"/>
+                                    <td style="padding: 1mm;" class="text-end"
+                                        t-out="'%g' % (line.tax_ids[:1].amount if line.tax_ids else 0)"/>
+                                    <td style="padding: 1mm;" class="text-end"
+                                        t-out="line.price_subtotal" t-options="mono"/>
+                                </t>
+                            </tr>
+                            <tr t-elif="line.display_type == 'line_section'">
+                                <td/><td colspan="7" style="padding: 1mm; font-weight: bold;" t-out="line.name"/>
+                            </tr>
+                            <tr t-else="">
+                                <td/><td colspan="7" style="padding: 1mm; font-style: italic;" t-out="line.name"/>
+                            </tr>
+                        </t>
+                    </tbody>
+                </table>
+
+                <!-- ═══ 5. ΦΠΑ ανάλυση | Σύνολα (fixed 2-col) ═══ -->
+                <table t-if="not dispatch_only" style="width: 100%; table-layout: fixed; margin-top: 2mm;">
+                    <tr style="vertical-align: top;">
+                        <td style="width: 58%; padding-right: 2mm;">
+                            <table style="width: 100%; border-collapse: collapse; font-size: 8.5pt;">
+                                <thead>
+                                    <tr style="background-color: #eee; font-weight: bold;">
+                                        <th style="border: 0.3pt solid #999; padding: 1mm;">Συντ. ΦΠΑ</th>
+                                        <th style="border: 0.3pt solid #999; padding: 1mm;" class="text-end">Καθαρή Αξία</th>
+                                        <th style="border: 0.3pt solid #999; padding: 1mm;" class="text-end">ΦΠΑ</th>
+                                        <th style="border: 0.3pt solid #999; padding: 1mm;" class="text-end">Σύνολο</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr t-foreach="vat_rows" t-as="vr">
+                                        <td style="border: 0.3pt solid #999; padding: 1mm;" t-out="'{:g}%'.format(vr['rate'])"/>
+                                        <td style="border: 0.3pt solid #999; padding: 1mm;" class="text-end" t-out="vr['net']" t-options="mono"/>
+                                        <td style="border: 0.3pt solid #999; padding: 1mm;" class="text-end" t-out="vr['vat']" t-options="mono"/>
+                                        <td style="border: 0.3pt solid #999; padding: 1mm;" class="text-end" t-out="vr['gross']" t-options="mono"/>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <div t-foreach="[vr for vr in vat_rows if vr['exemption']]" t-as="vr"
+                                 style="font-size: 7.5pt; margin-top: 0.5mm;">
+                                Απαλλαγή ΦΠΑ: <span t-out="vr['exemption']"/>
+                            </div>
+                        </td>
+                        <td style="width: 42%;">
+                            <table style="width: 100%; font-size: 9.5pt;">
+                                <tr>
+                                    <td>Σύνολο Καθαρής Αξίας</td>
+                                    <td class="text-end" t-out="o.amount_untaxed" t-options="mono"/>
+                                </tr>
+                                <tr>
+                                    <td>ΦΠΑ</td>
+                                    <td class="text-end" t-out="o.amount_tax" t-options="mono"/>
+                                </tr>
+                                <tr t-foreach="[('Ψηφιακό Τέλος Συναλλαγής', o.l10n_gr_prov_stamp_duty_amount),
+                                                ('Τέλη', o.l10n_gr_prov_fees_amount),
+                                                ('Λοιποί Φόροι', o.l10n_gr_prov_other_taxes_amount)]"
+                                    t-as="extra" t-if="extra[1]">
+                                    <td t-out="extra[0]"/>
+                                    <td class="text-end" t-out="extra[1]" t-options="mono"/>
+                                </tr>
+                                <tr t-if="o.l10n_gr_prov_withholding_amount">
+                                    <td>Κρατήσεις / Παρακράτηση</td>
+                                    <td class="text-end" t-out="-o.l10n_gr_prov_withholding_amount" t-options="mono"/>
+                                </tr>
+                                <tr style="border-top: 1pt solid #111; font-weight: bold; font-size: 11pt;">
+                                    <td style="padding-top: 1mm;">ΠΛΗΡΩΤΕΟ</td>
+                                    <td class="text-end" style="padding-top: 1mm;"
+                                        t-out="o._l10n_gr_prov_payable()" t-options="mono"/>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                </table>
+
+                <!-- ═══ 6. ΣΧΟΛΙΑ (fixed box) | ΤΡΟΠΟΙ ΠΛΗΡΩΜΗΣ ═══ -->
+                <div t-att-style="box + 'height: 15mm; margin-top: 2mm;'">
+                    <div t-att-style="lbl">Παρατηρήσεις / Σχόλια</div>
+                    <div style="font-size: 8pt;"><span t-if="o.narration" t-field="o.narration"/></div>
+                </div>
+
+                <div t-if="not dispatch_only and (o.l10n_gr_prov_payment_ids or o.l10n_gr_edi_payment_method)"
+                     t-att-style="box + 'margin-top: 2mm;'">
+                    <div t-att-style="lbl">Τρόποι Πληρωμής</div>
+                    <t t-if="o.l10n_gr_prov_payment_ids">
+                        <span t-foreach="o.l10n_gr_prov_payment_ids" t-as="p" style="font-size: 8.5pt;">
+                            <span t-field="p.payment_type"/>:
+                            <strong t-out="p.amount" t-options="mono"/>
+                            <t t-if="p.info"> (<span t-out="p.info"/>)</t>
+                            <t t-if="not p_last">&#160;&#160;•&#160;&#160;</t>
+                        </span>
+                    </t>
+                    <span t-else="" style="font-size: 8.5pt;">
+                        <span t-field="o.l10n_gr_edi_payment_method"/>
+                    </span>
+                </div>
+
+            </div>
         </div>
     </template>
 
-    <!-- Tight A4 paperformat: no header band (the template draws its own) -->
+    <!-- Tight A4 paperformat: 34mm bottom margin reserves space for the fixed footer -->
     <record id="paperformat_gr_invoice" model="report.paperformat">
         <field name="name">Ελληνικό Παραστατικό A4</field>
         <field name="format">A4</field>
         <field name="orientation">Portrait</field>
         <field name="margin_top">10</field>
-        <field name="margin_bottom">12</field>
+        <field name="margin_bottom">34</field>
         <field name="margin_left">7</field>
         <field name="margin_right">7</field>
         <field name="header_line" eval="False"/>
