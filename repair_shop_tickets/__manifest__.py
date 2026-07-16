@@ -1,7 +1,7 @@
 {
     'name': 'Repair Shop Tickets',
-    'version': '1.0',
-    'description': 'A module to manage repair shop tickets, including job details, parts used, and invoicing.\n\nChangelog\n---------\n* 1.0 — Initial public release.',
+    'version': '1.2',
+    'description': 'A module to manage repair shop tickets, including job details, parts used, and invoicing.\n\nChangelog\n---------\n* 1.2 — Record that the customer was notified the device is ready: who, when, through which channel, plus a "To Notify" worklist.\n* 1.1 — A ticket can carry several job types. Labour VAT/account now follow the company default and the customer fiscal position.\n* 1.0 — Initial public release.',
     'category': 'Services/Field Service',
     'summary': 'Manage repair jobs, parts, invoices & receipts',
     'author': 'Efstathios Voulgaris',

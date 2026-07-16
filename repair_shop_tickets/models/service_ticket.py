@@ -40,7 +40,12 @@ class ServiceTicket(models.Model):
     product_model_id = fields.Many2one('service.product.model', string='Model',
                                        domain="[('brand_id', '=', brand_id)]")
 
-    job_type_id = fields.Many2one('service.job.type', string='Job Type')
+    job_type_ids = fields.Many2many(
+        'service.job.type',
+        'service_ticket_job_type_rel',
+        'ticket_id', 'job_type_id',
+        string='Job Type',
+    )
     employee_id = fields.Many2one('hr.employee', string='Assigned Technician')
     fixes_needed = fields.Text(string='Customer Notes')
     technician_notes = fields.Text(string='Technician Notes')
@@ -60,6 +65,16 @@ class ServiceTicket(models.Model):
     )
     stock_move_count = fields.Integer(compute='_compute_stock_move_count', store=True, depends=['stock_move_ids'])
     stock_consumed = fields.Boolean(string='Stock Consumed', copy=False)
+
+    notified = fields.Boolean(string='Customer Notified', readonly=True, copy=False, tracking=True)
+    notified_date = fields.Datetime(string='Notified On', readonly=True, copy=False)
+    notified_uid = fields.Many2one('res.users', string='Notified By', readonly=True, copy=False)
+    notified_channel = fields.Selection([
+        ('phone', 'Phone'),
+        ('sms', 'SMS'),
+        ('email', 'Email'),
+        ('viber', 'Viber'),
+    ], string='Notification Channel', default='phone', copy=False, tracking=True)
 
     state = fields.Selection([
         ('new', 'New'),
@@ -159,6 +174,15 @@ class ServiceTicket(models.Model):
     def action_picked_up(self):
         self.write({'state': 'picked_up'})
 
+    def action_notify_customer(self):
+        """Record that a human told the customer the device is ready. The chatter
+        entry comes from tracking=True on notified/notified_channel."""
+        self.write({
+            'notified': True,
+            'notified_date': fields.Datetime.now(),
+            'notified_uid': self.env.user.id,
+        })
+
     def action_reset_to_in_progress(self):
         if self.stock_consumed:
             self._reverse_stock()
@@ -193,21 +217,18 @@ class ServiceTicket(models.Model):
             }))
 
         if self.labor_price:
-            account = self.env['account.account'].search([
-                ('company_ids', 'in', self.env.company.id),
-                ('account_type', 'in', ['income', 'income_other']),
-            ], limit=1)
-            tax = self.env['account.tax'].search([
-                ('type_tax_use', '=', 'sale'),
-                ('amount', '=', 24),
-                ('active', '=', True),
-                ('company_id', '=', self.env.company.id),
-            ], limit=1)
+            # ponytail: no account_id — Odoo derives it from the journal / fiscal
+            # position. Tax is the company default mapped through the customer's
+            # fiscal position, so island rates (17%/13%) follow automatically.
+            tax = self.env.company.account_sale_tax_id
+            fpos = self.env['account.fiscal.position']._get_fiscal_position(self.partner_id)
+            if fpos and tax:
+                tax = fpos.map_tax(tax)
             invoice_line_vals.append((0, 0, {
-                'name': 'Labor: ' + (self.job_type_id.name or self.fixes_needed or 'Service Work'),
+                'name': 'Labor: ' + (', '.join(self.job_type_ids.mapped('name'))
+                                     or self.fixes_needed or 'Service Work'),
                 'quantity': 1,
                 'price_unit': self.labor_price,
-                'account_id': account.id,
                 'tax_ids': [(6, 0, tax.ids)],
             }))
 

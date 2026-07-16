@@ -13,11 +13,12 @@
                 <field name="name"/>
                 <field name="partner_id"/>
                 <field name="phone"/>
-                <field name="job_type_id" optional="show"/>
+                <field name="job_type_ids" widget="many2many_tags" optional="show"/>
                 <field name="employee_id" optional="show"/>
                 <field name="brand_id" optional="show"/>
                 <field name="product_model_id" optional="show"/>
                 <field name="total_price" optional="show"/>
+                <field name="notified" optional="hide"/>
                 <field name="invoice_id" optional="show"/>
                 <field name="state" widget="badge"
                        decoration-info="state == 'new'"
@@ -44,6 +45,8 @@
                             invisible="state != 'waiting_for_parts'"/>
                     <button name="action_resolved" string="Επίλυση" type="object"
                             class="oe_highlight" invisible="state not in ('in_progress', 'waiting_for_parts')"/>
+                    <button name="action_notify_customer" string="Ειδοποίηση Πελάτη" type="object"
+                            class="oe_highlight" invisible="state != 'resolved' or notified"/>
                     <button name="action_picked_up" string="Παραλήφθηκε" type="object"
                             class="oe_highlight" invisible="state != 'resolved'"/>
                     <button name="action_reset_to_in_progress" string="Επαναφορά (Αποτυχία Επισκευής)" type="object"
@@ -83,9 +86,13 @@
                             <field name="brand_id"/>
                             <field name="product_model_id"
                                    context="{'default_brand_id': brand_id}"/>
-                            <field name="job_type_id"/>
+                            <field name="job_type_ids" widget="many2many_tags"/>
                             <field name="employee_id"
                                    options="{'no_create': True, 'no_create_edit': True}"/>
+                            <field name="notified_channel" readonly="notified"/>
+                            <field name="notified_date" invisible="not notified"/>
+                            <field name="notified_uid" invisible="not notified"/>
+                            <field name="notified" invisible="1"/>
                         </group>
                     </group>
 
@@ -167,7 +174,7 @@
             <search string="Search Service Tickets">
                 <field name="name"/>
                 <field name="partner_id"/>
-                <field name="job_type_id"/>
+                <field name="job_type_ids"/>
                 <field name="brand_id"/>
                 <field name="product_model_id"/>
                 <field name="fixes_needed"/>
@@ -179,9 +186,11 @@
                 <filter string="Resolved" name="state_resolved" domain="[('state', '=', 'resolved')]"/>
                 <filter string="Picked Up" name="state_picked_up" domain="[('state', '=', 'picked_up')]"/>
                 <filter string="Invoiced" name="invoiced" domain="[('invoice_id', '!=', False)]"/>
+                <separator/>
+                <filter string="To Notify" name="to_notify"
+                        domain="[('state', '=', 'resolved'), ('notified', '=', False)]"/>
                 <group>
                     <filter string="Customer" name="group_by_partner" context="{'group_by': 'partner_id'}"/>
-                    <filter string="Job Type" name="group_by_job_type" context="{'group_by': 'job_type_id'}"/>
                     <filter string="Brand" name="group_by_brand" context="{'group_by': 'brand_id'}"/>
                     <filter string="Status" name="group_by_state" context="{'group_by': 'state'}"/>
                 </group>

@@ -33,6 +33,11 @@
                 <t t-set="grand_total" t-value="parts_total + o.labor_price"/>
                 <t t-set="is_greek" t-value="o.partner_id.lang == 'el_GR'"/>
                 <t t-set="vat_rate" t-value="o._get_receipt_vat_rate()"/>
+                <!-- class="article" is mandatory: without it ir.actions.report._prepare_html
+                     finds no body, skips web.minimal_layout, and hands wkhtmltopdf a bare
+                     fragment with no <meta charset> — which then renders Greek as mojibake. -->
+                <div class="article" t-att-data-oe-model="o and o._name" t-att-data-oe-id="o and o.id"
+                     t-att-data-oe-lang="o and o.env.context.get('lang')">
                 <div class="page" style="
                     font-family: 'DejaVu Sans', Arial, sans-serif;
                     font-size: 9pt;
@@ -123,13 +128,13 @@
                     </div>
 
                     <!-- ===== JOB TYPE ===== -->
-                    <t t-if="o.job_type_id">
+                    <t t-if="o.job_type_ids">
                         <div style="margin-bottom: 4mm;">
                             <div style="font-weight: bold; text-decoration: underline; margin-bottom: 1mm;">
                                 <t t-if="is_greek">ΤΥΠΟΣ ΕΡΓΑΣΙΑΣ</t>
                                 <t t-else="">JOB TYPE</t>
                             </div>
-                            <div><t t-esc="o.job_type_id.name"/></div>
+                            <div t-foreach="o.job_type_ids" t-as="jt"><t t-esc="jt.name"/></div>
                         </div>
                     </t>
 
@@ -274,6 +279,7 @@
                         <t t-else="">*** Thank you for your trust ***</t>
                     </div>
 
+                </div>
                 </div>
             </t>
         </t>

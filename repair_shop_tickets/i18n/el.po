@@ -58,6 +58,7 @@ msgstr "Πελάτης"
 
 #. module: repair_shop_tickets
 #: model:ir.model.fields,field_description:repair_shop_tickets.field_service_ticket__phone
+#: model:ir.model.fields.selection,name:repair_shop_tickets.selection__service_ticket__notified_channel__phone
 msgid "Phone"
 msgstr "Τηλέφωνο"
 
@@ -77,7 +78,7 @@ msgid "Model"
 msgstr "Μοντέλο"
 
 #. module: repair_shop_tickets
-#: model:ir.model.fields,field_description:repair_shop_tickets.field_service_ticket__job_type_id
+#: model:ir.model.fields,field_description:repair_shop_tickets.field_service_ticket__job_type_ids
 #: model:ir.model.fields,field_description:repair_shop_tickets.field_service_job_type__name
 #: model:ir.ui.view,arch_db:repair_shop_tickets.view_service_job_type_form
 #: model:ir.ui.view,arch_db:repair_shop_tickets.view_service_ticket_search
@@ -371,6 +372,49 @@ msgstr "Δελτίο Σέρβις: Ο χρήστης μπορεί να δει ό
 #: model:ir.rule,name:repair_shop_tickets.service_ticket_rule_manager
 msgid "Service Ticket: Manager can see all"
 msgstr "Δελτίο Σέρβις: Ο διαχειριστής μπορεί να δει όλα"
+
+# ─── Customer notification ─────────────────────────────────────────────────────
+
+#. module: repair_shop_tickets
+#: model:ir.model.fields,field_description:repair_shop_tickets.field_service_ticket__notified
+#: model:ir.ui.view,arch_db:repair_shop_tickets.view_service_ticket_tree
+msgid "Customer Notified"
+msgstr "Ειδοποιήθηκε ο Πελάτης"
+
+#. module: repair_shop_tickets
+#: model:ir.model.fields,field_description:repair_shop_tickets.field_service_ticket__notified_date
+msgid "Notified On"
+msgstr "Ειδοποιήθηκε Στις"
+
+#. module: repair_shop_tickets
+#: model:ir.model.fields,field_description:repair_shop_tickets.field_service_ticket__notified_uid
+msgid "Notified By"
+msgstr "Ειδοποιήθηκε Από"
+
+#. module: repair_shop_tickets
+#: model:ir.model.fields,field_description:repair_shop_tickets.field_service_ticket__notified_channel
+msgid "Notification Channel"
+msgstr "Τρόπος Ειδοποίησης"
+
+#. module: repair_shop_tickets
+#: model:ir.model.fields.selection,name:repair_shop_tickets.selection__service_ticket__notified_channel__sms
+msgid "SMS"
+msgstr "SMS"
+
+#. module: repair_shop_tickets
+#: model:ir.model.fields.selection,name:repair_shop_tickets.selection__service_ticket__notified_channel__email
+msgid "Email"
+msgstr "Email"
+
+#. module: repair_shop_tickets
+#: model:ir.model.fields.selection,name:repair_shop_tickets.selection__service_ticket__notified_channel__viber
+msgid "Viber"
+msgstr "Viber"
+
+#. module: repair_shop_tickets
+#: model:ir.ui.view,arch_db:repair_shop_tickets.view_service_ticket_search
+msgid "To Notify"
+msgstr "Προς Ειδοποίηση"
 
 # ─── Python runtime strings ────────────────────────────────────────────────────
 
