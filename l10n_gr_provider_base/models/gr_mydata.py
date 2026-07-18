@@ -1210,20 +1210,68 @@ WITHHOLDING_CATEGORY_RATE = {
 }
 
 # ── Cross-border journals: auto 0% tax + VAT exemption reason ────────────────
-# inv_type → (sale tax name in the GR chart, exemption code). Lines on these
+# inv_type → (GR chart tax TEMPLATE id, exemption code). Lines on these
 # journals get the tax and the Απαλλαγή ΦΠΑ reason automatically.
+# Template ids, not names: taxes are user-renameable (Τακτοποίηση Καταλόγου
+# Φόρων), while the chart xmlid account.{company_id}_{template_id} is stable.
 INV_TYPE_ZERO_TAX = {
     # exemption codes per v2.0.1 §8.3 (articles renumbered by ν.5144/2024)
-    '1.2': ('0% EU G',   '14'),  # Ενδοκοινοτικές παραδόσεις — άρθρο 33 (πρώην 28)
-    '2.2': ('0% EU S',   '4'),   # Ενδοκοινοτική παροχή — άρθρο 18 (πρώην 14)
-    '1.3': ('0% Export', '8'),   # Παραδόσεις τρίτων χωρών — άρθρο 29 (πρώην 24)
-    '2.3': ('0% Export', '4'),   # Παροχή σε τρίτη χώρα — άρθρο 18 (πρώην 14)
+    '1.2': ('l10n_gr_tax_s0_G_eu',   '14'),  # Ενδοκοιν. παραδόσεις — άρθρο 33 (πρώην 28)
+    '2.2': ('l10n_gr_tax_s0_S_eu',   '4'),   # Ενδοκοιν. παροχή — άρθρο 18 (πρώην 14)
+    '1.3': ('l10n_gr_tax_s0_export', '8'),   # Παραδόσεις τρίτων χωρών — άρθρο 29 (πρώην 24)
+    '2.3': ('l10n_gr_tax_s0_export', '4'),   # Παροχή σε τρίτη χώρα — άρθρο 18 (πρώην 14)
 }
 
 # Domestic sale-tax whitelist: standard + island VAT rates, plus the 0% specials
 # that are legitimate domestically.
 DOMESTIC_TAX_RATES = (24, 13, 6, 17, 9, 4)
-DOMESTIC_ZERO_TAX_NAMES = ('0% Exempt', '0% Deduct')
+DOMESTIC_ZERO_TAX_TEMPLATES = ('l10n_gr_tax_s0_exempt', 'l10n_gr_tax_s0_deduct')
+
+
+def gr_tax(env, company, template_id):
+    """Resolve a chart-instantiated tax by its template id, rename-proof."""
+    return env.ref(f'account.{company.id}_{template_id}', raise_if_not_found=False)
+
+
+# ── Τακτοποίηση Καταλόγου Φόρων — self-explanatory Greek names ───────────────
+# Domestically G and S post to the same Φ2 box (361/303) but the 24% pair is
+# load-bearing for the EU remap (EU G → box 364, EU S → box 365) — keep both,
+# name them by what they actually mean. Sale «G» is the chart's generic rate
+# (no sale S exists), so no goods/services wording there.
+TAX_RENAME_MAP = {
+    # sale
+    'l10n_gr_tax_s24_G': 'ΦΠΑ 24%',
+    'l10n_gr_tax_s13_G': 'ΦΠΑ 13%',
+    'l10n_gr_tax_s6_G':  'ΦΠΑ 6%',
+    'l10n_gr_tax_s17_G': 'ΦΠΑ 17% (Νησιά Αιγαίου)',
+    'l10n_gr_tax_s9_G':  'ΦΠΑ 9% (Νησιά Αιγαίου)',
+    'l10n_gr_tax_s4_G':  'ΦΠΑ 4% (Νησιά Αιγαίου)',
+    'l10n_gr_tax_s0_G_eu':   '0% Ενδοκοινοτικές Παραδόσεις',
+    'l10n_gr_tax_s0_S_eu':   '0% Ενδοκοινοτικές Υπηρεσίες',
+    'l10n_gr_tax_s0_export': '0% Εξαγωγές',
+    # NB: the chart's English names are misleadingly swapped vs their Φ2 boxes:
+    # s0_exempt posts to box 310 (απαλλαγή ΧΩΡΙΣ δικαίωμα έκπτωσης) and
+    # s0_deduct to box 349 (ΜΕ δικαίωμα έκπτωσης) — name them by the truth.
+    'l10n_gr_tax_s0_exempt': '0% Απαλλαγή (χωρίς δικαίωμα έκπτωσης)',
+    'l10n_gr_tax_s0_deduct': '0% Απαλλαγή (με δικαίωμα έκπτωσης)',
+    # purchase
+    'l10n_gr_tax_p24_G': '24% Αγορές Αγαθών',
+    'l10n_gr_tax_p24_S': '24% Λήψη Υπηρεσιών',
+    'l10n_gr_tax_p13_G': '13% Αγορές',
+    'l10n_gr_tax_p6_G':  '6% Αγορές',
+    'l10n_gr_tax_p0_G':  '0% Αγορές',
+    'l10n_gr_tax_p17_G': '17% Αγορές (Νησιά)',
+    'l10n_gr_tax_p9_G':  '9% Αγορές (Νησιά)',
+    'l10n_gr_tax_p4_G':  '4% Αγορές (Νησιά)',
+    'l10n_gr_tax_p24_IG': '24% Πάγια',
+    'l10n_gr_tax_p24_other_imports': '24% Εισαγωγές',
+    'l10n_gr_tax_p24_G_eu': '24% Ενδοκ. Αποκτήσεις Αγαθών',
+    'l10n_gr_tax_p24_S_eu': '24% Ενδοκ. Λήψη Υπηρεσιών',
+}
+
+# «EU Other» (box 366, λοιπές πράξεις λήπτη) — archived when never used.
+TAX_ARCHIVE_TEMPLATES = tuple(
+    f'l10n_gr_tax_p{rate}_O_eu' for rate in (24, 17, 13, 9, 6, 4, 0))
 
 # ── Extra-tax rates — % of net for auto-calculation ─────────────────────────
 # Categories absent from these maps are manual (fixed €/unit or variable).

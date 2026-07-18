@@ -74,10 +74,6 @@
         </field>
     </record>
 
-    <menuitem id="menu_l10n_gr_prov_offline_key"
-              name="Κλειδιά Offline QR (TF-1)"
-              parent="account.menu_finance_configuration"
-              action="action_l10n_gr_prov_offline_key"
-              sequence="91"/>
+    <!-- Menu lives in views/menus.xml (consolidated myDATA section) -->
 
 </odoo>

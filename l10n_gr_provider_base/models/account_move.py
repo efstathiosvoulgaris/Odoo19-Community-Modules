@@ -14,8 +14,10 @@ from .gr_mydata import (
     OTHER_TAXES_CATEGORY_SELECTION, OTHER_TAXES_CATEGORY_RATE, OTHER_TAXES_CATEGORY_FIXED,
     STAMP_DUTY_CATEGORY_SELECTION, STAMP_DUTY_CATEGORY_RATE,
     partner_class, journal_types_for_class,
-    INV_TYPE_ZERO_TAX, DOMESTIC_TAX_RATES, DOMESTIC_ZERO_TAX_NAMES, TYPES_DISPATCH,
+    INV_TYPE_ZERO_TAX, DOMESTIC_TAX_RATES, DOMESTIC_ZERO_TAX_TEMPLATES, gr_tax,
+    TYPES_DISPATCH,
     VAT_EXEMPTION_CODES, TYPES_SELF_BILLED, TYPES_POS_ONLY,
+    TYPES_NO_VAT, valid_cls_categories,
 )
 
 _logger = logging.getLogger(__name__)
@@ -320,14 +322,15 @@ class AccountMove(models.Model):
                     or not inv_type or inv_type in TYPES_DISPATCH):
                 move.l10n_gr_prov_suitable_tax_ids = Tax.search(base)
             elif inv_type in INV_TYPE_ZERO_TAX:
-                move.l10n_gr_prov_suitable_tax_ids = Tax.search(
-                    base + [('name', '=', INV_TYPE_ZERO_TAX[inv_type][0])])
+                # Resolve by chart xmlid, not name — taxes are user-renameable.
+                tax = gr_tax(self.env, move.company_id, INV_TYPE_ZERO_TAX[inv_type][0])
+                move.l10n_gr_prov_suitable_tax_ids = tax or Tax.search(base)
             else:
-                move.l10n_gr_prov_suitable_tax_ids = Tax.search(base + [
-                    '|',
-                    ('amount', 'in', DOMESTIC_TAX_RATES),
-                    ('name', 'in', DOMESTIC_ZERO_TAX_NAMES),
-                ])
+                zero = Tax
+                for template_id in DOMESTIC_ZERO_TAX_TEMPLATES:
+                    zero |= gr_tax(self.env, move.company_id, template_id) or Tax
+                move.l10n_gr_prov_suitable_tax_ids = Tax.search(
+                    base + [('amount', 'in', DOMESTIC_TAX_RATES)]) | zero
 
     l10n_gr_prov_applicable = fields.Boolean(
         compute='_compute_l10n_gr_prov_applicable')
@@ -356,8 +359,91 @@ class AccountMove(models.Model):
         return journals.filtered(
             lambda j: j.l10n_gr_edi_inv_type_default not in TYPES_POS_ONLY)
 
+    # ── Tax guards: block wrong taxes at post, not at send ───────────────────
+    ISLAND_RATES = (17, 9, 4)
+    MAINLAND_RATES = (24, 13, 6)
+
+    @api.model
+    def _l10n_gr_prov_fp_is_island(self, fp):
+        """The Aegean-islands regime is recognised structurally — the fiscal
+        position carries replacement taxes at the reduced island rates — not by
+        name/xmlid, which vary per chart instance."""
+        return bool(fp) and any(
+            int(tax.amount) in self.ISLAND_RATES
+            for tax in fp.tax_ids if tax.original_tax_ids)
+
+    def _l10n_gr_prov_check_tax_guard(self):
+        """Company-toggleable pre-post validation of everything tax-shaped.
+
+        Without it, a wrong-tax document posts cleanly and only fails at the
+        provider (or as an AADE MDP error). Collects every problem and raises
+        one UserError so the user fixes the document in one pass."""
+        for move in self:
+            company = move.company_id
+            if not (company._l10n_gr_prov_active()
+                    and move.country_code == 'GR'
+                    and (move.is_sale_document(include_receipts=True)
+                         or (move.is_purchase_document(include_receipts=True)
+                             and move.journal_id.l10n_gr_edi_inv_type_default
+                             in TYPES_SELF_BILLED))):
+                continue
+            inv_type = move.journal_id.l10n_gr_edi_inv_type_default
+            if not inv_type or inv_type in TYPES_DISPATCH or inv_type in TYPES_NO_VAT:
+                continue
+            errors = []
+            lines = move.invoice_line_ids.filtered(
+                lambda l: l.display_type == 'product')
+            needs_cls = bool(valid_cls_categories(inv_type))
+            is_island = self._l10n_gr_prov_fp_is_island(move.fiscal_position_id)
+
+            if company.l10n_gr_prov_guard_tax:
+                suitable = move.l10n_gr_prov_suitable_tax_ids
+                for line in lines:
+                    label = line.product_id.display_name or line.name or _('γραμμή')
+                    tax = line.tax_ids[:1]
+                    if not tax:
+                        errors.append(_('• %s: η γραμμή δεν έχει ΦΠΑ.', label))
+                        continue
+                    if suitable and tax not in suitable:
+                        errors.append(_(
+                            '• %(line)s: ο φόρος «%(tax)s» δεν επιτρέπεται για '
+                            'παραστατικό τύπου %(type)s.',
+                            line=label, tax=tax.name, type=inv_type))
+                    if not int(tax.amount) and not line.l10n_gr_prov_vat_exemption:
+                        errors.append(_(
+                            '• %s: ΦΠΑ 0%% χωρίς αιτία απαλλαγής (άρθρο).', label))
+                    if needs_cls and (not line.l10n_gr_prov_cls_category
+                                      or not line.l10n_gr_prov_cls_type):
+                        errors.append(_(
+                            '• %s: λείπει ο χαρακτηρισμός myDATA (κατηγορία/E3).', label))
+
+            if company.l10n_gr_prov_guard_island:
+                for line in lines:
+                    tax = line.tax_ids[:1]
+                    if not tax:
+                        continue
+                    label = line.product_id.display_name or line.name or _('γραμμή')
+                    rate = int(tax.amount)
+                    if rate in self.ISLAND_RATES and not is_island:
+                        errors.append(_(
+                            '• %(line)s: νησιωτικός συντελεστής %(rate)s%% σε πελάτη '
+                            'χωρίς καθεστώς Νησιών Αιγαίου.', line=label, rate=rate))
+                    elif rate in self.MAINLAND_RATES and is_island:
+                        errors.append(_(
+                            '• %(line)s: συντελεστής %(rate)s%% ενώ ισχύει το καθεστώς '
+                            'Νησιών Αιγαίου — αναμένεται ο μειωμένος.',
+                            line=label, rate=rate))
+
+            if errors:
+                raise UserError(_(
+                    'Το παραστατικό %(name)s δεν καταχωρίστηκε — διορθώστε πρώτα:\n'
+                    '%(details)s\n\n(Οι έλεγχοι απενεργοποιούνται από τον '
+                    'διαχειριστή στις Ρυθμίσεις.)',
+                    name=move.name or move.ref or '', details='\n'.join(errors)))
+
     # ── Posting hook: queue, never call the network inside the posting tx ────
     def _post(self, soft=True):
+        self._l10n_gr_prov_check_tax_guard()
         posted = super()._post(soft)
         queue = posted.filtered(
             lambda m: m.l10n_gr_prov_applicable and not m.l10n_gr_prov_mark

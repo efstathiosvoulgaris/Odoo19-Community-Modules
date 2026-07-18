@@ -26,10 +26,6 @@
         </field>
     </record>
 
-    <menuitem id="menu_l10n_gr_prov_cls_default"
-              name="Προεπιλογές Χαρακτηρισμού myDATA"
-              parent="account.menu_finance_configuration"
-              action="action_l10n_gr_prov_cls_default"
-              sequence="90"/>
+    <!-- Menu lives in views/menus.xml (consolidated myDATA section) -->
 
 </odoo>

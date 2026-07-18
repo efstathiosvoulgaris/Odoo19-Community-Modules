@@ -4,6 +4,7 @@ from odoo.exceptions import ValidationError
 from .gr_mydata import (
     CLS_CATEGORIES, CLS_TYPES, VAT_EXEMPTION_CODES,
     valid_cls_categories, valid_cls_types, preferred_e3, INV_TYPE_ZERO_TAX,
+    gr_tax,
 )
 
 
@@ -89,12 +90,9 @@ class AccountMoveLine(models.Model):
             zero = INV_TYPE_ZERO_TAX.get(line._l10n_gr_prov_inv_type())
             if not zero:
                 continue
-            tax_name, exemption = zero
-            tax = self.env['account.tax'].search([
-                ('type_tax_use', '=', 'sale'),
-                ('company_id', 'parent_of', move.company_id.id),
-                ('name', '=', tax_name),
-            ], limit=1)
+            template_id, exemption = zero
+            # Resolve by chart xmlid, not name — taxes are user-renameable.
+            tax = gr_tax(self.env, move.company_id, template_id)
             if tax:
                 line.tax_ids = [(6, 0, tax.ids)]
             line.l10n_gr_prov_vat_exemption = exemption

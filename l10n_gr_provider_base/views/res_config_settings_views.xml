@@ -20,6 +20,19 @@
                              help="Queue posted invoices and let the scheduled job transmit them automatically.">
                         <field name="l10n_gr_prov_auto_send"/>
                     </setting>
+                    <setting string="Έλεγχος Φόρων στην Καταχώριση" name="l10n_gr_prov_guard_tax_setting"
+                             help="Η καταχώριση μπλοκάρει με σαφή λίστα λαθών: γραμμή χωρίς ΦΠΑ, φόρος εκτός επιτρεπτών για το παραστατικό, 0% χωρίς αιτία απαλλαγής, γραμμή χωρίς χαρακτηρισμό myDATA.">
+                        <field name="l10n_gr_prov_guard_tax"/>
+                    </setting>
+                    <setting string="Έλεγχος Νησιωτικών Συντελεστών" name="l10n_gr_prov_guard_island_setting"
+                             help="Μπλοκάρει 17/9/4% χωρίς καθεστώς Νησιών Αιγαίου και 24/13/6% όταν το καθεστώς ισχύει.">
+                        <field name="l10n_gr_prov_guard_island"/>
+                    </setting>
+                    <setting string="Κατάλογος Φόρων" name="l10n_gr_prov_tidy_taxes_setting"
+                             help="Δίνει σαφή ελληνικά ονόματα στους φόρους του ελληνικού λογιστικού σχεδίου (π.χ. «24% Αγορές Αγαθών» / «24% Λήψη Υπηρεσιών» αντί «24% G» / «24% S») και αρχειοθετεί τους αχρησιμοποίητους. Αναστρέψιμο — η αρχειοθέτηση αναιρείται από τη λίστα φόρων.">
+                        <button name="action_l10n_gr_prov_tidy_taxes" type="object"
+                                string="Τακτοποίηση Καταλόγου Φόρων" class="btn-link" icon="oi-arrow-right"/>
+                    </setting>
                 </block>
             </block>
         </field>

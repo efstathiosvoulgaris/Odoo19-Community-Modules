@@ -92,21 +92,7 @@
         </field>
     </record>
 
-    <!-- Menu: Ψηφιακή Διακίνηση -->
-    <menuitem id="menu_l10n_gr_prov_dispatch_root"
-              name="Ψηφιακή Διακίνηση"
-              parent="account.menu_finance"
-              sequence="40"/>
-    <menuitem id="menu_l10n_gr_prov_dispatch_notes"
-              name="Δελτία Αποστολής"
-              parent="menu_l10n_gr_prov_dispatch_root"
-              action="action_l10n_gr_prov_dispatch_notes"
-              sequence="10"/>
-    <menuitem id="menu_l10n_gr_prov_delivery_wizard"
-              name="Παραλαβή / Απόρριψη ΔΑ"
-              parent="menu_l10n_gr_prov_dispatch_root"
-              action="action_l10n_gr_prov_delivery_wizard"
-              sequence="20"/>
+    <!-- Menus live in views/menus.xml (consolidated myDATA section) -->
 
     <!-- Poll open dispatches every 30 minutes -->
     <record id="cron_l10n_gr_prov_poll_delivery" model="ir.cron">

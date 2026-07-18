@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Greece - E-Invoicing Provider (Base)',
-    'version': '2.0',
+    'version': '2.1',
     'category': 'Accounting/Localizations',
     'summary': 'Issue invoices through a licensed Greek e-invoicing provider (Y.PA.H.E.S.)',
     'description': (
@@ -17,6 +17,24 @@
         '\n'
         'Changelog\n'
         '---------\n'
+        '2.1 — Consolidated «myDATA» menu in the Accounting top bar: all\n'
+        'module screens and options (Ψηφιακή Διακίνηση, Προεπιλογές\n'
+        'Χαρακτηρισμού, Οχήματα, Κλειδιά Offline QR, provider settings link)\n'
+        'in one place instead of scattered through the stock configuration\n'
+        'lists. Vehicles get their own management screen.\n'
+        'Tax guards (admin-toggleable, default on): posting blocks with a\n'
+        'clear error list on wrong-tax documents — line without VAT, tax\n'
+        'outside the allowed set for the document type, 0%% without an\n'
+        'exemption reason, missing myDATA classification — and on island-rate\n'
+        'inconsistencies (17/9/4%% without the Aegean regime, 24/13/6%% with\n'
+        'it). The Ρυθμίσεις myDATA submenu is visible to Accounting managers\n'
+        'only.\n'
+        'Τακτοποίηση Καταλόγου Φόρων (settings button): self-explanatory Greek\n'
+        'tax names («24% Αγορές Αγαθών» / «24% Λήψη Υπηρεσιών» instead of the\n'
+        'chart\'s cryptic G/S/IG suffixes) and archiving of the unused «EU\n'
+        'Other» variants; internal tax matching switched from names to chart\n'
+        'xmlids so renames are safe.\n'
+        '\n'
         '2.0 — TF-1 offline QR (Α.1112/2025): offline signing keys\n'
         '(issue/verify/revoke via the provider), automatic fallback to a\n'
         'locally signed JWS QR when the provider is unreachable, new "offline"\n'
@@ -64,6 +82,7 @@
         'report/report_invoice.xml',
         'data/ir_cron.xml',
         'data/suppress_l10n_gr_edi.xml',
+        'views/menus.xml',
     ],
     'post_init_hook': 'post_init_hook',
     'installable': True,

@@ -25,6 +25,23 @@ class ResCompany(models.Model):
              'the Send & Print flow.',
     )
 
+    l10n_gr_prov_guard_tax = fields.Boolean(
+        string='Έλεγχος Φόρων στην Καταχώριση',
+        default=True,
+        help='Μπλοκάρει την καταχώριση παραστατικού με λάθος φόρους: γραμμή '
+             'χωρίς ΦΠΑ, φόρο εκτός των επιτρεπτών για το είδος παραστατικού, '
+             '0% χωρίς αιτία απαλλαγής, ή γραμμή χωρίς χαρακτηρισμό myDATA. '
+             'Χωρίς τον έλεγχο, τα λάθη εμφανίζονται μόνο κατά την αποστολή '
+             'στον πάροχο.',
+    )
+    l10n_gr_prov_guard_island = fields.Boolean(
+        string='Έλεγχος Νησιωτικών Συντελεστών',
+        default=True,
+        help='Μπλοκάρει μειωμένους νησιωτικούς συντελεστές (17/9/4%) σε πελάτες '
+             'χωρίς καθεστώς Νησιών Αιγαίου, και πλήρεις συντελεστές (24/13/6%) '
+             'σε πελάτες με το καθεστώς.',
+    )
+
     def _l10n_gr_prov_active(self):
         self.ensure_one()
         return bool(self.l10n_gr_prov_provider and self.l10n_gr_prov_provider != 'none')
