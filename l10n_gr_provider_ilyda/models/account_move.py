@@ -255,17 +255,20 @@ class AccountMove(models.Model):
         # response) — it needs no algorithm at all. Without one, try every
         # candidate format so a wrong concatenation guess can't yield a false
         # "not found" (which would green-light a duplicate resend).
+        # NB: never name a local variable `uid` in a function that calls _() —
+        # translate._get_lang() inspects caller frame locals and would read the
+        # hash as a res.users id (crashed the cron until renamed to doc_uid).
         uid_keys = [stored] if stored else [u for _label, u in candidates]
-        uid = uid_keys[0]
-        self.l10n_gr_prov_uid = uid
+        doc_uid = uid_keys[0]
+        self.l10n_gr_prov_uid = doc_uid
 
         # 1. Completed documents
         data = None
         for key in uid_keys:
             data = self._l10n_gr_prov_ilyda_lookup(client.find_by_uid, key)
             if data is not None:
-                uid = key
-                self.l10n_gr_prov_uid = uid
+                doc_uid = key
+                self.l10n_gr_prov_uid = doc_uid
                 break
         if data is not None and data.get('mark'):
             self.write({
@@ -306,7 +309,7 @@ class AccountMove(models.Model):
             else:
                 self.message_post(body=_(
                     'Αναζήτηση στον πάροχο: το παραστατικό δεν βρέθηκε (UID %s) — '
-                    'ασφαλής η επανυποβολή.', uid))
+                    'ασφαλής η επανυποβολή.', doc_uid))
             return False
 
         state = entry.get('invoiceState')
@@ -381,8 +384,9 @@ class AccountMove(models.Model):
             self._l10n_gr_prov_ilyda_inv_type() or '',
             series, serial,
         ])
-        uid = hashlib.sha1(text.encode('iso-8859-7', 'replace')).hexdigest()
-        return [('A.1035-B2', uid)]
+        # (named digest, not uid: see the frame-inspection note in recover)
+        digest = hashlib.sha1(text.encode('iso-8859-7', 'replace')).hexdigest()
+        return [('A.1035-B2', digest)]
 
     def _l10n_gr_prov_ilyda_inv_type(self):
         """Return the effective AADE invoice type for this document.
