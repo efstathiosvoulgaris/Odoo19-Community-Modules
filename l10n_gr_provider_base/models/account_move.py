@@ -20,6 +20,10 @@ _logger = logging.getLogger(__name__)
 
 PROVIDER_STATES = [
     ('to_send', 'To Send'),
+    # TF-2: the provider accepted the document but AADE was unreachable — it sits
+    # in the provider's transmission queue; the QR/identifier already exist and
+    # the printed document must carry them. The MARK arrives later via recovery.
+    ('queued', 'Queued at Provider (AADE offline)'),
     ('sent', 'Issued (Marked)'),
     ('error', 'Error'),
 ]
@@ -43,6 +47,11 @@ class AccountMove(models.Model):
     l10n_gr_prov_invoice_identifier = fields.Char(
         string='Invoice Identifier', copy=False,
         help='SHA-1 invoice identifier (Αναγνωριστικό Παραστατικού), Appendix B2 of A.1035/2020.')
+    l10n_gr_prov_uid = fields.Char(
+        string='myDATA UID', copy=False, readonly=True,
+        help='Deterministic document UID (ET-7): SHA-1 over issuer VAT, issue date, '
+             'branch, invoice type, series and number. Used to look the document up '
+             'at the provider when a submission response was lost.')
     l10n_gr_prov_qr_url = fields.Char(string='Provider QR URL', copy=False)
     l10n_gr_prov_provider_url = fields.Char(string='Provider Site', copy=False)
     l10n_gr_prov_previously_submitted = fields.Boolean(
@@ -72,6 +81,11 @@ class AccountMove(models.Model):
     l10n_gr_prov_purchase_order_ref = fields.Char(
         string='Purchase Order (BT-13)', copy=False,
         help='Purchase order reference issued by the buyer (Αναγνωριστικό Εντολής Αγοράς).')
+    l10n_gr_prov_receiving_advice_ref = fields.Char(
+        string='Receiving Advice Reference (BT-15)', copy=False,
+        help='Reference of the goods/services receiving advice (Αναγνωριστικό '
+             'Ειδοποίησης Παραλαβής), when the buyer confirms receipt before '
+             'payment. B2G element; optional.')
     l10n_gr_prov_buyer_ref = fields.Char(
         string='Buyer Reference (BT-10)', copy=False,
         compute='_compute_l10n_gr_prov_buyer_ref', store=True, readonly=False,
@@ -369,6 +383,21 @@ class AccountMove(models.Model):
             if move.l10n_gr_prov_b2g and move.l10n_gr_prov_invoice_id:
                 move._l10n_gr_prov_dispatch('poll_b2g_status')
 
+    def action_l10n_gr_prov_recover(self):
+        """Look the document up at the provider by its UID.
+
+        Marked documents: verifies the locally computed UID against the stored
+        identifier (algorithm self-check). Unmarked ones: adopts the MARK if the
+        provider has it, reports the queue state, or confirms it is unknown
+        (safe to resend). Outcome lands in the chatter.
+        """
+        for move in self:
+            if not move.l10n_gr_prov_applicable:
+                raise UserError(_('No e-invoicing provider is configured for this document.'))
+            if move.state != 'posted':
+                raise UserError(_('Only posted documents can be looked up at the provider.'))
+            move._l10n_gr_prov_dispatch('recover')
+
     def button_draft(self):
         """A transmitted document can't go back to draft — its MARK is live at
         AADE. Reversal is a credit note (5.1), not a reset."""
@@ -378,6 +407,12 @@ class AccountMove(models.Model):
                 'Έχει αποσταλεί στην ΑΑΔΕ (MARK %s) και δεν επαναφέρεται σε '
                 'πρόχειρο. Για ακύρωση/επιστροφή εκδώστε Πιστωτικό Τιμολόγιο (5.1).',
                 ', '.join(stuck.mapped('l10n_gr_prov_mark'))))
+        queued = self.filtered(lambda m: m.l10n_gr_prov_state == 'queued')
+        if queued:
+            raise UserError(_(
+                'Το παραστατικό βρίσκεται σε ουρά διαβίβασης στον πάροχο (myDATA '
+                'εκτός λειτουργίας) και το QR του έχει ήδη εκδοθεί — δεν '
+                'επαναφέρεται σε πρόχειρο.'))
         return super().button_draft()
 
     # ── Core dispatch to the configured driver ────────────────────────────────
@@ -397,17 +432,42 @@ class AccountMove(models.Model):
         return handler()
 
     def _l10n_gr_prov_try_send(self, raise_on_error=False):
-        """Send one document; on failure store the error instead of crashing."""
+        """Send one document; on failure store the error instead of crashing.
+
+        The driver's send returns 'sent' (marked) or 'queued' (TF-2: accepted by
+        the provider, AADE offline — QR/identifier stored, MARK pending).
+        """
         self.ensure_one()
         try:
-            self._l10n_gr_prov_dispatch('send')
-            self.write({
-                'l10n_gr_prov_state': 'sent',
-                'l10n_gr_prov_error': False,
-                'l10n_gr_prov_send_datetime': fields.Datetime.now(),
-            })
-            self.message_post(body=_(
-                'Issued through the e-invoicing provider. MARK: %s', self.l10n_gr_prov_mark))
+            # Duplicate guard: a previous attempt may have succeeded at the
+            # provider with the response lost in transit. Before re-submitting a
+            # failed document, look it up by UID; if it is found (marked or
+            # queued) adopt that instead of creating a duplicate at AADE. If the
+            # lookup itself fails we can't verify — so we do NOT resend; the
+            # exception lands in the error state and the next cron pass retries.
+            if self.l10n_gr_prov_state == 'error' and not self.l10n_gr_prov_mark:
+                if self._l10n_gr_prov_dispatch('recover'):
+                    return
+            result = self._l10n_gr_prov_dispatch('send') or 'sent'
+            if result == 'queued':
+                self.write({
+                    'l10n_gr_prov_state': 'queued',
+                    'l10n_gr_prov_error': False,
+                    'l10n_gr_prov_send_datetime': fields.Datetime.now(),
+                })
+                self.message_post(body=_(
+                    'Ο πάροχος παρέλαβε το παραστατικό αλλά το myDATA είναι εκτός '
+                    'λειτουργίας — μπήκε σε ουρά διαβίβασης. Το εκτυπωμένο '
+                    'παραστατικό φέρει το QR του παρόχου· το MARK θα ανακτηθεί '
+                    'αυτόματα.'))
+            else:
+                self.write({
+                    'l10n_gr_prov_state': 'sent',
+                    'l10n_gr_prov_error': False,
+                    'l10n_gr_prov_send_datetime': fields.Datetime.now(),
+                })
+                self.message_post(body=_(
+                    'Issued through the e-invoicing provider. MARK: %s', self.l10n_gr_prov_mark))
         except Exception as e:
             msg = str(e)
             self.write({'l10n_gr_prov_state': 'error', 'l10n_gr_prov_error': msg})
@@ -456,6 +516,14 @@ class AccountMove(models.Model):
                 continue  # manual mode: only retry documents that were attempted (error state)
             with self.env.cr.savepoint():
                 move._l10n_gr_prov_try_send()
+
+        # 1b. TF-2: poll documents queued at the provider until the MARK arrives
+        for move in self.search([('l10n_gr_prov_state', '=', 'queued')], limit=50):
+            with self.env.cr.savepoint():
+                try:
+                    move._l10n_gr_prov_dispatch('recover')
+                except Exception as e:
+                    _logger.warning('Provider queue poll failed for %s: %s', move.name, e)
 
         # 2. Upload PDFs for marked documents
         for move in self.search([

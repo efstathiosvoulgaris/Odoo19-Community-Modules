@@ -34,7 +34,9 @@
                  pipeline extracts it and wkhtmltopdf repeats it in the bottom
                  margin on every page (position:fixed is dropped by wkhtmltopdf). ═══ -->
             <div class="footer" style="border-top: 1pt solid #111; padding-top: 1.5mm; color: #111;">
-                <t t-if="o.l10n_gr_prov_mark">
+                <!-- Queued (TF-2, AADE offline) documents have no MARK yet, but the
+                     provider QR/identifier already exist and MUST be printed. -->
+                <t t-if="o.l10n_gr_prov_mark or o.l10n_gr_prov_qr_url">
                     <table style="width: 100%; table-layout: fixed;">
                         <tr style="vertical-align: top;">
                             <td style="width: 26mm;">
@@ -42,8 +44,10 @@
                                      style="width: 24mm; height: 24mm;" alt="QR"/>
                             </td>
                             <td style="font-size: 7pt; line-height: 1.3;">
-                                <div><strong>ΜΑΡΚ:</strong> <span t-out="o.l10n_gr_prov_mark"/></div>
-                                <div style="word-break: break-all;"><strong>Αυθεντικοποίηση:</strong>
+                                <div t-if="o.l10n_gr_prov_mark"><strong>ΜΑΡΚ:</strong> <span t-out="o.l10n_gr_prov_mark"/></div>
+                                <div t-else=""><strong>Σε αναμονή διαβίβασης ΑΑΔΕ</strong>
+                                    (εκδόθηκε μέσω παρόχου — myDATA προσωρινά εκτός λειτουργίας)</div>
+                                <div t-if="o.l10n_gr_prov_verification_hash" style="word-break: break-all;"><strong>Αυθεντικοποίηση:</strong>
                                     <span t-out="o.l10n_gr_prov_verification_hash"/></div>
                                 <div style="word-break: break-all;"><strong>Αναγν. Παραστατικού:</strong>
                                     <span t-out="o.l10n_gr_prov_invoice_identifier"/></div>
@@ -337,7 +341,7 @@
     <template id="report_invoice_document_l10n_gr_prov"
               inherit_id="account.report_invoice_document">
         <xpath expr="//div[@id='qrcode']" position="after">
-            <t t-if="o.l10n_gr_prov_mark">
+            <t t-if="o.l10n_gr_prov_mark or o.l10n_gr_prov_qr_url">
                 <t t-set="prov_qr" t-value="o._l10n_gr_prov_qr_image()"/>
                 <div class="mt-3" name="l10n_gr_prov_markings">
                     <div class="row">
@@ -347,8 +351,9 @@
                                  style="width: 30mm; height: 30mm;" alt="Provider QR"/>
                         </div>
                         <div class="col-10" style="font-size: 8pt;">
-                            <div><strong>ΜΑΡΚ:</strong> <span t-field="o.l10n_gr_prov_mark"/></div>
-                            <div><strong>Συμβολοσειρά Αυθεντικοποίησης:</strong> <span t-field="o.l10n_gr_prov_verification_hash"/></div>
+                            <div t-if="o.l10n_gr_prov_mark"><strong>ΜΑΡΚ:</strong> <span t-field="o.l10n_gr_prov_mark"/></div>
+                            <div t-else=""><strong>Σε αναμονή διαβίβασης ΑΑΔΕ</strong> (myDATA προσωρινά εκτός λειτουργίας)</div>
+                            <div t-if="o.l10n_gr_prov_verification_hash"><strong>Συμβολοσειρά Αυθεντικοποίησης:</strong> <span t-field="o.l10n_gr_prov_verification_hash"/></div>
                             <div><strong>Αναγνωριστικό Παραστατικού:</strong> <span t-field="o.l10n_gr_prov_invoice_identifier"/></div>
                             <div>
                                 <strong>Πάροχος:</strong> <span t-field="o.l10n_gr_prov_provider_url"/>

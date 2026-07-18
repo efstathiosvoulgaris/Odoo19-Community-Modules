@@ -64,6 +64,11 @@
                 <button name="action_l10n_gr_prov_send" type="object"
                         string="Send to Provider" class="btn-primary"
                         invisible="not l10n_gr_prov_applicable or state != 'posted' or l10n_gr_prov_mark"/>
+                <!-- Lookup by UID: recovers a lost MARK / polls the TF-2 queue;
+                     on marked documents it runs the UID self-check. -->
+                <button name="action_l10n_gr_prov_recover" type="object"
+                        string="Ανάκτηση από Πάροχο"
+                        invisible="not l10n_gr_prov_applicable or state != 'posted' or not l10n_gr_prov_state"/>
                 <!-- ΔΑ follow-ups: only on pure marked dispatch notes -->
                 <button name="action_l10n_gr_prov_create_invoice" type="object"
                         string="Δημιουργία Τιμολογίου"
@@ -143,6 +148,8 @@
                             <field name="l10n_gr_prov_invoice_id" readonly="1"/>
                             <field name="l10n_gr_prov_verification_hash" readonly="1"/>
                             <field name="l10n_gr_prov_invoice_identifier" readonly="1"/>
+                            <field name="l10n_gr_prov_uid" readonly="1"
+                                   invisible="not l10n_gr_prov_uid"/>
                             <field name="l10n_gr_prov_qr_url" widget="url" readonly="1"/>
                             <field name="l10n_gr_prov_provider_url" widget="url" readonly="1"/>
                         </group>
@@ -218,6 +225,9 @@
                                    class="border rounded bg-light px-2"
                                    invisible="not l10n_gr_prov_b2g" readonly="l10n_gr_prov_mark"/>
                             <field name="l10n_gr_prov_purchase_order_ref"
+                                   class="border rounded bg-light px-2"
+                                   invisible="not l10n_gr_prov_b2g" readonly="l10n_gr_prov_mark"/>
+                            <field name="l10n_gr_prov_receiving_advice_ref"
                                    class="border rounded bg-light px-2"
                                    invisible="not l10n_gr_prov_b2g" readonly="l10n_gr_prov_mark"/>
                         </group>
@@ -300,7 +310,7 @@
             <field name="status_in_payment" position="after">
                 <field name="l10n_gr_prov_state" optional="show" widget="badge"
                        decoration-success="l10n_gr_prov_state == 'sent'"
-                       decoration-warning="l10n_gr_prov_state == 'to_send'"
+                       decoration-warning="l10n_gr_prov_state in ('to_send', 'queued')"
                        decoration-danger="l10n_gr_prov_state == 'error'"/>
             </field>
         </field>

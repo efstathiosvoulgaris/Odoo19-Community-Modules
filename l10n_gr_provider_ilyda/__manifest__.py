@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Greece - E-Invoicing Provider: ILYDA',
-    'version': '1.8',
+    'version': '1.9',
     'category': 'Accounting/Localizations',
     'summary': 'ILYDA (vs.gr) driver for the Greek e-invoicing provider base',
     'description': (
@@ -15,6 +15,15 @@
         '\n'
         'Changelog\n'
         '---------\n'
+        '1.9 — Search & reconciliation: UID lookups (by-uid, by-mark,\n'
+        'by-authentication-code) and the TF-2 pending queue (pending/by-uid).\n'
+        'Recovery operation adopts a MARK issued during a lost-response\n'
+        'submission instead of resending (duplicate guard). TF-2 responses\n'
+        '(MQ001/MQ002 + I9999/I0004) now store the identifier/QR and mark the\n'
+        'document as queued instead of rejected; I0008 re-issues adopt the\n'
+        'original marking. Local myDATA UID computation (SHA-1/ISO-8859-7)\n'
+        'with a self-check against provider-returned identifiers.\n'
+        '\n'
         '1.1 — Fixed VAT category: now derived from the tax rate exactly like\n'
         'l10n_gr_edi (24/13/6/17/9/4/0 to categories 1-7, no-tax 8); exemption\n'
         'category required only for genuine 0 percent lines. Series/serial now\n'

@@ -5,9 +5,13 @@ Implements the operations dispatched by l10n_gr_provider_base:
   _l10n_gr_prov_send_ilyda            POST /api/invoice
   _l10n_gr_prov_upload_pdf_ilyda      POST /api/invoice/upload/{invoiceId}
   _l10n_gr_prov_poll_b2g_status_ilyda GET  /api/invoice/status/{invoiceId}
+  _l10n_gr_prov_recover_ilyda         GET  /api/invoice/by-uid/{uid}
+                                      GET  /api/invoice/pending/by-uid/{uid}
 
 API reference: ILYDA "Οδηγίες υλοποίησης eInvoicing" v1.0.6.
 """
+import hashlib
+import json
 import logging
 import unicodedata
 
@@ -84,6 +88,30 @@ class IlydaClient:
             headers=self._headers(json_content=False), auth=self._auth, timeout=TIMEOUT)
         return self._parse(resp)
 
+    # Search / reconciliation lookups. The API docs list X-Auth-Key as the
+    # primary auth for these; Basic auth works for POST /api/invoice, so we use
+    # it here too — if these ever return 401/403, add an X-Auth-Key company
+    # field. Not-found comes back as an A000x error body, not an exception.
+    def _get(self, path):
+        resp = requests.get(
+            f'{self.base}{path}',
+            headers=self._headers(json_content=False), auth=self._auth, timeout=TIMEOUT)
+        return self._parse(resp)
+
+    def find_by_uid(self, uid):
+        return self._get(f'/api/invoice/by-uid/{uid}')
+
+    def find_by_mark(self, mark):
+        return self._get(f'/api/invoice/by-mark/{mark}')
+
+    def find_by_auth_code(self, hash_):
+        return self._get(f'/api/invoice/by-authentication-code/{hash_}')
+
+    def pending_by_uid(self, uid):
+        """TF-2 transmission queue: state of a document queued while AADE was
+        offline (MyDataQueuePendingEntry)."""
+        return self._get(f'/api/invoice/pending/by-uid/{uid}')
+
     @staticmethod
     def _parse(resp):
         try:
@@ -136,7 +164,7 @@ class AccountMove(models.Model):
         _logger.info('ILYDA submit payload for %s: %s', self.name, payload)
         data = client.submit_invoice(payload)
         _logger.info('ILYDA raw response for %s: %s', self.name, data)
-        self._l10n_gr_prov_ilyda_handle_response(data)
+        return self._l10n_gr_prov_ilyda_handle_response(data)
 
     def _l10n_gr_prov_upload_pdf_ilyda(self):
         self.ensure_one()
@@ -160,7 +188,201 @@ class AccountMove(models.Model):
             self.l10n_gr_prov_b2g_status = status
             self.message_post(body=_('B2G status update: %s', status))
 
+    # A0002/3/4/6: not-found codes of by-mark/by-id/by-uid/by-authentication-code;
+    # the pending queue returns its own A000x for unknown uids.
+    _ILYDA_NOT_FOUND = {'A0002', 'A0003', 'A0004', 'A0005', 'A0006'}
+
+    @classmethod
+    def _l10n_gr_prov_ilyda_error_code(cls, data):
+        """Error code of a search response, or None if it is a real document."""
+        if not isinstance(data, dict):
+            return 'A0000'
+        if data.get('code'):
+            return data['code']
+        errors = data.get('errors') or []
+        if errors and isinstance(errors[0], dict):
+            return errors[0].get('code') or 'A0000'
+        return None
+
+    def _l10n_gr_prov_ilyda_lookup(self, method, key):
+        """Run one search call. Returns the document dict, or None when the
+        provider explicitly answers "not found". Any OTHER error raises — the
+        duplicate guard must never read an auth/server failure as "unknown
+        document, safe to resend"."""
+        data = method(key)
+        code = self._l10n_gr_prov_ilyda_error_code(data)
+        if code is None:
+            return data
+        if code in self._ILYDA_NOT_FOUND:
+            return None
+        raise UserError(_(
+            'Provider lookup failed (%(code)s): %(body)s',
+            code=code, body=str(data)[:300]))
+
+    def _l10n_gr_prov_recover_ilyda(self):
+        """Look this document up at ILYDA by UID; adopt what the provider has.
+
+        Returns a truthy state ('sent'/'queued') when the document exists at the
+        provider — the caller must NOT resend. Returns False when it is unknown
+        there (safe to resend) or when only errors were found.
+        """
+        self.ensure_one()
+        client = IlydaClient(self.company_id)
+        candidates = self._l10n_gr_prov_ilyda_uid_candidates()
+        stored = (self.l10n_gr_prov_invoice_identifier or '').lower()
+        matched = next((u for _label, u in candidates if u == stored), None)
+
+        # Self-check on already-marked documents: prove the UID algorithm
+        # against the identifier ILYDA returned, before it's ever needed for
+        # a real recovery.
+        if self.l10n_gr_prov_mark:
+            if not stored:
+                body = _('Έλεγχος UID: δεν υπάρχει αποθηκευμένο αναγνωριστικό για σύγκριση.')
+            elif matched:
+                label = next(l for l, u in candidates if u == matched)
+                body = _('Έλεγχος UID: ο τοπικός υπολογισμός (%s) ταυτίζεται με το '
+                         'αναγνωριστικό του παρόχου — η ανάκτηση είναι αξιόπιστη.', label)
+            else:
+                body = _('Έλεγχος UID: ΚΑΜΙΑ αντιστοιχία. Αποθηκευμένο: %(stored)s — '
+                         'υπολογισμένα: %(calc)s. Χρειάζεται προσαρμογή του αλγορίθμου.',
+                         stored=stored,
+                         calc='; '.join(f'{l}={u}' for l, u in candidates))
+            self.l10n_gr_prov_uid = matched or stored or candidates[0][1]
+            self.message_post(body=body)
+            return 'sent'
+
+        # Prefer the provider-authored identifier (present after a TF-2 queue
+        # response) — it needs no algorithm at all. Without one, try every
+        # candidate format so a wrong concatenation guess can't yield a false
+        # "not found" (which would green-light a duplicate resend).
+        uid_keys = [stored] if stored else [u for _label, u in candidates]
+        uid = uid_keys[0]
+        self.l10n_gr_prov_uid = uid
+
+        # 1. Completed documents
+        data = None
+        for key in uid_keys:
+            data = self._l10n_gr_prov_ilyda_lookup(client.find_by_uid, key)
+            if data is not None:
+                uid = key
+                self.l10n_gr_prov_uid = uid
+                break
+        if data is not None and data.get('mark'):
+            self.write({
+                'l10n_gr_prov_mark': str(data['mark']),
+                'l10n_gr_prov_verification_hash':
+                    data.get('invoiceVerificationHash') or self.l10n_gr_prov_verification_hash,
+                'l10n_gr_prov_qr_url':
+                    data.get('myDataQrCode') or self.l10n_gr_prov_qr_url,
+                'l10n_gr_prov_state': 'sent',
+                'l10n_gr_prov_error': False,
+            })
+            self.message_post(body=_(
+                'Το MARK ανακτήθηκε από τον πάροχο χωρίς επανυποβολή: %s',
+                self.l10n_gr_prov_mark))
+            return 'sent'
+
+        # 2. TF-2 transmission queue. Unlike the single-invoice lookups, an
+        # unknown UID here isn't confirmed to come back as a proper A000x code
+        # — it may just be an empty object. A real MyDataQueuePendingEntry
+        # always carries 'uid' (docs, EG-15), so treat anything without one as
+        # not-found too, rather than falling into the terminal-failure branch
+        # below for a document that was simply never submitted.
+        entry = None
+        for key in uid_keys:
+            candidate = self._l10n_gr_prov_ilyda_lookup(client.pending_by_uid, key)
+            if candidate is not None and candidate.get('uid'):
+                entry = candidate
+                self.l10n_gr_prov_uid = key
+                break
+        if entry is None:
+            if self.l10n_gr_prov_state == 'queued':
+                # It was queued and now the provider doesn't know it — surface it.
+                self.write({
+                    'l10n_gr_prov_state': 'error',
+                    'l10n_gr_prov_error': _(
+                        'Το παραστατικό δεν βρέθηκε πλέον στην ουρά του παρόχου.'),
+                })
+            else:
+                self.message_post(body=_(
+                    'Αναζήτηση στον πάροχο: το παραστατικό δεν βρέθηκε (UID %s) — '
+                    'ασφαλής η επανυποβολή.', uid))
+            return False
+
+        state = entry.get('invoiceState')
+        # mark is filled iff the queue completed the transmission (docs: EG-15);
+        # it may arrive as string or number.
+        if entry.get('mark'):
+            self.write({
+                'l10n_gr_prov_mark': str(entry['mark']),
+                'l10n_gr_prov_verification_hash':
+                    entry.get('verificationHash') or self.l10n_gr_prov_verification_hash,
+                'l10n_gr_prov_invoice_id':
+                    entry.get('invoiceId') or self.l10n_gr_prov_invoice_id,
+                'l10n_gr_prov_state': 'sent',
+                'l10n_gr_prov_error': False,
+            })
+            self.message_post(body=_(
+                'Η ουρά του παρόχου ολοκλήρωσε τη διαβίβαση. MARK: %s',
+                self.l10n_gr_prov_mark))
+            return 'sent'
+        if state in ('RESUBMIT_PENDING', 'SUBMITTED'):
+            # SUBMITTED without a mark yet: transitional — keep polling.
+            if self.l10n_gr_prov_state != 'queued':
+                self.write({'l10n_gr_prov_state': 'queued', 'l10n_gr_prov_error': False})
+            self.message_post(body=_(
+                'Σε ουρά διαβίβασης στον πάροχο (αναμονή myDATA).'))
+            return 'queued'
+        # SUBMISSION_ERRORS / MAX_RETRIES_REACHED: transmitted but rejected by
+        # AADE (no MARK exists) or the provider gave up — record the reason and
+        # allow a fresh submission attempt.
+        try:
+            details = '; '.join(
+                self._l10n_gr_prov_ilyda_format_error(e)
+                for e in json.loads(entry.get('errorsJson') or '[]'))
+        except (ValueError, AttributeError):
+            details = entry.get('errorsJson') or ''
+        self.write({
+            'l10n_gr_prov_state': 'error',
+            'l10n_gr_prov_error': _(
+                'Ουρά παρόχου: %(state)s. %(details)s', state=state, details=details),
+        })
+        self.message_post(body=self.l10n_gr_prov_error)
+        return False
+
     # ── Helpers ───────────────────────────────────────────────────────────────
+
+    def _l10n_gr_prov_ilyda_series_serial(self):
+        """Split the Odoo sequence into (series, serial) exactly as submitted.
+        The UID computation reuses this — it must stay byte-identical to what
+        the payload sends."""
+        self.ensure_one()
+        name_parts = (self.name or '').split('/')
+        series = ('_'.join(name_parts[:-1]) or self.journal_id.code)[:50]
+        serial = name_parts[-1] or str(self.sequence_number or 0)
+        return series, serial
+
+    def _l10n_gr_prov_ilyda_uid_candidates(self):
+        """The document UID as ILYDA computes it (A.1035 Appendix B2 / ET-7):
+
+            SHA-1( ISO-8859-7( vat-YYYY-MM-DD-branch-type-series-serial ) )
+
+        dash-separated, ISO date, bare VAT, effective submitted invoice type.
+        Format confirmed empirically against all 54 provider-returned
+        identifiers on the test database (2026-07-17); the recovery self-check
+        keeps guarding it on every marked document.
+        """
+        self.ensure_one()
+        series, serial = self._l10n_gr_prov_ilyda_series_serial()
+        text = '-'.join([
+            self._ilyda_vat(self.company_id.vat, prefixed=False),
+            str(self.invoice_date or ''),
+            str(self.company_id.partner_id.l10n_gr_edi_branch_number or 0),
+            self._l10n_gr_prov_ilyda_inv_type() or '',
+            series, serial,
+        ])
+        uid = hashlib.sha1(text.encode('iso-8859-7', 'replace')).hexdigest()
+        return [('A.1035-B2', uid)]
 
     def _l10n_gr_prov_ilyda_inv_type(self):
         """Return the effective AADE invoice type for this document.
@@ -621,9 +843,7 @@ class AccountMove(models.Model):
         # ── Series / serial ────────────────────────────────────────────────────
         # AADE series is plain xs:string(50) — Greek is permitted (ERP doc §5, series).
         # Send the journal code verbatim (ΤΙΜ, ΔΑ, ΑΛΠ) as Greek ERPs do.
-        name_parts = (self.name or '').split('/')
-        series = ('_'.join(name_parts[:-1]) or self.journal_id.code)[:50]
-        serial = name_parts[-1] or str(self.sequence_number or 0)
+        series, serial = self._l10n_gr_prov_ilyda_series_serial()
 
         # ── AADE block ────────────────────────────────────────────────────────
         aade_data = {
@@ -770,9 +990,7 @@ class AccountMove(models.Model):
         if self.move_type == 'out_refund' and self.reversed_entry_id \
                 and self.reversed_entry_id.l10n_gr_prov_mark:
             origin = self.reversed_entry_id
-            origin_parts = (origin.name or '').split('/')
-            origin_series = ('_'.join(origin_parts[:-1]) or origin.journal_id.code)[:50]
-            origin_serial = origin_parts[-1] or str(origin.sequence_number or 0)
+            origin_series, origin_serial = origin._l10n_gr_prov_ilyda_series_serial()
             seller_bare_vat = self._ilyda_vat(company.vat, prefixed=False)
             reference = '|'.join([
                 seller_bare_vat,
@@ -797,6 +1015,7 @@ class AccountMove(models.Model):
                 'projectReference': project_ref,
                 'buyerReference': self.l10n_gr_prov_buyer_ref or None,
                 'purchaseOrderReference': self.l10n_gr_prov_purchase_order_ref or None,
+                'receivingAdviceReference': self.l10n_gr_prov_receiving_advice_ref or None,
             })
             payload['sellerIdentifiers'] = [{'sellerIdentifier': self._ilyda_vat(company.vat)}]
             if buyer:
@@ -838,7 +1057,25 @@ class AccountMove(models.Model):
             text += f' [{details}]'
         return text
 
+    # TF-2: ILYDA accepted the document but AADE was unreachable — it is queued
+    # at the provider. MQ001 = already queued (re-submission), MQ002 = queued now.
+    _ILYDA_QUEUE_CODES = {'MQ001', 'MQ002'}
+
+    def _l10n_gr_prov_ilyda_write_marking(self, marking):
+        self.write({
+            'l10n_gr_prov_mark': str(marking.get('mark')),
+            'l10n_gr_prov_invoice_id': marking.get('invoiceId'),
+            'l10n_gr_prov_verification_hash': marking.get('verificationHash'),
+            'l10n_gr_prov_invoice_identifier': marking.get('invoiceIdentifier'),
+            'l10n_gr_prov_qr_url': marking.get('qrCode'),
+            'l10n_gr_prov_provider_url': marking.get('providerUrl'),
+            'l10n_gr_prov_previously_submitted': bool(marking.get('aadePreviouslySubmittedError228')),
+        })
+        if marking.get('invoiceIdentifier'):
+            self.l10n_gr_prov_uid = marking['invoiceIdentifier'].lower()
+
     def _l10n_gr_prov_ilyda_handle_response(self, data):
+        """Process a submit response. Returns 'sent' or 'queued' (TF-2)."""
         self.ensure_one()
         _logger.debug('ILYDA response: %s', data)
         if isinstance(data, list):
@@ -852,11 +1089,35 @@ class AccountMove(models.Model):
         errors = data.get('errors') or []
         fatal = [e for e in errors if e.get('fatal')]
         non_fatal = [e for e in errors if not e.get('fatal')]
+        codes = {e.get('code') for e in errors}
 
         if non_fatal:
             self.message_post(body=_(
                 'ILYDA non-fatal warnings: %s',
                 '; '.join(self._l10n_gr_prov_ilyda_format_error(e) for e in non_fatal)))
+
+        if not marking.get('mark') and codes & self._ILYDA_QUEUE_CODES:
+            # Queued, not rejected — MQ002 arrives together with fatal-flagged
+            # I9999/I0004, so this must be checked before the fatal guard. The
+            # response carries the identifier + QR that the printed document
+            # must bear; the MARK arrives later via the recovery poll.
+            identifier = marking.get('invoiceIdentifier')
+            if identifier or self.l10n_gr_prov_invoice_identifier:
+                self.write({
+                    'l10n_gr_prov_invoice_id':
+                        marking.get('invoiceId') or self.l10n_gr_prov_invoice_id,
+                    'l10n_gr_prov_invoice_identifier':
+                        identifier or self.l10n_gr_prov_invoice_identifier,
+                    'l10n_gr_prov_qr_url':
+                        marking.get('qrCode') or self.l10n_gr_prov_qr_url,
+                })
+                if identifier:
+                    self.l10n_gr_prov_uid = identifier.lower()
+                return 'queued'
+            # Queue code without any identifier: nothing to print or poll with.
+            raise UserError(_(
+                'ILYDA queued the document but returned no identifier: %s',
+                '; '.join(self._l10n_gr_prov_ilyda_format_error(e) for e in errors)))
 
         if fatal or not marking.get('mark'):
             details = '; '.join(
@@ -864,12 +1125,11 @@ class AccountMove(models.Model):
             ) or _('No marking returned by the provider.')
             raise UserError(_('ILYDA rejected the document: %s', details))
 
-        self.write({
-            'l10n_gr_prov_mark': marking.get('mark'),
-            'l10n_gr_prov_invoice_id': marking.get('invoiceId'),
-            'l10n_gr_prov_verification_hash': marking.get('verificationHash'),
-            'l10n_gr_prov_invoice_identifier': marking.get('invoiceIdentifier'),
-            'l10n_gr_prov_qr_url': marking.get('qrCode'),
-            'l10n_gr_prov_provider_url': marking.get('providerUrl'),
-            'l10n_gr_prov_previously_submitted': bool(marking.get('aadePreviouslySubmittedError228')),
-        })
+        if 'I0008' in codes:
+            # Same invoice number was already marked — the response carries the
+            # original marking. Expected after a lost response; not a new issue.
+            self.message_post(body=_(
+                'Ο πάροχος αναγνώρισε προηγούμενη έκδοση του παραστατικού (I0008) '
+                'και επέστρεψε το αρχικό MARK.'))
+        self._l10n_gr_prov_ilyda_write_marking(marking)
+        return 'sent'

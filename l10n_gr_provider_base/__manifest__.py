@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Greece - E-Invoicing Provider (Base)',
-    'version': '1.8',
+    'version': '1.9',
     'category': 'Accounting/Localizations',
     'summary': 'Issue invoices through a licensed Greek e-invoicing provider (Y.PA.H.E.S.)',
     'description': (
@@ -17,6 +17,12 @@
         '\n'
         'Changelog\n'
         '---------\n'
+        '1.9 — Provider search & reconciliation: "Ανάκτηση από Πάροχο" action\n'
+        'and myDATA UID field; duplicate guard looks a failed document up at\n'
+        'the provider before any retry resend. New "queued" state for TF-2\n'
+        '(provider accepted, AADE offline): the PDF prints the provider QR with\n'
+        'a waiting notice, and the cron polls the queue until the MARK arrives.\n'
+        '\n'
         '1.1 — Extended B2G per the national format: budget type and identifier\n'
         '(BT-11, sent as "type|id"), purchase order reference (BT-13), buyer\n'
         'reference (BT-10) auto-defaulted from the customer name and its AAHT\n'
