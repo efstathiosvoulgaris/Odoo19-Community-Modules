@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Greece - E-Invoicing Provider: ILYDA',
-    'version': '1.9',
+    'version': '2.0',
     'category': 'Accounting/Localizations',
     'summary': 'ILYDA (vs.gr) driver for the Greek e-invoicing provider base',
     'description': (
@@ -15,6 +15,13 @@
         '\n'
         'Changelog\n'
         '---------\n'
+        '2.0 — TF-1 offline QR: /api/offline-qr key lifecycle (issue, verify\n'
+        'installation, revoke), connection failures on submit now raise a\n'
+        'typed unreachable error that triggers the offline fallback, offline\n'
+        'JWS payload built from the same sources as the submit payload.\n'
+        'Recovered documents without a provider invoiceId get a chatter note\n'
+        'that the PDF must be uploaded manually.\n'
+        '\n'
         '1.9 — Search & reconciliation: UID lookups (by-uid, by-mark,\n'
         'by-authentication-code) and the TF-2 pending queue (pending/by-uid).\n'
         'Recovery operation adopts a MARK issued during a lost-response\n'

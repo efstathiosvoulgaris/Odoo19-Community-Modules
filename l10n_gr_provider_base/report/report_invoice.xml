@@ -45,6 +45,8 @@
                             </td>
                             <td style="font-size: 7pt; line-height: 1.3;">
                                 <div t-if="o.l10n_gr_prov_mark"><strong>ΜΑΡΚ:</strong> <span t-out="o.l10n_gr_prov_mark"/></div>
+                                <div t-elif="o.l10n_gr_prov_state == 'offline'"><strong>Έκδοση εκτός σύνδεσης (TF-1)</strong>
+                                    — εκκρεμεί διαβίβαση στον πάροχο έως το τέλος της επόμενης ημέρας (Α.1112/2025)</div>
                                 <div t-else=""><strong>Σε αναμονή διαβίβασης ΑΑΔΕ</strong>
                                     (εκδόθηκε μέσω παρόχου — myDATA προσωρινά εκτός λειτουργίας)</div>
                                 <div t-if="o.l10n_gr_prov_verification_hash" style="word-break: break-all;"><strong>Αυθεντικοποίηση:</strong>
@@ -352,6 +354,7 @@
                         </div>
                         <div class="col-10" style="font-size: 8pt;">
                             <div t-if="o.l10n_gr_prov_mark"><strong>ΜΑΡΚ:</strong> <span t-field="o.l10n_gr_prov_mark"/></div>
+                            <div t-elif="o.l10n_gr_prov_state == 'offline'"><strong>Έκδοση εκτός σύνδεσης (TF-1)</strong> — εκκρεμεί διαβίβαση στον πάροχο (Α.1112/2025)</div>
                             <div t-else=""><strong>Σε αναμονή διαβίβασης ΑΑΔΕ</strong> (myDATA προσωρινά εκτός λειτουργίας)</div>
                             <div t-if="o.l10n_gr_prov_verification_hash"><strong>Συμβολοσειρά Αυθεντικοποίησης:</strong> <span t-field="o.l10n_gr_prov_verification_hash"/></div>
                             <div><strong>Αναγνωριστικό Παραστατικού:</strong> <span t-field="o.l10n_gr_prov_invoice_identifier"/></div>

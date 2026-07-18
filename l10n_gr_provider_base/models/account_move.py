@@ -2,11 +2,13 @@
 import base64
 import logging
 import unicodedata
+from datetime import timedelta
 from decimal import Decimal, ROUND_HALF_UP
 
 from odoo import api, fields, models, _
 from odoo.exceptions import UserError
 from .gr_mydata import (
+    ProviderUnreachableError,
     WITHHOLDING_CATEGORY_SELECTION, WITHHOLDING_CATEGORY_RATE,
     FEES_CATEGORY_SELECTION, FEES_CATEGORY_RATE, FEES_CATEGORY_FIXED,
     OTHER_TAXES_CATEGORY_SELECTION, OTHER_TAXES_CATEGORY_RATE, OTHER_TAXES_CATEGORY_FIXED,
@@ -24,6 +26,10 @@ PROVIDER_STATES = [
     # in the provider's transmission queue; the QR/identifier already exist and
     # the printed document must carry them. The MARK arrives later via recovery.
     ('queued', 'Queued at Provider (AADE offline)'),
+    # TF-1: WE could not reach the provider — the document was issued with a
+    # locally signed offline QR (Α.1112/2025) and must be transmitted online
+    # within 1 calendar day. The cron keeps retrying.
+    ('offline', 'Offline QR (προς διαβίβαση)'),
     ('sent', 'Issued (Marked)'),
     ('error', 'Error'),
 ]
@@ -52,6 +58,11 @@ class AccountMove(models.Model):
         help='Deterministic document UID (ET-7): SHA-1 over issuer VAT, issue date, '
              'branch, invoice type, series and number. Used to look the document up '
              'at the provider when a submission response was lost.')
+    l10n_gr_prov_offline_token = fields.Char(
+        string='Offline QR Token', copy=False, readonly=True,
+        help='JWS token of the offline QR issued while the provider was '
+             'unreachable (TF-1). Kept for the audit link between the UID and '
+             'the token required by Α.1112/2025.')
     l10n_gr_prov_qr_url = fields.Char(string='Provider QR URL', copy=False)
     l10n_gr_prov_provider_url = fields.Char(string='Provider Site', copy=False)
     l10n_gr_prov_previously_submitted = fields.Boolean(
@@ -407,12 +418,11 @@ class AccountMove(models.Model):
                 'Έχει αποσταλεί στην ΑΑΔΕ (MARK %s) και δεν επαναφέρεται σε '
                 'πρόχειρο. Για ακύρωση/επιστροφή εκδώστε Πιστωτικό Τιμολόγιο (5.1).',
                 ', '.join(stuck.mapped('l10n_gr_prov_mark'))))
-        queued = self.filtered(lambda m: m.l10n_gr_prov_state == 'queued')
+        queued = self.filtered(lambda m: m.l10n_gr_prov_state in ('queued', 'offline'))
         if queued:
             raise UserError(_(
-                'Το παραστατικό βρίσκεται σε ουρά διαβίβασης στον πάροχο (myDATA '
-                'εκτός λειτουργίας) και το QR του έχει ήδη εκδοθεί — δεν '
-                'επαναφέρεται σε πρόχειρο.'))
+                'Το παραστατικό βρίσκεται σε ουρά/εκκρεμότητα διαβίβασης και το '
+                'QR του έχει ήδη εκδοθεί — δεν επαναφέρεται σε πρόχειρο.'))
         return super().button_draft()
 
     # ── Core dispatch to the configured driver ────────────────────────────────
@@ -445,7 +455,9 @@ class AccountMove(models.Model):
             # queued) adopt that instead of creating a duplicate at AADE. If the
             # lookup itself fails we can't verify — so we do NOT resend; the
             # exception lands in the error state and the next cron pass retries.
-            if self.l10n_gr_prov_state == 'error' and not self.l10n_gr_prov_mark:
+            # Offline (TF-1) documents get the same guard: the send that made
+            # them offline may in fact have reached the provider.
+            if self.l10n_gr_prov_state in ('error', 'offline') and not self.l10n_gr_prov_mark:
                 if self._l10n_gr_prov_dispatch('recover'):
                     return
             result = self._l10n_gr_prov_dispatch('send') or 'sent'
@@ -469,11 +481,56 @@ class AccountMove(models.Model):
                 self.message_post(body=_(
                     'Issued through the e-invoicing provider. MARK: %s', self.l10n_gr_prov_mark))
         except Exception as e:
+            # TF-1: the provider is unreachable — issue the document with a
+            # locally signed offline QR instead of just failing, when a verified
+            # key exists. The fallback must never mask the original failure.
+            if isinstance(e, ProviderUnreachableError):
+                try:
+                    if self._l10n_gr_prov_try_offline():
+                        return
+                except Exception:
+                    _logger.exception('Offline QR fallback failed for %s', self.name)
             msg = str(e)
-            self.write({'l10n_gr_prov_state': 'error', 'l10n_gr_prov_error': msg})
+            # A document that already carries an offline QR stays 'offline'
+            # through failed retries — the printed QR label and the retry cron
+            # depend on the state; the error text is still recorded.
+            state = 'offline' if self.l10n_gr_prov_offline_token else 'error'
+            self.write({'l10n_gr_prov_state': state, 'l10n_gr_prov_error': msg})
             self.message_post(body=_('Provider submission failed: %s', msg))
+            self._l10n_gr_prov_offline_deadline_warn()
             if raise_on_error:
                 raise
+
+    def _l10n_gr_prov_try_offline(self):
+        """TF-1 fallback. Returns True when the document is (already) covered
+        by an offline QR — the caller then stops treating the send as a
+        failure. False = no key configured, fail normally."""
+        self.ensure_one()
+        if self.l10n_gr_prov_offline_token:
+            # Already issued offline; the retry just found the provider still
+            # down. Stay offline, surface the deadline if it lapsed.
+            self._l10n_gr_prov_offline_deadline_warn()
+            return True
+        key = self.env['l10n.gr.prov.offline.key']._get_active_key(self.company_id)
+        if not key:
+            return False
+        return bool(self._l10n_gr_prov_dispatch('issue_offline'))
+
+    def _l10n_gr_prov_offline_deadline_warn(self):
+        """Α.1112/2025: offline documents must be transmitted within 1 calendar
+        day. Post the breach once (keyed on the stored error text)."""
+        self.ensure_one()
+        if not self.l10n_gr_prov_offline_token or self.l10n_gr_prov_mark:
+            return
+        if not self.invoice_date or \
+                fields.Date.context_today(self) <= self.invoice_date + timedelta(days=1):
+            return
+        warn = _('Η προθεσμία διαβίβασης του offline παραστατικού (Α.1112/2025: '
+                 'έως το τέλος της επόμενης ημέρας) έχει παρέλθει — το QR δεν '
+                 'επαληθεύεται πλέον. Απαιτείται άμεση διαβίβαση.')
+        if self.l10n_gr_prov_error != warn:
+            self.l10n_gr_prov_error = warn
+            self.message_post(body=warn)
 
     # ── PDF upload (after marking, once the legal PDF exists) ────────────────
     def _l10n_gr_prov_get_pdf(self):
@@ -506,7 +563,9 @@ class AccountMove(models.Model):
         # 1. Pending sends (auto-send companies) and previous errors (all companies)
         domain = [
             ('state', '=', 'posted'),
-            ('l10n_gr_prov_state', 'in', ('to_send', 'error')),
+            # 'offline' (TF-1) documents retry regardless of auto_send — the
+            # 1-day legal transmission deadline doesn't wait for a human.
+            ('l10n_gr_prov_state', 'in', ('to_send', 'error', 'offline')),
             ('l10n_gr_prov_mark', '=', False),
         ]
         for move in self.search(domain, limit=50):

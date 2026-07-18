@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Greece - E-Invoicing Provider (Base)',
-    'version': '1.9',
+    'version': '2.0',
     'category': 'Accounting/Localizations',
     'summary': 'Issue invoices through a licensed Greek e-invoicing provider (Y.PA.H.E.S.)',
     'description': (
@@ -17,6 +17,12 @@
         '\n'
         'Changelog\n'
         '---------\n'
+        '2.0 — TF-1 offline QR (Α.1112/2025): offline signing keys\n'
+        '(issue/verify/revoke via the provider), automatic fallback to a\n'
+        'locally signed JWS QR when the provider is unreachable, new "offline"\n'
+        'state with forced retries and 1-day deadline warning, offline notice\n'
+        'on the PDF. Send button hidden while queued (TF-2).\n'
+        '\n'
         '1.9 — Provider search & reconciliation: "Ανάκτηση από Πάροχο" action\n'
         'and myDATA UID field; duplicate guard looks a failed document up at\n'
         'the provider before any retry resend. New "queued" state for TF-2\n'
@@ -49,6 +55,7 @@
         'views/account_journal_views.xml',
         'views/account_move_views.xml',
         'views/cls_default_views.xml',
+        'views/offline_key_views.xml',
         'views/dispatch_views.xml',
         'views/suppress_l10n_gr_edi_views.xml',
         'views/res_partner_views.xml',

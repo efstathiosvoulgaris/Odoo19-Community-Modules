@@ -61,9 +61,11 @@
             </xpath>
 
             <header position="inside">
+                <!-- Hidden while queued (TF-2): a re-send only answers MQ001;
+                     offline (TF-1) documents keep it — manual retry is legitimate. -->
                 <button name="action_l10n_gr_prov_send" type="object"
                         string="Send to Provider" class="btn-primary"
-                        invisible="not l10n_gr_prov_applicable or state != 'posted' or l10n_gr_prov_mark"/>
+                        invisible="not l10n_gr_prov_applicable or state != 'posted' or l10n_gr_prov_mark or l10n_gr_prov_state == 'queued'"/>
                 <!-- Lookup by UID: recovers a lost MARK / polls the TF-2 queue;
                      on marked documents it runs the UID self-check. -->
                 <button name="action_l10n_gr_prov_recover" type="object"
@@ -150,6 +152,8 @@
                             <field name="l10n_gr_prov_invoice_identifier" readonly="1"/>
                             <field name="l10n_gr_prov_uid" readonly="1"
                                    invisible="not l10n_gr_prov_uid"/>
+                            <field name="l10n_gr_prov_offline_token" readonly="1"
+                                   invisible="not l10n_gr_prov_offline_token"/>
                             <field name="l10n_gr_prov_qr_url" widget="url" readonly="1"/>
                             <field name="l10n_gr_prov_provider_url" widget="url" readonly="1"/>
                         </group>

@@ -11,6 +11,14 @@ Data blocks (INVOICE_TYPES, CLS_CATEGORIES, CLS_TYPES, CLASSIFICATION_MAP) are
 regenerated from the v2.0.1 xlsx + ERP doc; see project-gr-provider-mydata201.
 """
 
+class ProviderUnreachableError(Exception):
+    """The provider API could not be reached at all (network / timeout).
+
+    Raised by driver clients around invoice submission so the base send flow
+    can distinguish 'provider down' (TF-1: fall back to the offline QR) from
+    'provider rejected the document' (a normal error)."""
+
+
 # -- Invoice types (v2.0.1 sec 8.1) -------------------------------------------
 # NOTE: providers may only submit 1.1-11.5 (provider doc sec 5, invoiceType list).
 #       13.x/14.x/15-17.x are ERP/accounting-only; enforced on the send path.

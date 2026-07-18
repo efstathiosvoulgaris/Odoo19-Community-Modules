@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from . import gr_mydata
 from . import cls_default
+from . import offline_key
 from . import dispatch
 from . import res_company
 from . import account_journal

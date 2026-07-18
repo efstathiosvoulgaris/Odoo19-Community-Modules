@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_l10n_gr_prov_offline_key_list" model="ir.ui.view">
+        <field name="name">l10n.gr.prov.offline.key.list</field>
+        <field name="model">l10n.gr.prov.offline.key</field>
+        <field name="arch" type="xml">
+            <list string="Κλειδιά Offline QR">
+                <field name="key_identifier"/>
+                <field name="key_version"/>
+                <field name="purpose"/>
+                <field name="status" widget="badge"
+                       decoration-success="status == 'verified'"
+                       decoration-warning="status == 'issued'"
+                       decoration-danger="status == 'revoked'"/>
+                <field name="valid_from"/>
+                <field name="valid_to"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_l10n_gr_prov_offline_key_form" model="ir.ui.view">
+        <field name="name">l10n.gr.prov.offline.key.form</field>
+        <field name="model">l10n.gr.prov.offline.key</field>
+        <field name="arch" type="xml">
+            <form string="Κλειδί Offline QR">
+                <header>
+                    <button name="action_issue" type="object" string="Έκδοση Κλειδιού"
+                            class="btn-primary" invisible="key_identifier"/>
+                    <button name="action_verify" type="object" string="Επαλήθευση Εγκατάστασης"
+                            class="btn-primary" invisible="status != 'issued'"/>
+                    <button name="action_revoke" type="object" string="Ανάκληση"
+                            confirm="Να ανακληθεί το κλειδί; Τα offline QR που υπογράφηκαν με αυτό θα πάψουν να επαληθεύονται."
+                            invisible="status not in ('issued', 'verified')"/>
+                    <field name="status" widget="statusbar"
+                           statusbar_visible="issued,verified"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="purpose" readonly="key_identifier != False"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                            <field name="key_identifier"/>
+                            <field name="key_version"/>
+                            <field name="algorithm"/>
+                        </group>
+                        <group>
+                            <field name="valid_from"/>
+                            <field name="valid_to"/>
+                            <field name="installation_verified_at"/>
+                            <field name="link_base_url"/>
+                        </group>
+                    </group>
+                    <div class="text-muted">
+                        Το κλειδί υπογράφει τα offline QR (TF-1, Α.1112/2025) όταν ο πάροχος
+                        είναι μη προσβάσιμος. Απαιτείται «Επαλήθευση Εγκατάστασης» πριν τη χρήση —
+                        χωρίς αυτήν κάθε σάρωση QR αποτυγχάνει (TQR-0017).
+                    </div>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_l10n_gr_prov_offline_key" model="ir.actions.act_window">
+        <field name="name">Κλειδιά Offline QR (TF-1)</field>
+        <field name="res_model">l10n.gr.prov.offline.key</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Εκδώστε ένα κλειδί Offline QR</p>
+            <p>Όταν ο πάροχος είναι εκτός σύνδεσης, τα παραστατικά εκδίδονται με
+               offline QR υπογεγραμμένο τοπικά με αυτό το κλειδί και διαβιβάζονται
+               εντός 1 ημέρας (Α.1112/2025).</p>
+        </field>
+    </record>
+
+    <menuitem id="menu_l10n_gr_prov_offline_key"
+              name="Κλειδιά Offline QR (TF-1)"
+              parent="account.menu_finance_configuration"
+              action="action_l10n_gr_prov_offline_key"
+              sequence="91"/>
+
+</odoo>

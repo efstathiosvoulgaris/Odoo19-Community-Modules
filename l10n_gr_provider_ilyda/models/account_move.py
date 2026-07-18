@@ -20,6 +20,7 @@ import requests
 from odoo import fields, models, _
 from odoo.exceptions import UserError
 from odoo.addons.l10n_gr_provider_base.models.gr_mydata import (
+    ProviderUnreachableError,
     VAT_CATEGORY_MAP,
     TYPES_NO_BUYER,
     TYPES_NO_VAT,
@@ -70,9 +71,14 @@ class IlydaClient:
         return headers
 
     def submit_invoice(self, payload):
-        resp = requests.post(
-            f'{self.base}/api/invoice',
-            json=payload, headers=self._headers(), auth=self._auth, timeout=TIMEOUT)
+        try:
+            resp = requests.post(
+                f'{self.base}/api/invoice',
+                json=payload, headers=self._headers(), auth=self._auth, timeout=TIMEOUT)
+        except (requests.ConnectionError, requests.Timeout) as e:
+            # TF-1 trigger: the provider is unreachable — the base send flow
+            # falls back to the locally signed offline QR when a key exists.
+            raise ProviderUnreachableError(str(e)) from e
         return self._parse(resp)
 
     def upload_pdf(self, invoice_id, filename, pdf_bytes):
@@ -111,6 +117,29 @@ class IlydaClient:
         """TF-2 transmission queue: state of a document queued while AADE was
         offline (MyDataQueuePendingEntry)."""
         return self._get(f'/api/invoice/pending/by-uid/{uid}')
+
+    # Offline-QR key lifecycle (TF-1). {vat} = bare 9 digits or EL+9.
+    def issue_offline_key(self, vat, purpose):
+        resp = requests.post(
+            f'{self.base}/api/offline-qr/{vat}/keys',
+            json={'purpose': purpose or 'Odoo ERP'},
+            headers=self._headers(), auth=self._auth, timeout=TIMEOUT)
+        return self._parse(resp)
+
+    def verify_offline_key(self, vat, key_identifier):
+        resp = requests.post(
+            f'{self.base}/api/offline-qr/{vat}/keys/{key_identifier}/verify',
+            headers=self._headers(json_content=False), auth=self._auth, timeout=TIMEOUT)
+        return self._parse(resp)
+
+    def revoke_offline_key(self, vat, key_identifier):
+        # keyIdentifier is REQUIRED here on purpose: omitting it revokes ALL
+        # active keys of the VAT.
+        resp = requests.delete(
+            f'{self.base}/api/offline-qr/{vat}/keys',
+            params={'keyIdentifier': key_identifier},
+            headers=self._headers(json_content=False), auth=self._auth, timeout=TIMEOUT)
+        return self._parse(resp)
 
     @staticmethod
     def _parse(resp):
@@ -283,6 +312,7 @@ class AccountMove(models.Model):
             self.message_post(body=_(
                 'Το MARK ανακτήθηκε από τον πάροχο χωρίς επανυποβολή: %s',
                 self.l10n_gr_prov_mark))
+            self._l10n_gr_prov_ilyda_note_missing_invoice_id()
             return 'sent'
 
         # 2. TF-2 transmission queue. Unlike the single-invoice lookups, an
@@ -328,6 +358,7 @@ class AccountMove(models.Model):
             self.message_post(body=_(
                 'Η ουρά του παρόχου ολοκλήρωσε τη διαβίβαση. MARK: %s',
                 self.l10n_gr_prov_mark))
+            self._l10n_gr_prov_ilyda_note_missing_invoice_id()
             return 'sent'
         if state in ('RESUBMIT_PENDING', 'SUBMITTED'):
             # SUBMITTED without a mark yet: transitional — keep polling.
@@ -352,6 +383,63 @@ class AccountMove(models.Model):
         })
         self.message_post(body=self.l10n_gr_prov_error)
         return False
+
+    def _l10n_gr_prov_ilyda_note_missing_invoice_id(self):
+        """Recovered documents may lack the provider's invoiceId (the search
+        and queue responses don't always include it) — without it the legal
+        PDF cannot be uploaded via /api/invoice/upload/{invoiceId}."""
+        self.ensure_one()
+        if not self.l10n_gr_prov_invoice_id:
+            self.message_post(body=_(
+                'Το παραστατικό ανακτήθηκε χωρίς provider invoice id — το PDF '
+                'δεν μπορεί να μεταφορτωθεί αυτόματα στον πάροχο. Αν απαιτείται, '
+                'ανεβάστε το χειροκίνητα από το portal της ILYDA.'))
+
+    def _l10n_gr_prov_issue_offline_ilyda(self):
+        """TF-1: sign an offline QR locally (provider unreachable at issue).
+
+        The payload amounts must match the later normal submission of the same
+        UID (TQR-0030/31/32)."""
+        self.ensure_one()
+        key = self.env['l10n.gr.prov.offline.key']._get_active_key(self.company_id)
+        if not key:
+            return False
+        series, serial = self._l10n_gr_prov_ilyda_series_serial()
+        now_athens = fields.Datetime.context_timestamp(
+            self.with_context(tz='Europe/Athens'), fields.Datetime.now())
+        issue_dt = now_athens.strftime('%Y-%m-%dT%H:%M:%S%z')
+        issue_dt = f'{issue_dt[:-2]}:{issue_dt[-2:]}'  # +0300 -> +03:00
+        payload = {
+            'sellerVat': self._ilyda_vat(self.company_id.vat, prefixed=False),
+            'sellerBranch': int(self.company_id.partner_id.l10n_gr_edi_branch_number or 0),
+            'invoiceIssueDate': issue_dt,
+            'seriesNumber': series,
+            'serialNumber': serial,
+            'aadeInvoiceTypeCode': self._l10n_gr_prov_ilyda_inv_type() or '',
+            # ponytail: plain move totals; documents with fees/stamp/other extra
+            # taxes may trip TQR-0030 — derive from the submit builder's
+            # aadeDocTotals if that ever bites.
+            'netAmount': _r2(self.amount_untaxed),
+            'vatAmount': _r2(self.amount_tax),
+            'grossAmount': _r2(self.amount_total),
+        }
+        partner = self.commercial_partner_id
+        if partner.vat:
+            payload['buyerVatNumber'] = self._ilyda_vat(partner.vat)
+        token = key._sign_jws(payload)
+        self.write({
+            'l10n_gr_prov_offline_token': token,
+            'l10n_gr_prov_qr_url': key._qr_url(token),
+            'l10n_gr_prov_state': 'offline',
+            'l10n_gr_prov_error': False,
+            'l10n_gr_prov_send_datetime': fields.Datetime.now(),
+        })
+        self.message_post(body=_(
+            'Ο πάροχος είναι μη προσβάσιμος — το παραστατικό εκδόθηκε με offline '
+            'QR (TF-1, κλειδί %(kid)s). Πρέπει να διαβιβαστεί έως το τέλος της '
+            'επόμενης ημέρας (Α.1112/2025)· οι επαναπροσπάθειες γίνονται '
+            'αυτόματα κάθε 10 λεπτά.', kid=key.key_identifier))
+        return True
 
     # ── Helpers ───────────────────────────────────────────────────────────────
 
