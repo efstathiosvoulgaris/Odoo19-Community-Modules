@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Greece - E-Invoicing Provider (Base)',
-    'version': '2.1',
+    'version': '2.2',
     'category': 'Accounting/Localizations',
     'summary': 'Issue invoices through a licensed Greek e-invoicing provider (Y.PA.H.E.S.)',
     'description': (
@@ -17,6 +17,12 @@
         '\n'
         'Changelog\n'
         '---------\n'
+        '2.2 — «Διαβιβάσεις» log under the myDATA menu: every provider-routed\n'
+        'document in one list (state badge, MARK, send date, PDF-uploaded\n'
+        'flag, error) with filters for pending / errors / PDF backlog and\n'
+        'grouping by state, journal or month — month-end checking at a\n'
+        'glance.\n'
+        '\n'
         '2.1 — Consolidated «myDATA» menu in the Accounting top bar: all\n'
         'module screens and options (Ψηφιακή Διακίνηση, Προεπιλογές\n'
         'Χαρακτηρισμού, Οχήματα, Κλειδιά Offline QR, provider settings link)\n'

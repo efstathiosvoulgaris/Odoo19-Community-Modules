@@ -19,10 +19,82 @@
         </field>
     </record>
 
+    <!-- ── Ημερολόγιο διαβιβάσεων: όλα τα παραστατικά του παρόχου σε μια λίστα ── -->
+    <record id="view_l10n_gr_prov_transmission_list" model="ir.ui.view">
+        <field name="name">account.move.list.l10n.gr.prov.transmission</field>
+        <field name="model">account.move</field>
+        <field name="arch" type="xml">
+            <list create="false" delete="false" default_order="l10n_gr_prov_send_datetime desc, id desc">
+                <field name="name"/>
+                <field name="invoice_date"/>
+                <field name="partner_id"/>
+                <field name="l10n_gr_edi_inv_type" optional="show"/>
+                <field name="amount_total" sum="Σύνολο"/>
+                <field name="l10n_gr_prov_state" widget="badge"
+                       decoration-success="l10n_gr_prov_state == 'sent'"
+                       decoration-warning="l10n_gr_prov_state in ('to_send', 'queued', 'offline')"
+                       decoration-danger="l10n_gr_prov_state == 'error'"/>
+                <field name="l10n_gr_prov_mark"/>
+                <field name="l10n_gr_prov_send_datetime" optional="show"/>
+                <field name="l10n_gr_prov_pdf_uploaded" optional="show" string="PDF"/>
+                <field name="l10n_gr_prov_error" optional="hide"/>
+                <field name="journal_id" optional="hide"/>
+                <field name="company_id" optional="hide" groups="base.group_multi_company"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_l10n_gr_prov_transmission_search" model="ir.ui.view">
+        <field name="name">account.move.search.l10n.gr.prov.transmission</field>
+        <field name="model">account.move</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="partner_id"/>
+                <field name="l10n_gr_prov_mark"/>
+                <filter name="pending" string="Εκκρεμή"
+                        domain="[('l10n_gr_prov_state', 'in', ('to_send', 'queued', 'offline'))]"/>
+                <filter name="errors" string="Σφάλματα"
+                        domain="[('l10n_gr_prov_state', '=', 'error')]"/>
+                <filter name="sent" string="Διαβιβασμένα"
+                        domain="[('l10n_gr_prov_state', '=', 'sent')]"/>
+                <filter name="pdf_pending" string="PDF σε εκκρεμότητα"
+                        domain="[('l10n_gr_prov_state', '=', 'sent'), ('l10n_gr_prov_pdf_uploaded', '=', False)]"/>
+                <separator/>
+                <filter name="filter_invoice_date" string="Ημερομηνία Έκδοσης" date="invoice_date"/>
+                <separator/>
+                <filter name="group_state" string="Κατάσταση" context="{'group_by': 'l10n_gr_prov_state'}"/>
+                <filter name="group_journal" string="Ημερολόγιο" context="{'group_by': 'journal_id'}"/>
+                <filter name="group_month" string="Μήνας Έκδοσης" context="{'group_by': 'invoice_date:month'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_l10n_gr_prov_transmissions" model="ir.actions.act_window">
+        <field name="name">Διαβιβάσεις myDATA</field>
+        <field name="res_model">account.move</field>
+        <field name="view_mode">list,form</field>
+        <field name="view_id" ref="view_l10n_gr_prov_transmission_list"/>
+        <field name="search_view_id" ref="view_l10n_gr_prov_transmission_search"/>
+        <field name="domain">[('l10n_gr_prov_state', '!=', False)]</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Καμία διαβίβαση ακόμη</p>
+            <p>Όλα τα παραστατικά που δρομολογούνται μέσω του παρόχου:
+               κατάσταση, MARK, ημερομηνία αποστολής και μεταφόρτωση PDF,
+               σε μια λίστα για τον έλεγχο του μήνα.</p>
+        </field>
+    </record>
+
     <menuitem id="menu_l10n_gr_prov_root"
               name="myDATA"
               parent="account.menu_finance"
               sequence="40"/>
+
+    <menuitem id="menu_l10n_gr_prov_transmissions"
+              name="Διαβιβάσεις"
+              parent="menu_l10n_gr_prov_root"
+              action="action_l10n_gr_prov_transmissions"
+              sequence="5"/>
 
     <!-- Έγγραφα / ροές -->
     <menuitem id="menu_l10n_gr_prov_dispatch_root"
