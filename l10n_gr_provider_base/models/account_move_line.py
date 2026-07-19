@@ -105,6 +105,21 @@ class AccountMoveLine(models.Model):
             if line.product_id and line.move_id.l10n_gr_prov_is_dispatch_only:
                 line.price_unit = 0.0
 
+    # 8.2 Ειδικό Στοιχείο: the line is only the fee description — the amount
+    # lives in Λοιποί Φόροι. Hook the computes (not an onchange): they re-run
+    # after any product/account change, so price and VAT can never sneak back.
+    def _compute_price_unit(self):
+        super()._compute_price_unit()
+        for line in self:
+            if line.move_id.journal_id.l10n_gr_edi_inv_type_default == '8.2':
+                line.price_unit = 0.0
+
+    def _compute_tax_ids(self):
+        super()._compute_tax_ids()
+        for line in self:
+            if line.move_id.journal_id.l10n_gr_edi_inv_type_default == '8.2':
+                line.tax_ids = [(5, 0, 0)]
+
     @api.onchange('product_id')
     def _onchange_l10n_gr_prov_cls_from_product(self):
         """Fill line classification from the defaults table (override → derived).
@@ -118,6 +133,13 @@ class AccountMoveLine(models.Model):
                 continue
             inv_type = line._l10n_gr_prov_inv_type()
             if not inv_type:
+                continue
+            # 8.2 Ειδικό Στοιχείο: the only valid income combo is category1_95
+            # (informational, takes NO E3 code) — the derived goods/service
+            # default would be wrong here.
+            if inv_type == '8.2':
+                line.l10n_gr_prov_cls_category = 'category1_95'
+                line.l10n_gr_prov_cls_type = False
                 continue
             tmpl = line.product_id.product_tmpl_id
             # Fall back to 'goods' when the product has no Greek type set —

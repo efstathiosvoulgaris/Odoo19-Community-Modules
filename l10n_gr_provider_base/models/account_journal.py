@@ -3,6 +3,8 @@ from odoo import fields, models
 from odoo.addons.account.models.chart_template import template
 from odoo.addons.l10n_gr_edi.models.preferred_classification import INVOICE_TYPES_SELECTION
 
+from .gr_mydata import OTHER_TAXES_CATEGORY_SELECTION
+
 _EXTRA_SELECTION = [
     ('8.4',  '8.4 - Απόδειξη Είσπραξης POS'),
     ('8.5',  '8.5 - Απόδειξη Επιστροφής POS'),
@@ -91,6 +93,14 @@ class AccountJournal(models.Model):
         string='Τιμολόγιο – Δελτίο Αποστολής',
         help='Τα παραστατικά αυτού του ημερολογίου είναι και δελτία αποστολής '
              '(isDeliveryNote): αποστέλλονται με στοιχεία διακίνησης.',
+    )
+
+    l10n_gr_prov_other_taxes_default = fields.Selection(
+        selection=OTHER_TAXES_CATEGORY_SELECTION,
+        string='Προεπιλογή Λοιπών Φόρων (8.2)',
+        help='Για ημερολόγια Ειδικού Στοιχείου (8.2): η κατηγορία τέλους '
+             'διαμονής του καταλύματος (π.χ. Ξενοδοχείο 3 αστέρων) — '
+             'συμπληρώνεται αυτόματα σε κάθε νέο παραστατικό.',
     )
 
     l10n_gr_edi_inv_type_default = fields.Selection(

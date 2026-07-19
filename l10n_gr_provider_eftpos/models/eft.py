@@ -195,7 +195,7 @@ class EftPayment(models.Model):
             company = move.company_id
             series, _serial = move._l10n_gr_prov_ilyda_series_serial()
             rates = {_r2(t.amount) for t in move.invoice_line_ids.filtered(
-                lambda l: not l.display_type).tax_ids}
+                lambda l: l.display_type == 'product').tax_ids}
             body.update({
                 'netAmount': _r2(move.amount_untaxed),
                 'vatAmount': _r2(move.amount_tax),

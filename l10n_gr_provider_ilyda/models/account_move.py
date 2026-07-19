@@ -550,6 +550,32 @@ class AccountMove(models.Model):
         lines = self._l10n_gr_prov_ilyda_lines()
         if not lines:
             errors.append(_('The document has no product lines.'))
+        # 8.2 Ειδικό Στοιχείο Τέλους Διαμονής: the fee IS the document — one
+        # zero-value line, the amount only in Λοιποί Φόροι, correlated with
+        # the stay document (cf. examples_bundle/VALID_8_2_example.json).
+        if inv_type == '8.2':
+            if not (self.l10n_gr_prov_other_taxes_amount
+                    and self.l10n_gr_prov_other_taxes_category):
+                errors.append(_(
+                    'Το Ειδικό Στοιχείο (8.2) απαιτεί κατηγορία και ποσό στους '
+                    'Λοιπούς Φόρους (τέλος διαμονής/ανθεκτικότητας) — '
+                    'καρτέλα myDATA Φόροι.'))
+            if (self.l10n_gr_prov_fees_amount or self.l10n_gr_prov_stamp_duty_amount
+                    or self.l10n_gr_prov_withholding_amount):
+                errors.append(_(
+                    'Το Ειδικό Στοιχείο (8.2) επιτρέπει μόνο Λοιπούς Φόρους — '
+                    'όχι Τέλη, Χαρτόσημο ή Κρατήσεις.'))
+            if len(lines) != 1 or any(l.price_subtotal for l in lines):
+                errors.append(_(
+                    'Το Ειδικό Στοιχείο (8.2) θέλει ακριβώς μία γραμμή με '
+                    'μηδενική αξία (περιγραφή τέλους) — το ποσό μπαίνει μόνο '
+                    'στους Λοιπούς Φόρους.'))
+            corr = self.l10n_gr_edi_correlation_id
+            if not corr or not corr.l10n_gr_prov_mark:
+                errors.append(_(
+                    'Το Ειδικό Στοιχείο (8.2) συσχετίζεται με το παραστατικό '
+                    'διαμονής (ΑΛΠ/ΤΠΥ με MARK) — επιλέξτε το στο πεδίο '
+                    '«Correlated Invoice».'))
         # Dispatch types (9.x/10.x) classify with category3 only; associate
         # types (1.6/2.4 — CLASSIFICATION_MAP sentinel, no valid categories)
         # inherit their classification from the correlated invoice.
@@ -558,7 +584,12 @@ class AccountMove(models.Model):
         no_vat = inv_type in TYPES_NO_VAT
         for line in lines:
             line_label = line.name or line.product_id.display_name
-            if not no_cls and (not line.l10n_gr_prov_cls_category or not line.l10n_gr_prov_cls_type):
+            # E3 is required only when the category takes one — the *_95 and
+            # category3 groups are E3-less by spec (e.g. category1_95 on 8.2).
+            cls_cat = line.l10n_gr_prov_cls_category
+            if not no_cls and (not cls_cat or (
+                    not line.l10n_gr_prov_cls_type
+                    and valid_cls_types(inv_type, cls_cat))):
                 errors.append(_(
                     'Line "%s": myDATA income classification (category + E3 type) is missing.',
                     line_label))
@@ -888,6 +919,53 @@ class AccountMove(models.Model):
                 'aadeTotalDeductionsAmount': 0.0,
             },
         }
+
+        # ── 8.2 Ειδικό Στοιχείο Τέλους Διαμονής: the document IS the tax ─────
+        # myDATA wants net 0 with the fee only in otherTaxes (recType 3 row),
+        # but ILYDA's EN16931 validation rejects a tax above its underlying
+        # value (MDP-0058) — so, per ILYDA's VALID_8_2 example, the fee rides
+        # as the line base on the EN16931 side while the aadeData row carries
+        # the true myDATA picture. Generic extra-tax taxTotals/charges and
+        # classifications are dropped (recType 3 rows carry none).
+        if inv_type == '8.2':
+            fee = other_taxes
+            line0 = invoice_lines[0]
+            line0['netAmount'] = fee
+            line0['priceDetails']['itemNetPrice'] = fee
+            row0 = row_types[0]
+            row0.update({
+                'recType': 3,
+                'netValue': 0.0,
+                # MDP-0075: recType 3 rows take ONLY the category — the amount
+                # goes in taxesTotals (cf. the example's XML).
+                'otherTaxesPercentCategory': int(self.l10n_gr_prov_other_taxes_category),
+            })
+            row0.pop('incomeClassification', None)
+            row0.pop('expensesClassification', None)
+            for breakdown in vat_breakdowns:
+                breakdown['categoryTaxableAmount'] = fee
+            # underlyingValue = the EN16931 line base (= fee), so the
+            # tax ≤ underlying check (MDP-0058) is satisfied.
+            tax_totals[:] = [{
+                'taxType': 3,
+                'taxAmount': fee,
+                'underlyingValue': fee,
+                'taxCategory': int(self.l10n_gr_prov_other_taxes_category),
+            }]
+            doc_level_charges.clear()
+            income_classifications.clear()
+            expenses_classifications.clear()
+            doc_total.update({
+                'invoiceLinesNetAmountSum': fee,
+                'invoiceTotalWithoutVat': fee,
+                'invoiceTotalAmountWithVat': fee,
+                'amountDueForPayment': fee,
+                'documentLevelChargesSum': 0.0,
+            })
+            doc_total['aadeDocTotals'].update({
+                'aadeTotalNetValue': 0.0,
+                'aadeTotalGrossValue': fee,
+            })
 
         # ── Seller ────────────────────────────────────────────────────────────
         company_partner = company.partner_id

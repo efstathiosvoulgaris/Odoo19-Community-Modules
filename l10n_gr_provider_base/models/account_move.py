@@ -233,9 +233,20 @@ class AccountMove(models.Model):
             'l10n_gr_prov_fees_category', 'l10n_gr_prov_fees_amount',
             FEES_CATEGORY_RATE)
 
-    @api.depends('l10n_gr_prov_other_taxes_category', 'amount_untaxed')
+    @api.depends('l10n_gr_prov_other_taxes_category', 'amount_untaxed',
+                 'l10n_gr_edi_correlation_id', 'journal_id')
     def _compute_l10n_gr_prov_other_taxes_amount(self):
-        self._l10n_gr_prov_apply_rate(
+        # 8.2 Ειδικό Στοιχείο: fixed € × nights of the correlated stay
+        # document — compute-driven so the field order never matters.
+        fee_docs = self.filtered(
+            lambda m: m.journal_id.l10n_gr_edi_inv_type_default == '8.2')
+        for move in fee_docs:
+            fixed = OTHER_TAXES_CATEGORY_FIXED.get(
+                move.l10n_gr_prov_other_taxes_category)
+            if fixed:
+                move.l10n_gr_prov_other_taxes_amount = (
+                    fixed * move._l10n_gr_prov_fee_nights())
+        (self - fee_docs)._l10n_gr_prov_apply_rate(
             'l10n_gr_prov_other_taxes_category', 'l10n_gr_prov_other_taxes_amount',
             OTHER_TAXES_CATEGORY_RATE)
 
@@ -249,9 +260,92 @@ class AccountMove(models.Model):
 
     @api.onchange('l10n_gr_prov_other_taxes_category')
     def _onchange_l10n_gr_prov_other_taxes_fixed(self):
+        # 8.2 documents are handled by the compute (fixed × nights) — don't
+        # fight it with a unit-only default here.
+        if self.journal_id.l10n_gr_edi_inv_type_default == '8.2':
+            return
         fixed = OTHER_TAXES_CATEGORY_FIXED.get(self.l10n_gr_prov_other_taxes_category)
         if fixed:
             self.l10n_gr_prov_other_taxes_amount = fixed
+
+    def _l10n_gr_prov_fee_nights(self):
+        """8.2 Ειδικό Στοιχείο: nights = total quantity on the correlated stay
+        document (2 διανυκτερεύσεις × 50€ → fee × 2). Editable afterwards —
+        e.g. when the ΑΛΠ also carries non-stay lines (minibar)."""
+        self.ensure_one()
+        if self.journal_id.l10n_gr_edi_inv_type_default != '8.2':
+            return 1
+        corr = self.l10n_gr_edi_correlation_id
+        nights = sum(corr.invoice_line_ids.filtered(
+            lambda l: l.display_type == 'product' and l.quantity > 0
+        ).mapped('quantity'))
+        return nights or 1
+
+    @api.onchange('journal_id')
+    def _onchange_l10n_gr_prov_fee_doc_defaults(self):
+        """ΤΔΙ (8.2) journal: default the Λοιποί Φόροι category from the
+        journal (the amount follows via the compute: fixed € × nights)."""
+        for move in self:
+            journal = move.journal_id
+            if (journal.l10n_gr_edi_inv_type_default == '8.2'
+                    and not move.l10n_gr_prov_other_taxes_category):
+                move.l10n_gr_prov_other_taxes_category = \
+                    journal.l10n_gr_prov_other_taxes_default
+
+    def action_l10n_gr_prov_create_fee_doc(self):
+        """ΑΛΠ/ΤΠΥ → ΤΔΙ (8.2 Ειδικό Στοιχείο), built server-side in one shot:
+        journal, correlation, category from the journal default, amount =
+        fixed € × nights (total quantity of this document). No onchange
+        choreography — the draft opens ready to post and send."""
+        self.ensure_one()
+        if not self.l10n_gr_prov_mark:
+            raise UserError(_(
+                'Το %s δεν έχει MARK — στείλτε το πρώτα στον πάροχο.', self.name))
+        journal = self.env['account.journal'].search([
+            ('company_id', '=', self.company_id.id),
+            ('type', '=', 'sale'),
+            ('l10n_gr_edi_inv_type_default', '=', '8.2'),
+        ], limit=1)
+        if not journal:
+            raise UserError(_(
+                'Δεν βρέθηκε ημερολόγιο πωλήσεων με Προεπιλογή Τύπου myDATA '
+                '8.2 (Ειδικό Στοιχείο).'))
+        category = journal.l10n_gr_prov_other_taxes_default
+        fixed = OTHER_TAXES_CATEGORY_FIXED.get(category)
+        if not fixed:
+            raise UserError(_(
+                'Ορίστε την «Προεπιλογή Λοιπών Φόρων (8.2)» στο ημερολόγιο '
+                '%s — την κατηγορία πάγιου τέλους του καταλύματος '
+                '(π.χ. Ξενοδοχεία 3 αστέρων).', journal.name))
+        nights = sum(self.invoice_line_ids.filtered(
+            lambda l: l.display_type == 'product' and l.quantity > 0
+        ).mapped('quantity')) or 1
+        fee_doc = self.create({
+            'move_type': 'out_invoice',
+            'journal_id': journal.id,
+            'partner_id': self.partner_id.id,
+            'invoice_date': fields.Date.context_today(self),
+            'l10n_gr_edi_correlation_id': self.id,
+            'invoice_line_ids': [(0, 0, {
+                'name': _('Τέλος διαμονής — %s', self.name),
+                'quantity': nights,
+                'price_unit': 0.0,
+                'tax_ids': [(5, 0, 0)],
+                'l10n_gr_prov_cls_category': 'category1_95',
+            })],
+        })
+        # explicit write after create — the stored compute agrees (fixed ×
+        # nights from the correlated document), but nothing is left to chance
+        fee_doc.write({
+            'l10n_gr_prov_other_taxes_category': category,
+            'l10n_gr_prov_other_taxes_amount': fixed * nights,
+        })
+        return {
+            'type': 'ir.actions.act_window',
+            'res_model': 'account.move',
+            'res_id': fee_doc.id,
+            'view_mode': 'form',
+        }
 
     @api.depends('partner_id', 'l10n_gr_prov_b2g')
     def _compute_l10n_gr_prov_buyer_ref(self):

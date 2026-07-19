@@ -11,6 +11,8 @@
                        invisible="type not in ('sale', 'purchase')"
                        string="Προεπιλογή Τύπου myDATA"/>
                 <field name="l10n_gr_prov_delivery_note" invisible="type != 'sale'"/>
+                <field name="l10n_gr_prov_other_taxes_default"
+                       invisible="l10n_gr_edi_inv_type_default != '8.2'"/>
             </field>
         </field>
     </record>

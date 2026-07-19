@@ -62,10 +62,13 @@ class AccountMove(models.Model):
         return super()._get_starting_sequence()
 
     def _compute_l10n_gr_edi_need_fields(self):
-        # Correlated dispatch advices (9.1/10.1) need the correlated invoice too
+        # Correlated dispatch advices (9.1/10.1) need the correlated invoice
+        # too, and so does the 8.2 Ειδικό Στοιχείο (correlates with the stay
+        # document's ΑΛΠ/ΤΠΥ MARK).
         super()._compute_l10n_gr_edi_need_fields()
         for move in self:
-            if move.l10n_gr_edi_inv_type in TYPES_DISPATCH_CORRELATED:
+            if move.l10n_gr_edi_inv_type in TYPES_DISPATCH_CORRELATED \
+                    or move.l10n_gr_edi_inv_type == '8.2':
                 move.l10n_gr_edi_need_correlated = True
 
     @api.depends('journal_id', 'journal_id.l10n_gr_edi_inv_type_default',

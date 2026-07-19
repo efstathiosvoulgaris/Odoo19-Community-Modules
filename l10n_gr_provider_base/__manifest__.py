@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Greece - E-Invoicing Provider (Base)',
-    'version': '2.2',
+    'version': '2.3',
     'category': 'Accounting/Localizations',
     'summary': 'Issue invoices through a licensed Greek e-invoicing provider (Y.PA.H.E.S.)',
     'description': (
@@ -17,6 +17,19 @@
         '\n'
         'Changelog\n'
         '---------\n'
+        '2.3 — 8.2 Ειδικό Στοιχείο Τέλους Διαμονής (ΤΔΙ): «Ειδικό Στοιχείο\n'
+        '(ΤΔΙ)» button on marked invoices builds the fee document server-side\n'
+        '(8.2 journal, correlation, zero line, category1_95, fee = fixed € ×\n'
+        'nights from the stay document). Journal default for the fee\n'
+        'category; 8.2 lines auto-zero price and VAT via the compute chain.\n'
+        '\n'
+        '2.3 — 8.2 Ειδικό Στοιχείο Τέλους Διαμονής (ΤΔΙ): «Ειδικό Στοιχείο\n'
+        '(ΤΔΙ)» button on marked invoices builds the fee document server-side\n'
+        '(8.2 journal, correlation, zero line, category1_95, fee = fixed € ×\n'
+        'nights from the stay document). Journal default for the property\'s\n'
+        'fee category; 8.2 lines auto-zero price and VAT via the compute\n'
+        'chain; per-night amount recomputed from category/correlation.\n'
+        '\n'
         '2.2 — «Διαβιβάσεις» log under the myDATA menu: every provider-routed\n'
         'document in one list (state badge, MARK, send date, PDF-uploaded\n'
         'flag, error) with filters for pending / errors / PDF backlog and\n'
