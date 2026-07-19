@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ── Τερματικά ── -->
+    <record id="view_eft_terminal_list" model="ir.ui.view">
+        <field name="name">l10n.gr.prov.eft.terminal.list</field>
+        <field name="model">l10n.gr.prov.eft.terminal</field>
+        <field name="arch" type="xml">
+            <list editable="bottom">
+                <field name="name"/>
+                <field name="code"/>
+                <field name="nsp_protocol"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+                <field name="active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_eft_terminal" model="ir.actions.act_window">
+        <field name="name">Τερματικά EFT/POS</field>
+        <field name="res_model">l10n.gr.prov.eft.terminal</field>
+        <field name="view_mode">list</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Καταχωρίστε τα τερματικά καρτών</p>
+            <p>Το Terminal ID και το πρωτόκολλο NSP κάθε μηχανήματος POS
+               της επιχείρησης (Α.1155/2023).</p>
+        </field>
+    </record>
+
+    <!-- ── Πληρωμές ── -->
+    <!-- Two-step dialog: (1) terminal → OK issues the signature,
+         (2) charge the terminal, enter the transaction id → done. -->
+    <record id="view_eft_payment_form" model="ir.ui.view">
+        <field name="name">l10n.gr.prov.eft.payment.form</field>
+        <field name="model">l10n.gr.prov.eft.payment</field>
+        <field name="arch" type="xml">
+            <form string="Πληρωμή με Κάρτα">
+                <field name="state" invisible="1"/>
+                <field name="signature_expired" invisible="1"/>
+                <field name="company_id" invisible="1"/>
+                <widget name="web_ribbon" title="Ληγμένη" bg_color="text-bg-danger"
+                        invisible="not signature_expired"/>
+                <div class="alert alert-info" role="alert"
+                     invisible="state != 'signed'">
+                    Η υπογραφή εκδόθηκε. Χρεώστε τώρα την κάρτα στο τερματικό
+                    και καταχωρίστε την Ταυτότητα Συναλλαγής από την απόδειξή του.
+                </div>
+                <group>
+                    <group>
+                        <field name="move_id" readonly="state != 'draft'"/>
+                        <field name="terminal_id" readonly="state != 'draft'"/>
+                        <field name="amount" readonly="state != 'draft'"/>
+                        <field name="tip_amount" invisible="state == 'draft'"
+                               readonly="state not in ('draft', 'signed')"/>
+                    </group>
+                    <group>
+                        <field name="transaction_id" invisible="state == 'draft'"
+                               readonly="state not in ('signed',)"/>
+                        <field name="payment_method_mark"
+                               invisible="not payment_method_mark"/>
+                        <field name="signature_expiry" invisible="state == 'draft'"/>
+                    </group>
+                </group>
+                <group string="Ακύρωση" invisible="state not in ('signed', 'paid')">
+                    <field name="cancel_reason"/>
+                    <field name="cancel_reason_text"
+                           required="cancel_reason == 'OTHER'"/>
+                </group>
+                <footer>
+                    <button name="action_request_signature" type="object"
+                            string="OK — Έκδοση Υπογραφής" class="btn-primary"
+                            invisible="state != 'draft'"/>
+                    <button name="action_complete" type="object"
+                            string="Ολοκλήρωση Αποστολής" class="btn-primary"
+                            invisible="state != 'signed'"/>
+                    <button name="action_cancel" type="object"
+                            string="Ακύρωση Υπογραφής"
+                            invisible="state not in ('signed', 'paid')"/>
+                    <button special="cancel" string="Κλείσιμο" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_eft_payment_list" model="ir.ui.view">
+        <field name="name">l10n.gr.prov.eft.payment.list</field>
+        <field name="model">l10n.gr.prov.eft.payment</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="move_id"/>
+                <field name="partner_id"/>
+                <field name="terminal_id"/>
+                <field name="amount" sum="Σύνολο"/>
+                <field name="transaction_id"/>
+                <field name="payment_method_mark"/>
+                <field name="signature_expiry" optional="hide"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'submitted'"
+                       decoration-warning="state in ('signed', 'paid')"
+                       decoration-danger="state == 'cancelled'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_eft_payment_search" model="ir.ui.view">
+        <field name="name">l10n.gr.prov.eft.payment.search</field>
+        <field name="model">l10n.gr.prov.eft.payment</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="move_id"/>
+                <field name="partner_id"/>
+                <field name="transaction_id"/>
+                <field name="payment_method_mark"/>
+                <filter name="open" string="Σε εξέλιξη"
+                        domain="[('state', 'in', ('draft', 'signed', 'paid'))]"/>
+                <filter name="submitted" string="Διαβιβασμένες"
+                        domain="[('state', '=', 'submitted')]"/>
+                <separator/>
+                <filter name="group_terminal" string="Τερματικό"
+                        context="{'group_by': 'terminal_id'}"/>
+                <filter name="group_state" string="Κατάσταση"
+                        context="{'group_by': 'state'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_eft_payment" model="ir.actions.act_window">
+        <field name="name">Πληρωμές EFT/POS</field>
+        <field name="res_model">l10n.gr.prov.eft.payment</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_eft_payment_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Καμία πληρωμή κάρτας ακόμη</p>
+            <p>Πληρωμές με κάρτα συνδεδεμένες με παραστατικά (Α.1155/2023):
+               υπογραφή παρόχου, χρέωση τερματικού, διαβίβαση στην ΑΑΔΕ.
+               Δημιουργήστε νέα επιλέγοντας το παραστατικό.</p>
+        </field>
+    </record>
+
+    <!-- ── Μενού (κάτω από το myDATA του base) ── -->
+    <menuitem id="menu_eft_payment"
+              name="Πληρωμές EFT/POS"
+              parent="l10n_gr_provider_base.menu_l10n_gr_prov_root"
+              action="action_eft_payment"
+              sequence="7"/>
+    <menuitem id="menu_eft_terminal"
+              name="Τερματικά EFT/POS"
+              parent="l10n_gr_provider_base.menu_l10n_gr_prov_config"
+              action="action_eft_terminal"
+              sequence="25"/>
+
+</odoo>
