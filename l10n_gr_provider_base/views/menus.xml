@@ -29,7 +29,8 @@
                 <field name="invoice_date"/>
                 <field name="partner_id"/>
                 <field name="l10n_gr_edi_inv_type" optional="show"/>
-                <field name="amount_total" sum="Σύνολο"/>
+                <!-- Signed so credit notes subtract from the sum. -->
+                <field name="amount_total_signed" string="Σύνολο" sum="Σύνολο"/>
                 <field name="l10n_gr_prov_state" widget="badge"
                        decoration-success="l10n_gr_prov_state == 'sent'"
                        decoration-warning="l10n_gr_prov_state in ('to_send', 'queued', 'offline')"
@@ -76,7 +77,9 @@
         <field name="view_mode">list,form</field>
         <field name="view_id" ref="view_l10n_gr_prov_transmission_list"/>
         <field name="search_view_id" ref="view_l10n_gr_prov_transmission_search"/>
-        <field name="domain">[('l10n_gr_prov_state', '!=', False)]</field>
+        <!-- Posted only: draft/cancelled can keep a stale provider state the
+             cron never processes — showing them as «Εκκρεμή» would lie. -->
+        <field name="domain">[('state', '=', 'posted'), ('l10n_gr_prov_state', '!=', False)]</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">Καμία διαβίβαση ακόμη</p>
             <p>Όλα τα παραστατικά που δρομολογούνται μέσω του παρόχου:
