@@ -13,3 +13,4 @@ from . import payment
 from . import account_move_line
 from . import account_move_inv_type
 from . import account_move_send
+from . import ir_actions_report

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+
+    <t t-name="l10n_gr_provider_pos.ReceiptHeader"
+       t-inherit="point_of_sale.ReceiptHeader" t-inherit-mode="extension">
+        <xpath expr="//span[hasclass('pos-receipt-vat')]" position="before">
+            <div t-if="order.l10n_gr_prov_doc_name" class="fw-bolder"
+                 style="font-size: 110%; margin-bottom: 4px;">
+                <div t-if="grDocTitle" t-out="grDocTitle"/>
+                <div t-out="order.l10n_gr_prov_doc_name"/>
+            </div>
+        </xpath>
+    </t>
+
+</templates>

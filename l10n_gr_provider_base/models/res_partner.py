@@ -5,14 +5,10 @@ from odoo import fields, models
 class ResPartner(models.Model):
     _inherit = 'res.partner'
 
-    l10n_gr_prov_doy = fields.Char(
-        string='ΔΟΥ',
-        help='Αρμόδια Δημόσια Οικονομική Υπηρεσία. Τυπώνεται στα παραστατικά.',
-    )
-    l10n_gr_prov_activity = fields.Char(
-        string='Δραστηριότητα',
-        help='Επάγγελμα / κύρια δραστηριότητα. Τυπώνεται στα παραστατικά.',
-    )
+    # ΔΟΥ and δραστηριότητα are NOT redefined here — they live in
+    # l10n_gr_partner as `doy` / `drastiriotita` (filled by the AADE VAT
+    # lookup). We consumed those directly; a duplicate pair here only went
+    # stale against the AADE data.
     l10n_gr_prov_aaht = fields.Char(
         string='ΑΑΗΤ',
         help='Unique e-invoicing code of the contracting authority (Αναθέτουσα '

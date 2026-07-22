@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Greece - E-Invoicing Provider (Base)',
-    'version': '2.3',
+    'version': '2.4',
     'category': 'Accounting/Localizations',
     'summary': 'Issue invoices through a licensed Greek e-invoicing provider (Y.PA.H.E.S.)',
     'description': (
@@ -99,6 +99,7 @@
         'views/product_template_views.xml',
         'views/res_config_settings_views.xml',
         'report/report_invoice.xml',
+        'report/report_gr_invoice.xml',
         'data/ir_cron.xml',
         'data/suppress_l10n_gr_edi.xml',
         'views/menus.xml',

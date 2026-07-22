@@ -1,0 +1,366 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Custom 80mm roll format for retail receipts printed from the backend
+         (POS uses its own OWL receipt; this is for Print/Send on ΑΛΠ/ΑΠΥ). -->
+    <record id="paperformat_gr_80mm" model="report.paperformat">
+        <field name="name">GR 80mm Απόδειξη</field>
+        <field name="format">custom</field>
+        <field name="page_width">80</field>
+        <field name="page_height">297</field>
+        <field name="orientation">Portrait</field>
+        <field name="margin_top">3</field>
+        <field name="margin_bottom">3</field>
+        <field name="margin_left">2</field>
+        <field name="margin_right">2</field>
+        <field name="header_line" eval="False"/>
+        <field name="header_spacing">0</field>
+        <field name="disable_shrinking" eval="True"/>
+        <field name="dpi">203</field>
+    </record>
+
+    <!-- A4 form: bottom margin reserves room for the static provider footer
+         (QR + MARK), repeated by wkhtmltopdf on every page. -->
+    <record id="paperformat_gr_a4" model="report.paperformat">
+        <field name="name">GR Παραστατικό A4</field>
+        <field name="format">A4</field>
+        <field name="orientation">Portrait</field>
+        <!-- Header is in the body flow now, so a small top margin is enough;
+             the bottom margin reserves the fixed footer region (QR + MARK). -->
+        <field name="margin_top">8</field>
+        <field name="margin_bottom">30</field>
+        <field name="margin_left">7</field>
+        <field name="margin_right">7</field>
+        <field name="header_line" eval="False"/>
+        <field name="header_spacing">0</field>
+        <field name="dpi">90</field>
+    </record>
+
+    <record id="action_report_gr_invoice" model="ir.actions.report">
+        <field name="name">Παραστατικό</field>
+        <field name="model">account.move</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">l10n_gr_provider_base.report_gr_invoice</field>
+        <field name="report_file">l10n_gr_provider_base.report_gr_invoice</field>
+        <field name="print_report_name">object.name</field>
+        <field name="binding_model_id" ref="account.model_account_move"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <!-- Single html_container wrap for the WHOLE batch — matches how core
+         account.report_invoice wraps once around its own t-foreach. The
+         *_body templates below are raw content with NO wrapper of their own:
+         calling a self-wrapping template (web.basic_layout/html_container)
+         from inside an already-wrapped context nests <html> inside <html>,
+         which wkhtmltopdf renders as a blank page — the bug that produced
+         empty PDFs after the routing was added. -->
+    <template id="report_gr_invoice">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <t t-if="o.journal_id.l10n_gr_prov_print_form == 'standard'">
+                    <t t-call="account.report_invoice_document"/>
+                </t>
+                <t t-elif="o.journal_id.l10n_gr_prov_print_form == 'gr_80mm'">
+                    <t t-call="l10n_gr_provider_base.report_gr_invoice_80mm_body"/>
+                </t>
+                <t t-else="">
+                    <t t-call="l10n_gr_provider_base.report_gr_invoice_a4_body"/>
+                </t>
+            </t>
+        </t>
+    </template>
+
+    <!-- The standard Print button (core account.report_invoice / action
+         account.account_invoices) routes here too, via
+         account.move._get_name_invoice_report() — one form, reached from
+         either the dedicated «Παραστατικό» action or the normal Print button.
+         Calls the raw _body templates (core already supplies the single
+         html_container wrap around its own t-foreach). -->
+    <template id="report_invoice_gr_routing" inherit_id="account.report_invoice">
+        <xpath expr='//t[@t-call="account.report_invoice_document"]' position="after">
+            <t t-elif="o._get_name_invoice_report() == 'l10n_gr_provider_base.report_gr_invoice_document'"
+               t-call="l10n_gr_provider_base.report_gr_invoice_a4_body" t-lang="lang"/>
+            <t t-elif="o._get_name_invoice_report() == 'l10n_gr_provider_base.report_gr_invoice_80mm'"
+               t-call="l10n_gr_provider_base.report_gr_invoice_80mm_body" t-lang="lang"/>
+        </xpath>
+    </template>
+
+    <!-- Fixed-geometry Greek form: every box renders at its reserved size
+         even when empty; the lines area dominates the page; the footer with
+         the provider markings is static on every page. Tables only — the
+         report engine's webkit has no CSS grid. Raw content, no wrapper —
+         see the note on report_gr_invoice above. -->
+    <template id="report_gr_invoice_a4_body">
+        <t t-set="partner" t-value="o.commercial_partner_id"/>
+        <div class="article" t-att-data-oe-model="o._name" t-att-data-oe-id="o.id">
+            <!-- ΕΝΙΑΙΟ ΜΗΧΑΝΟΓΡΑΦΙΚΟ ΕΝΤΥΠΟ ΠΟΛΛΑΠΛΗΣ ΧΡΗΣΗΣ — grayscale boxed
+                 form (Epsilon-style). Everything in the body flow; only a thin
+                 provider line uses the repeating footer. print-color-adjust
+                 forces the grey header shading to render. -->
+            <t t-set="grey" t-value="'background-color: #e6e6e6; -webkit-print-color-adjust: exact; print-color-adjust: exact;'"/>
+            <t t-set="cell" t-value="'border: 1px solid #000; padding: 1mm 2mm; box-sizing: border-box;'"/>
+            <t t-set="series" t-value="o._l10n_gr_prov_report_series_serial()"/>
+            <t t-set="tot" t-value="o._l10n_gr_prov_report_totals()"/>
+            <t t-set="mono" t-value="{'widget': 'monetary', 'display_currency': o.currency_id}"/>
+
+            <!-- ═══ Masthead (outside the box) ═══ -->
+            <table style="width: 100%; font-size: 9px; margin-bottom: 2mm;">
+                <tr style="vertical-align: top;">
+                    <td style="width: 38%;">
+                        <img t-if="o.company_id.logo" t-att-src="image_data_uri(o.company_id.logo)"
+                             style="max-height: 16mm; max-width: 50mm;" alt="Logo"/>
+                    </td>
+                    <td style="width: 24%; text-align: center;">
+                        <img t-if="o.l10n_gr_prov_qr_png"
+                             t-att-src="'data:image/png;base64,%s' % o.l10n_gr_prov_qr_png.decode()"
+                             style="width: 20mm; height: 20mm;"/>
+                    </td>
+                    <td style="width: 38%; text-align: right;">
+                        <div style="font-size: 15px; font-weight: bold;" t-out="o.company_id.name"/>
+                        <div>
+                            Α.Φ.Μ.: <span t-out="(o.company_id.vat or '').replace('EL', '')"/>
+                            <t t-if="o.company_id.partner_id.doy"> Δ.Ο.Υ.: <span t-out="o.company_id.partner_id.doy"/></t>
+                        </div>
+                        <div t-out="', '.join(filter(None, [o.company_id.street, o.company_id.city]))"/>
+                        <div t-if="o.company_id.phone">ΤΗΛ: <span t-out="o.company_id.phone"/></div>
+                        <div t-if="o.company_id.email">e-mail: <span t-out="o.company_id.email"/></div>
+                    </td>
+                </tr>
+            </table>
+
+            <div class="page" style="font-size: 9px;">
+                <!-- Outer boxed form -->
+                <table style="width: 100%; border-collapse: collapse;">
+
+                    <!-- Row 1: document type / series / number / date / time -->
+                    <tr t-attf-style="{{grey}}" style="font-weight: bold; text-align: center;">
+                        <td t-attf-style="{{cell}} width: 44%;">ΕΙΔΟΣ ΠΑΡΑΣΤΑΤΙΚΟΥ</td>
+                        <td t-attf-style="{{cell}} width: 10%;">ΣΕΙΡΑ</td>
+                        <td t-attf-style="{{cell}} width: 12%;">ΑΡΙΘΜΟΣ</td>
+                        <td t-attf-style="{{cell}} width: 17%;">ΗΜΕΡΟΜΗΝΙΑ</td>
+                        <td t-attf-style="{{cell}} width: 17%;">ΩΡΑ ΑΠΟΣΤΟΛΗΣ</td>
+                    </tr>
+                    <tr style="text-align: center;">
+                        <td t-attf-style="{{cell}}" t-out="o._l10n_gr_prov_doc_title()"/>
+                        <td t-attf-style="{{cell}}" t-out="series[0]"/>
+                        <td t-attf-style="{{cell}}" t-out="series[1]"/>
+                        <td t-attf-style="{{cell}}"><span t-field="o.invoice_date"/></td>
+                        <td t-attf-style="{{cell}}">
+                            <span t-if="o.l10n_gr_prov_send_datetime" t-field="o.l10n_gr_prov_send_datetime" t-options='{"format": "HH:mm"}'/>
+                        </td>
+                    </tr>
+                </table>
+
+                <!-- Row 2: counterparty | related docs + purpose + payment -->
+                <table style="width: 100%; border-collapse: collapse;">
+                    <tr style="vertical-align: top;">
+                        <td t-attf-style="{{cell}} width: 55%; height: 34mm;">
+                            <div t-attf-style="{{grey}}" style="font-weight: bold; text-align: center; margin: -1mm -2mm 1mm -2mm; padding: 0.5mm;">ΣΤΟΙΧΕΙΑ ΣΥΜΒΑΛΛΟΜΕΝΟΥ</div>
+                            <table style="width: 100%;">
+                                <tr><td style="width: 26mm;"><strong>ΚΩΔΙΚΟΣ</strong> :</td><td t-out="partner.ref or ''"/></tr>
+                                <tr><td><strong>ΕΠΩΝΥΜΙΑ</strong> :</td><td t-out="partner.name"/></tr>
+                                <tr><td><strong>ΕΠΑΓΓΕΛΜΑ</strong> :</td><td t-out="partner.drastiriotita or ''"/></tr>
+                                <tr><td><strong>ΔΙΕΥΘΥΝΣΗ</strong> :</td><td t-out="partner.street or ''"/></tr>
+                                <tr><td><strong>ΠΟΛΗ - Τ.Κ.</strong> :</td><td t-out="' '.join(filter(None, [partner.city, partner.zip]))"/></tr>
+                                <tr><td><strong>ΤΗΛ.</strong> :</td><td t-out="partner.phone or ''"/></tr>
+                                <tr><td><strong>Α.Φ.Μ.</strong> :</td><td t-out="(partner.vat or '').replace('EL', '')"/></tr>
+                                <tr><td><strong>Δ.Ο.Υ.</strong> :</td><td t-out="partner.doy or ''"/></tr>
+                            </table>
+                        </td>
+                        <td t-attf-style="{{cell}} width: 45%; height: 34mm;">
+                            <div t-attf-style="{{grey}}" style="font-weight: bold; text-align: center; margin: -1mm -2mm 1mm -2mm; padding: 0.5mm;">ΣΧΕΤΙΚΑ ΠΑΡΑΣΤΑΤΙΚΑ</div>
+                            <div t-if="o.l10n_gr_edi_correlation_id">
+                                <span t-out="o.l10n_gr_edi_correlation_id.name"/>
+                                <t t-if="o.l10n_gr_edi_correlation_id.l10n_gr_prov_mark"> — ΜΑΡΚ <span t-out="o.l10n_gr_edi_correlation_id.l10n_gr_prov_mark"/></t>
+                            </div>
+                            <div style="margin-top: 8mm;">
+                                <strong>ΣΚΟΠΟΣ ΔΙΑΚΙΝΗΣΗΣ</strong> :
+                                <span t-if="o.l10n_gr_prov_is_dispatch and o.l10n_gr_prov_move_purpose"
+                                      t-out="dict(o._fields['l10n_gr_prov_move_purpose'].selection).get(o.l10n_gr_prov_move_purpose, '')"/>
+                            </div>
+                            <div>
+                                <strong>ΤΡΟΠΟΣ ΠΛΗΡΩΜΗΣ</strong> :
+                                <span t-out="', '.join(dict(p._fields['payment_type'].selection)[p.payment_type].split(' - ', 1)[1] for p in o.l10n_gr_prov_payment_ids)"/>
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+
+                <!-- Row 3: item table (tall fixed body) -->
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr t-attf-style="{{grey}}" style="font-weight: bold; text-align: center;">
+                            <td t-attf-style="{{cell}} width: 14%;">ΚΩΔΙΚΟΣ</td>
+                            <td t-attf-style="{{cell}} width: 30%;">ΠΕΡΙΓΡΑΦΗ</td>
+                            <td t-attf-style="{{cell}} width: 6%;">ΜΜ</td>
+                            <td t-attf-style="{{cell}} width: 9%;">ΠΟΣ.</td>
+                            <td t-attf-style="{{cell}} width: 11%;">ΤΙΜΗ ΜΟΝ.</td>
+                            <td t-attf-style="{{cell}} width: 11%;">ΑΞΙΑ</td>
+                            <td t-attf-style="{{cell}} width: 8%;">ΕΚΠΤΩΣΗ</td>
+                            <td t-attf-style="{{cell}} width: 11%;">ΑΞΙΑ ΜΕΤΑ ΕΚΠΤ.</td>
+                            <td t-attf-style="{{cell}} width: 5%;">ΦΠΑ%</td>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr t-foreach="o.invoice_line_ids.filtered(lambda l: l.display_type == 'product')" t-as="line" style="vertical-align: top;">
+                            <td t-attf-style="{{cell}}" t-out="line.product_id.default_code or ''"/>
+                            <td t-attf-style="{{cell}}" t-out="line.name or line.product_id.display_name"/>
+                            <td t-attf-style="{{cell}} text-align: center;" t-out="line.product_uom_id.name or ''"/>
+                            <td t-attf-style="{{cell}} text-align: right;" t-out="'%.3f' % line.quantity"/>
+                            <td t-attf-style="{{cell}} text-align: right;"><span t-field="line.price_unit"/></td>
+                            <td t-attf-style="{{cell}} text-align: right;" t-out="'%.2f' % (line.price_unit * line.quantity)"/>
+                            <td t-attf-style="{{cell}} text-align: right;" t-out="'%.2f' % (line.price_unit * line.quantity - line.price_subtotal)"/>
+                            <td t-attf-style="{{cell}} text-align: right; background-color: #f0f0f0; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
+                                <span t-field="line.price_subtotal" t-options="mono"/>
+                            </td>
+                            <td t-attf-style="{{cell}} text-align: right;" t-out="'%g' % (line.tax_ids[:1].amount if line.tax_ids else 0)"/>
+                        </tr>
+                        <!-- filler row so the item area stays tall like the form -->
+                        <tr style="height: 70mm;"><td t-attf-style="{{cell}}" colspan="9"/></tr>
+                    </tbody>
+                </table>
+
+                <!-- Row 4: page/notes/banks | ΑΝΑΛΥΣΗ ΦΠΑ | totals stack -->
+                <table style="width: 100%; border-collapse: collapse;">
+                    <tr style="vertical-align: top;">
+                        <td t-attf-style="{{cell}} width: 46%;">
+                            <div>Σελίδα : <span class="page"/>/<span class="topage"/></div>
+                            <div style="margin-top: 3mm;"><strong>ΠΑΡΑΤΗΡΗΣΕΙΣ:</strong></div>
+                            <div style="font-size: 8px;"><span t-if="o.narration" t-field="o.narration"/></div>
+                        </td>
+                        <td t-attf-style="{{cell}} width: 30%;">
+                            <div t-attf-style="{{grey}}" style="font-weight: bold; text-align: center; margin: -1mm -2mm 1mm -2mm; padding: 0.5mm;">ΑΝΑΛΥΣΗ ΥΠΟΛΟΓΙΣΜΟΥ ΦΠΑ</div>
+                            <table style="width: 100%; border-collapse: collapse; font-size: 8px;">
+                                <tr style="font-weight: bold; text-align: center;">
+                                    <td style="border: 1px solid #999; padding: 0.5mm;">ΚΑΘΑΡΗ ΑΞΙΑ</td>
+                                    <td style="border: 1px solid #999; padding: 0.5mm;">% Φ.Π.Α.</td>
+                                    <td style="border: 1px solid #999; padding: 0.5mm;">ΑΞΙΑ Φ.Π.Α.</td>
+                                </tr>
+                                <tr t-foreach="o._l10n_gr_prov_vat_analysis()" t-as="vr" style="text-align: right;">
+                                    <td style="border: 1px solid #999; padding: 0.5mm;" t-out="'%.2f' % vr['net']"/>
+                                    <td style="border: 1px solid #999; padding: 0.5mm; text-align: center;" t-out="'%g' % vr['rate']"/>
+                                    <td style="border: 1px solid #999; padding: 0.5mm;" t-out="'%.2f' % vr['vat']"/>
+                                </tr>
+                            </table>
+                        </td>
+                        <td t-attf-style="{{cell}} width: 24%; padding: 0;">
+                            <table style="width: 100%; border-collapse: collapse; font-size: 9px;">
+                                <tr><td style="padding: 0.5mm 2mm;">ΑΞΙΑ ΠΡΟ ΕΚΠΤ.</td><td style="padding: 0.5mm 2mm; text-align: right;" t-out="'%.2f' % tot['gross_before']"/></tr>
+                                <tr><td style="padding: 0.5mm 2mm;">ΕΚΠΤΩΣΗ</td><td style="padding: 0.5mm 2mm; text-align: right;" t-out="'%.2f' % tot['discount']"/></tr>
+                                <tr><td style="padding: 0.5mm 2mm;">ΚΑΘΑΡΗ ΑΞΙΑ</td><td style="padding: 0.5mm 2mm; text-align: right;" t-out="'%.2f' % tot['net']"/></tr>
+                                <tr><td style="padding: 0.5mm 2mm;">ΧΡΕΩΣΕΙΣ</td><td style="padding: 0.5mm 2mm; text-align: right;" t-out="'%.2f' % tot['charges']"/></tr>
+                                <tr><td style="padding: 0.5mm 2mm;">ΦΟΡΟΙ</td><td style="padding: 0.5mm 2mm; text-align: right;" t-out="'%.2f' % tot['other_taxes']"/></tr>
+                                <tr><td style="padding: 0.5mm 2mm;">Φ.Π.Α.</td><td style="padding: 0.5mm 2mm; text-align: right;" t-out="'%.2f' % tot['vat']"/></tr>
+                                <tr t-attf-style="{{grey}}" style="font-weight: bold; border-top: 1px solid #000; border-bottom: 1px solid #000;">
+                                    <td style="padding: 0.8mm 2mm;">ΤΕΛΙΚΗ ΑΞΙΑ</td><td style="padding: 0.8mm 2mm; text-align: right;" t-out="'%.2f' % tot['final']"/></tr>
+                                <tr><td style="padding: 0.5mm 2mm;">ΚΡΑΤΗΣΕΙΣ</td><td style="padding: 0.5mm 2mm; text-align: right;" t-out="'%.2f' % tot['withholding']"/></tr>
+                                <tr t-attf-style="{{grey}}" style="font-weight: bold; font-size: 11px; border-bottom: 1px solid #000;">
+                                    <td style="padding: 0.8mm 2mm;">ΠΛΗΡΩΤΕΟ</td><td style="padding: 0.8mm 2mm; text-align: right;" t-out="'%.2f' % tot['payable']"/></tr>
+                            </table>
+                        </td>
+                    </tr>
+                </table>
+
+                <!-- Row 5: signature strip -->
+                <table style="width: 100%; border-collapse: collapse; text-align: center; font-size: 8px;">
+                    <tr>
+                        <td t-attf-style="{{cell}} width: 40%; text-align: left;">ΕΝΙΑΙΟ ΜΗΧΑΝΟΓΡΑΦΙΚΟ ΕΝΤΥΠΟ ΠΟΛΛΑΠΛΗΣ ΧΡΗΣΗΣ</td>
+                        <td t-attf-style="{{cell}} width: 20%; height: 12mm; vertical-align: top;">ΕΚΔΟΣΗ</td>
+                        <td t-attf-style="{{cell}} width: 20%; vertical-align: top;">ΕΛΕΓΧΟΣ</td>
+                        <td t-attf-style="{{cell}} width: 20%; vertical-align: top;">ΠΑΡΑΛΑΒΗ</td>
+                    </tr>
+                </table>
+
+                <!-- Provider markings (below the box, like the reference) -->
+                <div style="font-size: 8px; margin-top: 1.5mm;">
+                    <t t-if="o.l10n_gr_prov_mark">
+                        <div style="word-break: break-all;"><strong>Αυθεντικοποίηση:</strong> <span t-out="o.l10n_gr_prov_verification_hash"/></div>
+                        <div style="word-break: break-all;"><strong>Αναγν. Παραστατικού:</strong> <span t-out="o.l10n_gr_prov_invoice_identifier"/> &#160; <strong>ΜΑΡΚ:</strong> <span t-out="o.l10n_gr_prov_mark"/></div>
+                    </t>
+                    <t t-elif="o.l10n_gr_prov_state in ('queued', 'offline')">
+                        <div style="font-weight: bold;">
+                            <t t-if="o.l10n_gr_prov_state == 'queued'">Σε αναμονή διαβίβασης ΑΑΔΕ</t>
+                            <t t-else="">Έκδοση εκτός σύνδεσης (TF-1) — εκκρεμεί διαβίβαση</t>
+                        </div>
+                    </t>
+                </div>
+            </div>
+
+            <!-- Repeating footer: single provider line + support -->
+            <div class="footer" style="font-size: 7px; color: #555; border-top: 1px solid #ccc; padding-top: 1mm;">
+                Ηλεκτρονική τιμολόγηση μέσω Παρόχου Υ.ΠΑ.Η.Ε.Σ. — Α.1035/2020
+            </div>
+        </div>
+    </template>
+
+    <!-- 80mm roll receipt: single-column, compact — no header/footer
+         boilerplate, since every mm is scarce on a narrow ticket. Raw
+         content, no wrapper — see the note on report_gr_invoice above. -->
+    <template id="report_gr_invoice_80mm_body">
+        <t t-set="partner" t-value="o.commercial_partner_id"/>
+        <div class="article" t-att-data-oe-model="o._name" t-att-data-oe-id="o.id">
+            <div style="width: 76mm; font-size: 9px; font-family: monospace;">
+                <div style="text-align: center;">
+                    <img t-if="o.company_id.logo" t-att-src="image_data_uri(o.company_id.logo)"
+                         style="max-height: 12mm; max-width: 40mm;" alt="Logo"/>
+                    <div style="font-weight: bold;" t-out="o.company_id.name"/>
+                    <div t-out="', '.join(filter(None, [o.company_id.street, o.company_id.city, o.company_id.zip]))"/>
+                    <div>ΑΦΜ: <span t-out="(o.company_id.vat or '').replace('EL', '')"/></div>
+                </div>
+                <div style="text-align: center; border-top: 1px dashed #000; border-bottom: 1px dashed #000; margin: 2mm 0; padding: 1mm 0;">
+                    <div style="font-weight: bold;" t-out="o._l10n_gr_prov_doc_title()"/>
+                    <div t-out="o.name"/>
+                    <div t-field="o.invoice_date"/>
+                </div>
+                <div t-if="partner and partner != o.company_id.partner_id">
+                    <div t-out="partner.name"/>
+                    <div t-if="partner.vat">ΑΦΜ: <span t-out="partner.vat.replace('EL', '')"/></div>
+                </div>
+                <table style="width: 100%; border-collapse: collapse; margin-top: 1mm;">
+                    <tr t-foreach="o.invoice_line_ids.filtered(lambda l: l.display_type == 'product')" t-as="line">
+                        <td colspan="2" style="padding-top: 1mm;" t-out="line.name or line.product_id.display_name"/>
+                    </tr>
+                    <tr t-foreach="o.invoice_line_ids.filtered(lambda l: l.display_type == 'product')" t-as="line2">
+                        <td style="text-align: left;">
+                            <span t-out="'%g' % line2.quantity"/> x
+                            <span t-field="line2.price_unit"/>
+                        </td>
+                        <td style="text-align: right;">
+                            <span t-field="line2.price_subtotal"
+                                  t-options="{'widget': 'monetary', 'display_currency': o.currency_id}"/>
+                        </td>
+                    </tr>
+                </table>
+                <table style="width: 100%; border-top: 1px dashed #000; margin-top: 2mm; padding-top: 1mm;">
+                    <tr><td>Καθαρή Αξία</td><td style="text-align: right;">
+                        <span t-field="o.amount_untaxed"
+                              t-options="{'widget': 'monetary', 'display_currency': o.currency_id}"/>
+                    </td></tr>
+                    <tr><td>ΦΠΑ</td><td style="text-align: right;">
+                        <span t-field="o.amount_tax"
+                              t-options="{'widget': 'monetary', 'display_currency': o.currency_id}"/>
+                    </td></tr>
+                    <tr t-if="o.l10n_gr_prov_other_taxes_amount">
+                        <td>Λοιποί Φόροι</td>
+                        <td style="text-align: right;" t-out="'%.2f' % o.l10n_gr_prov_other_taxes_amount"/></tr>
+                    <tr style="font-weight: bold; font-size: 11px;">
+                        <td>ΠΛΗΡΩΤΕΟ</td>
+                        <td style="text-align: right;"><span t-out="'%.2f' % o._l10n_gr_prov_payable()"/> €</td></tr>
+                </table>
+                <div style="text-align: center; margin-top: 2mm; border-top: 1px dashed #000; padding-top: 1mm;">
+                    <img t-if="o.l10n_gr_prov_qr_png"
+                         t-att-src="'data:image/png;base64,%s' % o.l10n_gr_prov_qr_png.decode()"
+                         style="width: 20mm; height: 20mm;"/>
+                    <t t-if="o.l10n_gr_prov_mark">
+                        <div>ΜΑΡΚ: <span t-out="o.l10n_gr_prov_mark"/></div>
+                    </t>
+                    <t t-elif="o.l10n_gr_prov_state in ('queued', 'offline')">
+                        <div>Σε αναμονή διαβίβασης ΑΑΔΕ</div>
+                    </t>
+                    <div>Α.1035/2020 — Πάροχος Υ.ΠΑ.Η.Ε.Σ.</div>
+                </div>
+            </div>
+        </div>
+    </template>
+
+</odoo>

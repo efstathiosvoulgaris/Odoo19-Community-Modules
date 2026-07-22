@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="res_config_settings_view_form_l10n_gr_prov_pos" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.l10n.gr.prov.pos</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="point_of_sale.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <block id="pos_accounting_section" position="inside">
+                <setting string="Πάροχος myDATA (ΑΛΠ / ΤΙΜ / ΠΛΑ)"
+                         name="l10n_gr_prov_pos_setting"
+                         help="Κάθε παραγγελία εκδίδεται στο αντίστοιχο ελληνικό ημερολόγιο και διαβιβάζεται στον πάροχο. Χωρίς ημερολόγιο ΑΛΠ το POS δουλεύει όπως το στάνταρ Odoo.">
+                    <div class="row mt16">
+                        <label string="ΑΛΠ (11.x)" for="pos_l10n_gr_prov_alp_journal_id" class="col-lg-4 o_light_label"/>
+                        <field name="pos_l10n_gr_prov_alp_journal_id"/>
+                    </div>
+                    <div class="row">
+                        <label string="ΤΙΜ (1.1)" for="pos_l10n_gr_prov_tim_journal_id" class="col-lg-4 o_light_label"/>
+                        <field name="pos_l10n_gr_prov_tim_journal_id"/>
+                    </div>
+                    <div class="row">
+                        <label string="ΠΛΠ (11.4)" for="pos_l10n_gr_prov_pla_journal_id" class="col-lg-4 o_light_label"/>
+                        <field name="pos_l10n_gr_prov_pla_journal_id"/>
+                    </div>
+                    <div class="row">
+                        <label string="Πελάτης Λιανικής" for="pos_l10n_gr_prov_walkin_partner_id" class="col-lg-4 o_light_label"/>
+                        <field name="pos_l10n_gr_prov_walkin_partner_id"/>
+                    </div>
+                </setting>
+            </block>
+        </field>
+    </record>
+
+    <record id="pos_payment_method_view_form_l10n_gr_prov" model="ir.ui.view">
+        <field name="name">pos.payment.method.form.l10n.gr.prov</field>
+        <field name="model">pos.payment.method</field>
+        <field name="inherit_id" ref="point_of_sale.pos_payment_method_view_form"/>
+        <field name="arch" type="xml">
+            <field name="journal_id" position="after">
+                <field name="l10n_gr_prov_payment_type"/>
+            </field>
+        </field>
+    </record>
+
+</odoo>

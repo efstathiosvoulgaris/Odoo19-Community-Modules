@@ -84,7 +84,7 @@ class SkroutzApiClient:
         if isinstance(tracking_codes, str):
             codes = [c.strip() for c in tracking_codes.split(',') if c.strip()]
         else:
-            codes = list(tracking_codes)
+            codes = list(tracking_codes or [])
         if fulfilled_by_skroutz:
             # FBS orders: send courier + tracking to Skroutz
             return self._request('POST', f'/merchants/ecommerce/orders/{order_code}/tracking_details', json={
@@ -479,7 +479,6 @@ class SkroutzOrder(models.Model):
             message_type='notification',
             subtype_xmlid='mail.mt_comment',
             partner_ids=partners.ids,
-            notify_by_email=False,
         )
 
 

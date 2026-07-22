@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 from odoo import fields, models
-from odoo.addons.account.models.chart_template import template
 from odoo.addons.l10n_gr_edi.models.preferred_classification import INVOICE_TYPES_SELECTION
 
 from .gr_mydata import OTHER_TAXES_CATEGORY_SELECTION
@@ -85,6 +84,10 @@ GR_JOURNALS = [
 # (isDeliveryNote=true in myDATA: ΤΔΑ = 1.1, ΠΤΔΑ = 5.1 with dispatch data).
 DELIVERY_NOTE_JOURNALS = frozenset({'gr_j_1_1_dn', 'gr_j_5_1_dn'})
 
+# Retail receipt types print on an 80mm roll by default (ΑΛΠ/ΑΠΥ + their
+# credit and third-party variants) — everything else defaults to A4.
+RETAIL_80MM_TYPES = frozenset({'11.1', '11.2', '11.3', '11.4', '11.5'})
+
 
 class AccountJournal(models.Model):
     _inherit = 'account.journal'
@@ -94,6 +97,15 @@ class AccountJournal(models.Model):
         help='Τα παραστατικά αυτού του ημερολογίου είναι και δελτία αποστολής '
              '(isDeliveryNote): αποστέλλονται με στοιχεία διακίνησης.',
     )
+
+    l10n_gr_prov_print_form = fields.Selection([
+        ('standard', 'Τυπική Odoo'),
+        ('gr_a4', 'Παραστατικό GR (A4)'),
+        ('gr_80mm', 'Απόδειξη GR (80mm)'),
+    ], string='Φόρμα Εκτύπωσης', default='gr_a4',
+        help='Ποια φόρμα χρησιμοποιεί η εκτύπωση «Παραστατικό» για τα '
+             'έγγραφα αυτού του ημερολογίου — A4 για τιμολόγια, 80mm για '
+             'αποδείξεις λιανικής σε εκτυπωτή ρολού.')
 
     l10n_gr_prov_other_taxes_default = fields.Selection(
         selection=OTHER_TAXES_CATEGORY_SELECTION,
@@ -110,23 +122,52 @@ class AccountJournal(models.Model):
              'θα παίρνουν αυτόματα αυτόν τον τύπο myDATA.',
     )
 
-    @template('gr', 'account.journal')
-    def _get_gr_account_journal(self):
-        """Greek myDATA journals — one per invoice type."""
-        return {
-            xmlid: {
-                'name': name,
-                'code': code,
-                'type': jtype,
-                'show_on_dashboard': False,
-                'l10n_gr_edi_inv_type_default': inv_type,
-                'l10n_gr_prov_delivery_note': xmlid in DELIVERY_NOTE_JOURNALS,
-            }
-            for xmlid, name, code, jtype, inv_type in GR_JOURNALS
-        }
+    # Fallback default accounts so a fresh setup never hits «Missing required
+    # account»: the accountant refines per journal/product later.
+    _GR_JOURNAL_DEFAULT_ACCOUNT = {
+        'sale': 'l10n_gr_70_01_01',       # Πωλήσεις εμπορευμάτων
+        'purchase': 'l10n_gr_64_12_02',   # Λοιπά έξοδα
+    }
+
+    # NOTE: journals are deliberately NOT declared via @template — the chart
+    # loader merges template journals onto existing ones (it grabbed the stock
+    # sale journal and rewrote its code). Creation goes exclusively through
+    # _l10n_gr_prov_create_journals (post_init hook + the settings button),
+    # which builds fresh records under our own xmlids and never touches
+    # journals it does not own.
+
+    def _l10n_gr_prov_journal_defaults(self, company):
+        """Backfill for existing companies: no refund sequences anywhere, and
+        a default income/expense account on journals that lack one."""
+        counts = {'refund_seq': 0, 'accounts': 0}
+        journals = self.search([
+            ('company_id', '=', company.id),
+            ('type', 'in', ('sale', 'purchase')),
+        ])
+        stale = journals.filtered('refund_sequence')
+        stale.write({'refund_sequence': False})
+        counts['refund_seq'] = len(stale)
+        for jtype, template_id in self._GR_JOURNAL_DEFAULT_ACCOUNT.items():
+            account = self.env.ref(
+                f'account.{company.id}_{template_id}', raise_if_not_found=False)
+            if not account:
+                continue
+            missing = journals.filtered(
+                lambda j: j.type == jtype and not j.default_account_id)
+            missing.write({'default_account_id': account.id})
+            counts['accounts'] += len(missing)
+        retail_wrong_form = journals.filtered(
+            lambda j: j.l10n_gr_edi_inv_type_default in RETAIL_80MM_TYPES
+            and j.l10n_gr_prov_print_form != 'gr_80mm')
+        retail_wrong_form.write({'l10n_gr_prov_print_form': 'gr_80mm'})
+        counts['print_forms'] = len(retail_wrong_form)
+        return counts
 
     def _l10n_gr_prov_create_journals(self, company):
-        """Create missing Greek myDATA journals for an existing company."""
+        """Create missing Greek myDATA journals for an existing company.
+        Idempotent — existing codes are skipped. Returns counts for the UI."""
+        counts = self._l10n_gr_prov_journal_defaults(company)
+        counts['created'] = 0
         for xmlid, name, code, jtype, inv_type in GR_JOURNALS:
             full_xmlid = f'l10n_gr_provider_base.{xmlid}_{company.id}'
             if self.env.ref(full_xmlid, raise_if_not_found=False):
@@ -136,10 +177,11 @@ class AccountJournal(models.Model):
                 ('company_id', '=', company.id),
             ], limit=1)
             if existing:
-                # just set the default type if missing
-                if not existing.l10n_gr_edi_inv_type_default:
-                    existing.l10n_gr_edi_inv_type_default = inv_type
+                # a foreign journal holds our code — leave it alone entirely
                 continue
+            default_account = self.env.ref(
+                f'account.{company.id}_{self._GR_JOURNAL_DEFAULT_ACCOUNT[jtype]}',
+                raise_if_not_found=False)
             # Use a temp unique alias to avoid conflicts; clear it after creation.
             temp_alias = f'gr-mydata-{code.lower()}-{company.id}'
             journal = self.with_context(mail_create_nosubscribe=True).create({
@@ -148,8 +190,12 @@ class AccountJournal(models.Model):
                 'type': jtype,
                 'company_id': company.id,
                 'show_on_dashboard': False,
+                'refund_sequence': False,
+                'default_account_id': default_account.id if default_account else False,
                 'l10n_gr_edi_inv_type_default': inv_type,
                 'l10n_gr_prov_delivery_note': xmlid in DELIVERY_NOTE_JOURNALS,
+                'l10n_gr_prov_print_form':
+                    'gr_80mm' if inv_type in RETAIL_80MM_TYPES else 'gr_a4',
                 'alias_name': temp_alias,
             })
             if journal.alias_id:
@@ -163,3 +209,5 @@ class AccountJournal(models.Model):
                 'res_id': journal.id,
                 'noupdate': True,
             })
+            counts['created'] += 1
+        return counts

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+
+    <t t-name="l10n_gr_provider_pos.OrderReceipt"
+       t-inherit="point_of_sale.OrderReceipt" t-inherit-mode="extension">
+        <xpath expr="//div[hasclass('before-footer')]" position="before">
+            <div class="pos-receipt-center-align" style="margin-top: 8px;"
+                 t-if="order.l10n_gr_prov_state">
+                <t t-if="order.l10n_gr_prov_mark">
+                    <img t-if="order.l10n_gr_prov_qr_url"
+                         t-att-src="grProvQr(order.l10n_gr_prov_qr_url)"
+                         style="width: 120px; height: 120px;"/>
+                    <div>ΜΑΡΚ: <t t-out="order.l10n_gr_prov_mark"/></div>
+                    <div t-if="order.l10n_gr_prov_verification_hash"
+                         style="font-size: 9px; word-break: break-all;">
+                        Συμβ. Αυθεντικοποίησης: <t t-out="order.l10n_gr_prov_verification_hash"/>
+                    </div>
+                    <div style="font-size: 9px;">
+                        Ηλεκτρονική τιμολόγηση μέσω Παρόχου Υ.ΠΑ.Η.Ε.Σ. — Α.1035/2020
+                    </div>
+                </t>
+                <t t-elif="order.l10n_gr_prov_state === 'queued' or order.l10n_gr_prov_state === 'offline'">
+                    <img t-if="order.l10n_gr_prov_qr_url"
+                         t-att-src="grProvQr(order.l10n_gr_prov_qr_url)"
+                         style="width: 120px; height: 120px;"/>
+                    <div>Σε αναμονή διαβίβασης ΑΑΔΕ</div>
+                    <div style="font-size: 9px;">
+                        Ηλεκτρονική τιμολόγηση μέσω Παρόχου Υ.ΠΑ.Η.Ε.Σ. — Α.1035/2020
+                    </div>
+                </t>
+                <t t-else="">
+                    <div>ΔΕΝ ΔΙΑΒΙΒΑΣΤΗΚΕ — θα επαναληφθεί αυτόματα</div>
+                </t>
+            </div>
+        </xpath>
+    </t>
+
+</templates>

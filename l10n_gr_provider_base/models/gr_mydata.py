@@ -182,8 +182,9 @@ def journal_types_for_class(cls):
     }
 
 
-VAT_CATEGORY_MAP = {24: 1, 13: 1, 6: 1, 17: 2, 9: 2, 4: 2, 0: 7}
-VAT_CATEGORY_CODE = {1: 'S', 2: 'S', 3: 'E', 4: 'AE', 5: 'G', 6: 'L', 7: 'E', 8: 'O'}
+# myDATA vatCategory codes (ERP doc §8.1): one code PER rate — NOT grouped
+# mainland/island. 1=24, 2=13, 3=6, 4=17, 5=9, 6=4, 7=0/exempt, 8=χωρίς ΦΠΑ.
+VAT_CATEGORY_MAP = {24: 1, 13: 2, 6: 3, 17: 4, 9: 5, 4: 6, 0: 7}
 
 # v2.0.1 §8.3 — article numbers per the new VAT Code (ν.5144/2024)
 VAT_EXEMPTION_CODES = [

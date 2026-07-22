@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 import base64
 import logging
-import unicodedata
 from datetime import timedelta
 from decimal import Decimal, ROUND_HALF_UP
 
@@ -16,11 +15,33 @@ from .gr_mydata import (
     partner_class, journal_types_for_class,
     INV_TYPE_ZERO_TAX, DOMESTIC_TAX_RATES, DOMESTIC_ZERO_TAX_TEMPLATES, gr_tax,
     TYPES_DISPATCH,
-    VAT_EXEMPTION_CODES, TYPES_SELF_BILLED, TYPES_POS_ONLY,
+    TYPES_SELF_BILLED, TYPES_POS_ONLY,
     TYPES_NO_VAT, valid_cls_categories,
 )
 
 _logger = logging.getLogger(__name__)
+
+# Greek legal titles per myDATA type (printed forms + POS receipts)
+GR_DOC_TITLES = {
+    '1.1': 'ΤΙΜΟΛΟΓΙΟ ΠΩΛΗΣΗΣ', '1.2': 'ΤΙΜΟΛΟΓΙΟ ΠΩΛΗΣΗΣ (ΕΝΔΟΚΟΙΝΟΤΙΚΟ)',
+    '1.3': 'ΤΙΜΟΛΟΓΙΟ ΠΩΛΗΣΗΣ (ΤΡΙΤΕΣ ΧΩΡΕΣ)', '1.4': 'ΤΙΜΟΛΟΓΙΟ ΠΩΛΗΣΗΣ',
+    '1.5': 'ΤΙΜΟΛΟΓΙΟ ΠΩΛΗΣΗΣ', '1.6': 'ΤΙΜΟΛΟΓΙΟ ΠΩΛΗΣΗΣ (ΣΥΜΠΛΗΡΩΜΑΤΙΚΟ)',
+    '2.1': 'ΤΙΜΟΛΟΓΙΟ ΠΑΡΟΧΗΣ ΥΠΗΡΕΣΙΩΝ', '2.2': 'ΤΙΜΟΛΟΓΙΟ ΠΑΡΟΧΗΣ ΥΠΗΡΕΣΙΩΝ',
+    '2.3': 'ΤΙΜΟΛΟΓΙΟ ΠΑΡΟΧΗΣ ΥΠΗΡΕΣΙΩΝ', '2.4': 'ΤΙΜΟΛΟΓΙΟ ΠΑΡΟΧΗΣ ΥΠΗΡΕΣΙΩΝ',
+    '3.1': 'ΤΙΤΛΟΣ ΚΤΗΣΗΣ', '3.2': 'ΤΙΤΛΟΣ ΚΤΗΣΗΣ',
+    '5.1': 'ΠΙΣΤΩΤΙΚΟ ΤΙΜΟΛΟΓΙΟ', '5.2': 'ΠΙΣΤΩΤΙΚΟ ΤΙΜΟΛΟΓΙΟ',
+    '6.1': 'ΣΤΟΙΧΕΙΟ ΑΥΤΟΠΑΡΑΔΟΣΗΣ', '6.2': 'ΣΤΟΙΧΕΙΟ ΙΔΙΟΧΡΗΣΙΜΟΠΟΙΗΣΗΣ',
+    '7.1': 'ΣΥΜΒΟΛΑΙΟ', '8.1': 'ΕΝΟΙΚΙΑ',
+    '8.2': 'ΕΙΔΙΚΟ ΣΤΟΙΧΕΙΟ ΤΕΛΟΥΣ ΔΙΑΜΟΝΗΣ',
+    '8.4': 'ΑΠΟΔΕΙΞΗ ΕΙΣΠΡΑΞΗΣ POS', '8.5': 'ΑΠΟΔΕΙΞΗ ΕΠΙΣΤΡΟΦΗΣ POS',
+    '8.6': 'ΔΕΛΤΙΟ ΠΑΡΑΓΓΕΛΙΑΣ ΕΣΤΙΑΣΗΣ',
+    '9.1': 'ΔΕΛΤΙΟ ΑΠΟΣΤΟΛΗΣ', '9.2': 'ΣΥΓΚΕΝΤΡΩΤΙΚΟ ΔΕΛΤΙΟ ΑΠΟΣΤΟΛΗΣ',
+    '9.3': 'ΔΕΛΤΙΟ ΑΠΟΣΤΟΛΗΣ',
+    '10.1': 'ΔΕΛΤΙΟ ΠΟΣΟΤΙΚΗΣ ΠΑΡΑΛΑΒΗΣ', '10.2': 'ΔΕΛΤΙΟ ΠΟΣΟΤΙΚΗΣ ΠΑΡΑΛΑΒΗΣ',
+    '11.1': 'ΑΠΟΔΕΙΞΗ ΛΙΑΝΙΚΗΣ ΠΩΛΗΣΗΣ', '11.2': 'ΑΠΟΔΕΙΞΗ ΠΑΡΟΧΗΣ ΥΠΗΡΕΣΙΩΝ',
+    '11.3': 'ΑΠΛΟΠΟΙΗΜΕΝΟ ΤΙΜΟΛΟΓΙΟ', '11.4': 'ΠΙΣΤΩΤΙΚΟ ΣΤΟΙΧΕΙΟ ΛΙΑΝΙΚΗΣ',
+    '11.5': 'ΑΠΟΔΕΙΞΗ ΛΙΑΝΙΚΗΣ ΠΩΛΗΣΗΣ',
+}
 
 PROVIDER_STATES = [
     ('to_send', 'To Send'),
@@ -72,6 +93,37 @@ class AccountMove(models.Model):
         help='Set when the provider recovered the marking from a prior submission '
              '(AADE error 228 handling).')
     l10n_gr_prov_pdf_uploaded = fields.Boolean(string='PDF Uploaded to Provider', copy=False)
+    # Pre-rendered QR (data-URI in the reports): generating it at print time
+    # forces wkhtmltopdf through an HTTP round-trip per page — this is the
+    # main reason the legacy injected footer took ~10s.
+    l10n_gr_prov_qr_png = fields.Binary(
+        compute='_compute_l10n_gr_prov_qr_png', store=True, copy=False,
+        string='Provider QR (PNG)')
+
+    @api.depends('l10n_gr_prov_qr_url')
+    def _compute_l10n_gr_prov_qr_png(self):
+        report = self.env['ir.actions.report']
+        for move in self:
+            url = move.l10n_gr_prov_qr_url
+            move.l10n_gr_prov_qr_png = base64.b64encode(report.barcode(
+                'QR', url, width=240, height=240)) if url else False
+
+    def _l10n_gr_prov_doc_title(self):
+        """Greek legal title of the document, from the effective myDATA type."""
+        self.ensure_one()
+        inv_type = (self.l10n_gr_edi_inv_type
+                    or self.journal_id.l10n_gr_edi_inv_type_default)
+        return GR_DOC_TITLES.get(inv_type) or (
+            'ΠΙΣΤΩΤΙΚΟ ΤΙΜΟΛΟΓΙΟ' if self.move_type == 'out_refund'
+            else 'ΤΙΜΟΛΟΓΙΟ')
+
+    def _l10n_gr_prov_doc_is_service(self):
+        """True for service-type documents (ΤΠΥ, rents, contracts...): the
+        print form skips the shipping box for these — nothing is shipped."""
+        self.ensure_one()
+        inv_type = (self.l10n_gr_edi_inv_type
+                    or self.journal_id.l10n_gr_edi_inv_type_default or '')
+        return inv_type.startswith('2.') or inv_type in ('7.1', '8.1', '8.2', '11.2')
 
     # ── B2G (Peppol) ──────────────────────────────────────────────────────────
     l10n_gr_prov_b2g = fields.Boolean(
@@ -784,41 +836,19 @@ class AccountMove(models.Model):
             except Exception as e:
                 _logger.warning('B2G status poll failed for %s: %s', move.name, e)
 
-    # ── Report helpers (custom Greek PDF) ─────────────────────────────────────
+    # ── Report helpers ──────────────────────────────────────────────────────
     def _get_name_invoice_report(self):
+        """Route the standard Print button through the same per-journal form
+        as the «Παραστατικό» action: gr_a4/gr_80mm use the new box-grid
+        reports, standard keeps the vanilla Odoo layout (with just the QR/
+        MARK footer injected)."""
         self.ensure_one()
-        if self.l10n_gr_prov_applicable and self.journal_id.l10n_gr_edi_inv_type_default:
-            return 'l10n_gr_provider_base.report_invoice_document_gr'
+        form = self.journal_id.l10n_gr_prov_print_form
+        if self.l10n_gr_prov_applicable and form == 'gr_a4':
+            return 'l10n_gr_provider_base.report_gr_invoice_document'
+        if self.l10n_gr_prov_applicable and form == 'gr_80mm':
+            return 'l10n_gr_provider_base.report_gr_invoice_80mm'
         return super()._get_name_invoice_report()
-
-    def _l10n_gr_prov_report_title(self):
-        """Greek document title, e.g. 'ΤΙΜΟΛΟΓΙΟ ΠΩΛΗΣΗΣ' (caps drop the τόνοι)."""
-        self.ensure_one()
-        name = (self.journal_id.name or 'ΠΑΡΑΣΤΑΤΙΚΟ').upper()
-        return ''.join(c for c in unicodedata.normalize('NFD', name)
-                       if not unicodedata.combining(c))
-
-    def _l10n_gr_prov_vat_analysis(self):
-        """Per-rate VAT buckets: [{'rate', 'net', 'vat', 'gross', 'exemption'}]."""
-        self.ensure_one()
-        buckets = {}
-        for line in self.invoice_line_ids.filtered(
-                lambda l: l.display_type == 'product'):
-            tax = line.tax_ids[:1]
-            rate = tax.amount if tax else 0.0
-            exemption = line.l10n_gr_prov_vat_exemption if not rate else False
-            bucket = buckets.setdefault((rate, exemption), [0.0, 0.0])
-            bucket[0] += line.price_subtotal
-            bucket[1] += line.price_total - line.price_subtotal
-        labels = dict(VAT_EXEMPTION_CODES)
-        return [{
-            'rate': rate,
-            'net': round(net, 2),
-            'vat': round(vat, 2),
-            'gross': round(net + vat, 2),
-            'exemption': labels.get(exemption, '') if exemption else '',
-        } for (rate, exemption), (net, vat)
-          in sorted(buckets.items(), key=lambda kv: -kv[0][0])]
 
     def _l10n_gr_prov_qr_image(self):
         self.ensure_one()
@@ -827,3 +857,58 @@ class AccountMove(models.Model):
         barcode = self.env['ir.actions.report'].barcode(
             'QR', self.l10n_gr_prov_qr_url, width=120, height=120)
         return base64.b64encode(barcode).decode()
+
+    def _l10n_gr_prov_report_series_serial(self):
+        """(ΣΕΙΡΑ, ΑΡΙΘΜΟΣ) for the printed form — split the sequence name."""
+        self.ensure_one()
+        parts = (self.name or '').split('/')
+        if len(parts) > 1:
+            return '/'.join(parts[:-1]), parts[-1]
+        return self.journal_id.code or '', (self.name or '')
+
+    def _l10n_gr_prov_vat_analysis(self):
+        """Per-rate VAT buckets for the ΑΝΑΛΥΣΗ ΥΠΟΛΟΓΙΣΜΟΥ ΦΠΑ table:
+        [{'rate', 'net', 'vat'}], highest rate first."""
+        self.ensure_one()
+        buckets = {}
+        for line in self.invoice_line_ids.filtered(
+                lambda l: l.display_type == 'product'):
+            tax = line.tax_ids[:1]
+            rate = tax.amount if tax else 0.0
+            b = buckets.setdefault(rate, [0.0, 0.0])
+            b[0] += line.price_subtotal
+            b[1] += line.price_total - line.price_subtotal
+        return [{'rate': rate, 'net': round(net, 2), 'vat': round(vat, 2)}
+                for rate, (net, vat) in sorted(buckets.items(), key=lambda kv: -kv[0])]
+
+    def _l10n_gr_prov_report_totals(self):
+        """The right-hand totals stack of the ΕΝΙΑΙΟ form."""
+        self.ensure_one()
+        # Pre-discount NET per line. price_unit × quantity is wrong for
+        # tax-included pricing (it contains the VAT) — reconstruct from the
+        # discounted net instead; at 100% discount the subtotal is 0, so fall
+        # back to price_unit × quantity (only inflated on tax-included lines).
+        gross_before = 0.0
+        for l in self.invoice_line_ids.filtered(lambda l: l.display_type == 'product'):
+            if l.discount and l.discount < 100:
+                gross_before += l.price_subtotal / (1 - l.discount / 100.0)
+            elif l.discount:
+                gross_before += l.price_unit * l.quantity
+            else:
+                gross_before += l.price_subtotal
+        discount = round(gross_before - self.amount_untaxed, 2)
+        charges = round((self.l10n_gr_prov_fees_amount or 0.0)
+                        + (self.l10n_gr_prov_stamp_duty_amount or 0.0), 2)
+        other_taxes = round(self.l10n_gr_prov_other_taxes_amount or 0.0, 2)
+        withholding = round(self.l10n_gr_prov_withholding_amount or 0.0, 2)
+        return {
+            'gross_before': round(gross_before, 2),
+            'discount': discount,
+            'net': round(self.amount_untaxed, 2),
+            'charges': charges,
+            'other_taxes': other_taxes,
+            'vat': round(self.amount_tax, 2),
+            'final': round(self.amount_untaxed + charges + other_taxes + self.amount_tax, 2),
+            'withholding': withholding,
+            'payable': self._l10n_gr_prov_payable(),
+        }

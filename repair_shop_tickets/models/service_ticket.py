@@ -163,7 +163,7 @@ class ServiceTicket(models.Model):
                 active_id=picking.id,
                 active_model='stock.picking',
             ).create({})
-            return_wizard._create_returns()
+            return_wizard._create_return()
 
         self.stock_consumed = False
 

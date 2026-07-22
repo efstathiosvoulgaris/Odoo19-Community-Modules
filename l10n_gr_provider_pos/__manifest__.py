@@ -1,0 +1,50 @@
+# -*- coding: utf-8 -*-
+{
+    'name': 'Greece - E-Invoicing Provider (Point of Sale)',
+    'version': '1.0',
+    'category': 'Accounting/Localizations',
+    'summary': 'POS receipts (ΑΛΠ) and invoices (ΤΙΜ) through the e-invoicing provider',
+    'description': (
+        'Issues every Point of Sale order through the licensed e-invoicing\n'
+        'provider (Υ.ΠΑ.Η.Ε.Σ.), riding the existing provider workflow.\n'
+        '\n'
+        'Every validated POS order becomes a posted invoice on the proper\n'
+        'Greek journal and is transmitted synchronously:\n'
+        '\n'
+        '- ΑΛΠ (11.1) by default — with the selected client as partner, or\n'
+        '  the walk-in retail partner when none is selected.\n'
+        '- ΤΙΜ (1.1) when the cashier explicitly requests an invoice.\n'
+        '- ΠΛΑ (11.4) for refunds of retail receipts.\n'
+        '\n'
+        'The printed receipt carries the legal markings (MARK,\n'
+        'authentication code, provider QR) or the TF-2/TF-1 fallback notice;\n'
+        'a failed transmission never blocks the sale — the document lands in\n'
+        'the provider retry queue and the receipt says so.\n'
+        '\n'
+        'POS payment methods map to myDATA payment types (§8.12).\n'
+        '\n'
+        'Changelog\n'
+        '---------\n'
+        '1.0 — Phase A: ΑΛΠ/ΤΙΜ/ΠΛΑ issuance, synchronous send, receipt\n'
+        'markings, payment type mapping. (Phase B: Α.1155 EFT signatures in\n'
+        'the payment screen.)'
+    ),
+    'author': 'Efstathios Voulgaris',
+    'support': 'efstathiosvoulgaris@gmail.com',
+    'license': 'LGPL-3',
+    'depends': [
+        'point_of_sale',
+        'l10n_gr_provider_base',
+        'l10n_gr_provider_ilyda',
+    ],
+    'data': [
+        'views/pos_views.xml',
+    ],
+    'assets': {
+        'point_of_sale._assets_pos': [
+            'l10n_gr_provider_pos/static/src/**/*',
+        ],
+    },
+    'installable': True,
+    'auto_install': False,
+}

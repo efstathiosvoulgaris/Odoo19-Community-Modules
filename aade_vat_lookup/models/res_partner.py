@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import logging
 import re
+from xml.sax.saxutils import escape
 
 import requests
 from lxml import etree
@@ -32,6 +33,8 @@ LEGAL_FORM_MAP = [
 
 
 def _build_soap_request(username, password, afm):
+    # credentials are user input — escape them so &, < etc. can't break the XML
+    username, password, afm = escape(username), escape(password), escape(afm)
     return f"""<?xml version="1.0" encoding="UTF-8"?>
 <env:Envelope xmlns:env="http://www.w3.org/2003/05/soap-envelope"
               xmlns:wsse="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd"

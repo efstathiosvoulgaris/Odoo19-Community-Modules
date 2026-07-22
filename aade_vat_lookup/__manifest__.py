@@ -44,7 +44,7 @@ Changelog
 ---------
 * 1.0 — Initial public release.
 """,
-    "version": "1.0",
+    "version": "1.1",
     "author": "Efstathios Voulgaris",
     "publisher": "Efstathios Voulgaris",
     "category": "Localization/Greece",
