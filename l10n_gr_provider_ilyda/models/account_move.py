@@ -487,9 +487,11 @@ class AccountMove(models.Model):
         """
         self.ensure_one()
         if self.move_type == 'out_refund':
-            # retail refunds (ΠΛΑ journal) are 11.4, not a 5.x credit note
-            if self.journal_id.l10n_gr_edi_inv_type_default == '11.4':
-                return '11.4'
+            # Retail refunds (ΠΛΑ journal) are 11.4 and POS card refunds (ΠΟΣΕ)
+            # are 8.5 — neither is a 5.x credit note.
+            journal_default = self.journal_id.l10n_gr_edi_inv_type_default
+            if journal_default in ('11.4', '8.5'):
+                return journal_default
             return '5.1' if self.reversed_entry_id else '5.2'
         return self.journal_id.l10n_gr_edi_inv_type_default or self.l10n_gr_edi_inv_type
 

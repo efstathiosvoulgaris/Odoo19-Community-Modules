@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Greece - E-Invoicing Provider (EFT/POS Α.1155)',
-    'version': '1.0',
+    'version': '1.1',
     'category': 'Accounting/Localizations',
     'summary': 'Card-terminal payment signatures per Α.1155/2023 through the e-invoicing provider',
     'description': (
@@ -40,6 +40,7 @@
     'data': [
         'security/ir.model.access.csv',
         'views/eft_views.xml',
+        'views/pos_receipt_wizard_views.xml',
     ],
     'installable': True,
     'auto_install': False,

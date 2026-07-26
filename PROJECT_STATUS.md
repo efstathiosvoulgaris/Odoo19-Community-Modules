@@ -103,6 +103,15 @@ second provider would only need a new driver module.
    unit — only the mapping and a button to stamp it are missing.
 
 ### Open, not yet scheduled
+
+0. **8.6 Δελτίο Παραγγελίας Εστίασης — modelled but not issuable.** The type is
+   fully supported on the transmission side (ΑΑ Τραπεζιού field, `tableAA`,
+   validation, classification, kitchen receipts in `pos_community_addons`) and
+   the ΔΠΕ journal exists, but no flow creates one: `TYPES_POS_ONLY` hides it
+   from the invoice journal picker and the restaurant POS doesn't issue it.
+   Kept deliberately for restaurant clients — issuing order notes from the
+   restaurant flow is the remaining piece. (8.4/8.5 had the same gap and were
+   built out in eftpos 1.1.)
 3. **No automated tests.** `gr_mydata._demo()` is a good self-check but is not
    wired into Odoo's test runner. Nothing guards the classification map,
    `partner_class`, payment grouping or the UID algorithm against a future edit.

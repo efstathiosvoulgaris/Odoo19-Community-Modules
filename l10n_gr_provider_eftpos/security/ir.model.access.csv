@@ -3,3 +3,4 @@ access_eft_terminal_user,eft.terminal.user,model_l10n_gr_prov_eft_terminal,base.
 access_eft_terminal_manager,eft.terminal.manager,model_l10n_gr_prov_eft_terminal,account.group_account_manager,1,1,1,1
 access_eft_payment_user,eft.payment.user,model_l10n_gr_prov_eft_payment,account.group_account_invoice,1,1,1,1
 access_eft_payment_read,eft.payment.read,model_l10n_gr_prov_eft_payment,base.group_user,1,0,0,0
+access_pos_receipt_wizard,pos.receipt.wizard,model_l10n_gr_prov_pos_receipt_wizard,account.group_account_invoice,1,1,1,1

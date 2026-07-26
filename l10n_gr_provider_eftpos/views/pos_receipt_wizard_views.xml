@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_pos_receipt_wizard_form" model="ir.ui.view">
+        <field name="name">l10n.gr.prov.pos.receipt.wizard.form</field>
+        <field name="model">l10n.gr.prov.pos.receipt.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Είσπραξη με Κάρτα">
+                <div class="alert alert-info" role="status">
+                    Για είσπραξη ή επιστροφή με κάρτα χωρίς παραστατικό πώλησης
+                    (προκαταβολή, εξόφληση παλαιότερου τιμολογίου στο ταμείο).
+                    Εκδίδεται 8.4/8.5 με έναν και μόνο τρόπο πληρωμής POS,
+                    υπογεγραμμένο κατά Α.1155.
+                </div>
+                <group>
+                    <group>
+                        <field name="doc_type" widget="radio"/>
+                        <field name="partner_id"/>
+                        <field name="amount"/>
+                    </group>
+                    <group>
+                        <field name="terminal_id"/>
+                        <field name="reason"/>
+                        <field name="company_id" invisible="1"/>
+                        <field name="currency_id" invisible="1"/>
+                    </group>
+                </group>
+                <footer>
+                    <button name="action_create_and_charge" type="object"
+                            string="Έκδοση &amp; Χρέωση Κάρτας" class="btn-primary"/>
+                    <button string="Άκυρο" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_pos_receipt_wizard" model="ir.actions.act_window">
+        <field name="name">Είσπραξη με Κάρτα (8.4/8.5)</field>
+        <field name="res_model">l10n.gr.prov.pos.receipt.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <menuitem id="menu_pos_receipt_wizard"
+              name="Είσπραξη με Κάρτα (8.4/8.5)"
+              parent="l10n_gr_provider_base.menu_l10n_gr_prov_root"
+              action="action_pos_receipt_wizard"
+              sequence="8"/>
+
+</odoo>
