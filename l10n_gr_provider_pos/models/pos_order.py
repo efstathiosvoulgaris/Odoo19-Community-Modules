@@ -81,7 +81,32 @@ class PosOrder(models.Model):
             if not self.partner_id:
                 vals['partner_id'] = \
                     self.config_id._l10n_gr_prov_get_walkin_partner().id
+            # Set the real myDATA payment methods HERE, before the invoice is
+            # posted and transmitted. Core _generate_pos_order_invoice posts and
+            # sends the document inside itself, i.e. before _l10n_gr_prov_pos_send
+            # runs — so applying them afterwards was too late (the doc reached
+            # the provider with the seed method 1).
+            vals['l10n_gr_prov_payment_ids'] = self._l10n_gr_prov_pos_payment_vals()
         return vals
+
+    def _l10n_gr_prov_pos_payment_vals(self):
+        """POS payments → myDATA payment lines, one per AADE code.
+
+        Amounts are grouped by the method's myDATA type and summed, so cash
+        change (recorded by POS as a negative return line) nets out naturally.
+        Refund orders carry negative amounts; the sign is flipped so the
+        credit note's methods stay positive."""
+        self.ensure_one()
+        sign = -1.0 if self.amount_total < 0.0 else 1.0
+        by_type = {}
+        for p in self.payment_ids:
+            ptype = p.payment_method_id._l10n_gr_prov_mydata_type()
+            by_type[ptype] = by_type.get(ptype, 0.0) + sign * p.amount
+        return [
+            (0, 0, {'payment_type': ptype, 'amount': round(amount, 2)})
+            for ptype, amount in by_type.items()
+            if round(amount, 2) > 0
+        ]
 
     def _get_invoice_lines_values(self, line_values, pos_line, move_type):
         """Invoice lines are created directly (no onchange path) — derive the
@@ -102,33 +127,16 @@ class PosOrder(models.Model):
         return vals
 
     def _l10n_gr_prov_pos_send(self):
-        """Real payment methods onto the move, then synchronous send. Any
-        failure is swallowed: the receipt shows the pending notice and the
-        provider cron retries."""
+        """Transmit the invoice if core's _generate_pos_order_invoice didn't
+        already (it sends inside itself when generate_pdf is on). Payment
+        methods are set at invoice creation (_prepare_invoice_vals), so there
+        is nothing to fix up here. Any failure is swallowed: the receipt shows
+        the pending notice and the provider cron retries."""
         self.ensure_one()
         move = self.account_move
         if not move.l10n_gr_prov_applicable or move.l10n_gr_prov_mark:
             return
         try:
-            # refund orders carry negative payment amounts — normalize the
-            # sign so their real methods survive (the credit note is positive)
-            sign = -1.0 if self.amount_total < 0.0 else 1.0
-            payments = [{
-                'payment_type':
-                    p.payment_method_id.l10n_gr_prov_payment_type or '3',
-                'amount': sign * p.amount,
-            } for p in self.payment_ids if sign * p.amount > 0]
-            # cash change: the tendered amount exceeds the payable — deduct
-            # the difference from the largest cash-type payment
-            payable = move._l10n_gr_prov_payable()
-            excess = round(sum(p['amount'] for p in payments) - abs(payable), 2)
-            if excess > 0:
-                cash = max((p for p in payments if p['payment_type'] == '3'),
-                           key=lambda p: p['amount'], default=None)
-                if cash:
-                    cash['amount'] = round(cash['amount'] - excess, 2)
-            move.l10n_gr_prov_payment_ids.unlink()
-            move.l10n_gr_prov_payment_ids = [(0, 0, p) for p in payments]
             move._l10n_gr_prov_try_send()
         except Exception:
             _logger.exception(

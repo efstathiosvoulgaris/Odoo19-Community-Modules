@@ -2,6 +2,8 @@
 from odoo import api, fields, models, _
 from odoo.exceptions import UserError
 
+from .pos_payment_method import GR_POS_PAYMENT_METHODS
+
 
 class PosConfig(models.Model):
     _inherit = 'pos.config'
@@ -49,3 +51,16 @@ class ResConfigSettings(models.TransientModel):
         related='pos_config_id.l10n_gr_prov_pla_journal_id', readonly=False)
     pos_l10n_gr_prov_walkin_partner_id = fields.Many2one(
         related='pos_config_id.l10n_gr_prov_walkin_partner_id', readonly=False)
+
+    def action_l10n_gr_prov_tidy_taxes(self):
+        """Also create the Greek POS payment methods Odoo doesn't ship (IRIS,
+        Web Banking, Επιταγή, τραπεζικές μεταφορές), each carrying its AADE
+        §8.12 code."""
+        res = super().action_l10n_gr_prov_tidy_taxes()
+        created = self.env['pos.payment.method'] \
+            ._l10n_gr_prov_create_pos_payment_methods(self.company_id)
+        res['params']['message'] += _(
+            ' %(created)s νέοι τρόποι πληρωμής POS (από %(total)s ελληνικούς) — '
+            'ενεργοποιήστε όσους θέλετε ανά ταμείο.',
+            created=created, total=len(GR_POS_PAYMENT_METHODS))
+        return res

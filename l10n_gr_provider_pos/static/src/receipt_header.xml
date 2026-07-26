@@ -10,6 +10,11 @@
                 <div t-out="order.l10n_gr_prov_doc_name"/>
             </div>
         </xpath>
+        <!-- The GR document number IS the ticket reference — drop the default
+             «VAT Ticket <pos_reference>» line on provider-issued orders. -->
+        <xpath expr="//span[hasclass('pos-receipt-vat')]" position="attributes">
+            <attribute name="t-if">!order.l10n_gr_prov_doc_name</attribute>
+        </xpath>
     </t>
 
 </templates>

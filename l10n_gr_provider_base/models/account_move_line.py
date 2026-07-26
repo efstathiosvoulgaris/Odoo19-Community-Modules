@@ -162,3 +162,31 @@ class AccountMoveLine(models.Model):
             if cat:
                 line.l10n_gr_prov_cls_category = cat
                 line.l10n_gr_prov_cls_type = e3
+
+    def _l10n_gr_prov_lot_names(self):
+        """SN/LN delivered against this invoice line, via its sale order lines.
+        Empty when sale/stock are not installed (no sale_line_ids field)."""
+        self.ensure_one()
+        if 'sale_line_ids' not in self._fields:
+            return []
+        move_lines = self.sale_line_ids.move_ids.move_line_ids.filtered(
+            lambda sml: sml.state == 'done' and sml.lot_id
+            and sml._should_show_lot_in_invoice())
+        return sorted(set(move_lines.mapped('lot_id.name')))
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        """Lines created outside the form onchange path (sale order invoicing,
+        imports, API) never receive the myDATA defaults — derive them here.
+        Lines that already carry a classification (form UI, POS) are left
+        untouched."""
+        lines = super().create(vals_list)
+        todo = lines.filtered(
+            lambda l: l.display_type == 'product' and l.product_id
+            and not l.l10n_gr_prov_cls_category
+            and l.company_id.country_code == 'GR'
+            and l._l10n_gr_prov_inv_type())
+        if todo:
+            todo._onchange_l10n_gr_prov_cls_from_product()
+            todo._onchange_l10n_gr_prov_zero_tax()
+        return lines
