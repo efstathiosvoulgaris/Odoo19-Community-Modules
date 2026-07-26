@@ -118,6 +118,16 @@ second provider would only need a new driver module.
 8. **Purchase-side transmission** (13.x/14.x expense classifications) still goes
    through the core `l10n_gr_edi` ERP channel, by design. Revisit only if the
    provider should own that too.
+9. **Type 1.5 (Εκκαθάριση Πωλήσεων Τρίτων) — partially supported.** The
+   Επισήμανση (§8.15) is modelled on the line, transmitted as
+   `invoiceDetailType`, and validated (a 1.5 needs both a «1» sales line and a
+   «2» commission line). What is unresolved is the totals rule: ILYDA computes
+   the AADE totals from the commission lines only and then rejects the document
+   because the EN16931 totals cover every line (`BG-22-MISMATCH`). The likely
+   fix — EN16931 lines/totals = commission only, `aadeData` keeps both row
+   types, mirroring the 8.2 precedent — was deferred: no 1.5 example exists in
+   the bundle, the spec doesn't state the rule, and the business doesn't issue
+   these documents. Get a sample payload from ILYDA before implementing.
 
 ---
 

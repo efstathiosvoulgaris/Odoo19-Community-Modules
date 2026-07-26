@@ -23,6 +23,20 @@ class AccountMoveLine(models.Model):
         copy=True,
         help='myDATA E3 classification type for this line.',
     )
+    # §8.15 Επισήμανση — mandatory on 1.5 (Εκκαθάριση Πωλήσεων Τρίτων), which
+    # must carry both kinds of line: the third-party sales being cleared and
+    # the agent's commission on them (MDP-0083/0084).
+    l10n_gr_prov_detail_type = fields.Selection(
+        selection=[
+            ('1', '1 - Εκκαθάριση Πωλήσεων Τρίτων'),
+            ('2', '2 - Αμοιβή από Πωλήσεις Τρίτων'),
+        ],
+        string='Επισήμανση Γραμμής',
+        copy=True,
+        help='Υποχρεωτικό για Εκκαθάριση Πωλήσεων Τρίτων (1.5): κάθε γραμμή '
+             'δηλώνεται είτε ως αξία πωλήσεων τρίτων (1) είτε ως αμοιβή του '
+             'εκκαθαριστή (2). Το παραστατικό απαιτεί τουλάχιστον μία από κάθε είδος.',
+    )
     l10n_gr_prov_vat_exemption = fields.Selection(
         selection=VAT_EXEMPTION_CODES,
         string='Αιτία Απαλλαγής ΦΠΑ',
@@ -162,6 +176,18 @@ class AccountMoveLine(models.Model):
             if cat:
                 line.l10n_gr_prov_cls_category = cat
                 line.l10n_gr_prov_cls_type = e3
+
+    def _l10n_gr_prov_measurement_unit(self):
+        """(AADE §8.13 code, title) for this line's unit of measure.
+
+        An unmapped unit is transmitted as 7 (Λοιπές Περιπτώσεις) carrying its
+        real name, which AADE requires alongside the code."""
+        self.ensure_one()
+        uom = self.product_uom_id
+        code = uom.l10n_gr_prov_measurement_unit
+        if code:
+            return int(code), None
+        return 7, (uom.name or '')[:50]
 
     def _l10n_gr_prov_lot_names(self):
         """SN/LN delivered against this invoice line, via its sale order lines.

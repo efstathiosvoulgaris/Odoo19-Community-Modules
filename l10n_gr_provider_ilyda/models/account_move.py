@@ -579,6 +579,22 @@ class AccountMove(models.Model):
                     'Το Ειδικό Στοιχείο (8.2) συσχετίζεται με το παραστατικό '
                     'διαμονής (ΑΛΠ/ΤΠΥ με MARK) — επιλέξτε το στο πεδίο '
                     '«Correlated Invoice».'))
+        # 1.5 Εκκαθάριση Πωλήσεων Τρίτων: every line carries an Επισήμανση and
+        # the document needs both kinds — the cleared third-party sales (1) and
+        # the agent's commission (2). AADE MDP-0083 / MDP-0084.
+        if inv_type == '1.5':
+            marks = {l.l10n_gr_prov_detail_type for l in lines}
+            if None in marks or False in marks:
+                errors.append(_(
+                    'Εκκαθάριση Πωλήσεων Τρίτων (1.5): κάθε γραμμή χρειάζεται '
+                    'Επισήμανση (1 Εκκαθάριση Πωλήσεων Τρίτων ή 2 Αμοιβή από '
+                    'Πωλήσεις Τρίτων) — συμπληρώστε τη στήλη «Επισήμανση».'))
+            elif not {'1', '2'} <= marks:
+                errors.append(_(
+                    'Εκκαθάριση Πωλήσεων Τρίτων (1.5): απαιτείται τουλάχιστον '
+                    'μία γραμμή με Επισήμανση 1 (αξία πωλήσεων τρίτων) και μία '
+                    'με Επισήμανση 2 (αμοιβή εκκαθαριστή).'))
+
         # Dispatch types (9.x/10.x) classify with category3 only; associate
         # types (1.6/2.4 — CLASSIFICATION_MAP sentinel, no valid categories)
         # inherit their classification from the correlated invoice.
@@ -610,8 +626,10 @@ class AccountMove(models.Model):
                         '(set on the line in the invoice).', line_label))
         # Counterpart required for B2B types (and self-billed 3.1/3.2, whose
         # counterpart is the individual's ΑΦΜ); forbidden for retail/no-VAT types
+        # 9.2 is exempt: it is transmitted with the generic ΑΦΜ 000000000.
         if ((self.is_sale_document() or inv_type in TYPES_SELF_BILLED)
                 and inv_type not in TYPES_NO_BUYER
+                and inv_type != '9.2'
                 and not self.commercial_partner_id.vat):
             errors.append(_(
                 'Invoice type %s requires a counterpart with a VAT/ΑΦΜ number '
@@ -770,12 +788,22 @@ class AccountMove(models.Model):
             }
             if exemption:
                 row_type['vatExemptionCategory'] = int(exemption)
+            # §8.15 Επισήμανση — mandatory on 1.5 (MDP-0083)
+            if line.l10n_gr_prov_detail_type:
+                row_type['invoiceDetailType'] = int(line.l10n_gr_prov_detail_type)
             # dispatch rows AND restaurant order notes (8.6) need item
             # description/quantity/unit — also on combined invoice+ΔΑ documents
             if is_dispatch_type or is_delivery_note or inv_type == '8.6':
                 row_type['itemDescr'] = (line.product_id.name or line.name or '')[:200]
                 row_type['quantity'] = line.quantity
-                row_type['measurementUnit'] = 1  # ponytail: no UoM mapping yet
+                unit_code, unit_title = line._l10n_gr_prov_measurement_unit()
+                row_type['measurementUnit'] = unit_code
+                if unit_code == 7:
+                    # §8.13 note 9: code 7 must carry the real unit name and
+                    # the count it corresponds to.
+                    row_type['otherMeasurementUnitTitle'] = unit_title
+                    row_type['otherMeasurementUnitQuantity'] = max(
+                        int(line.quantity or 0), 1)
             # myDATA requires document- and row-level classification to match
             # (MDP-0004/0006). 3.1/3.2 forbid row-level *income* (MDP-0040), but
             # their expense classification must be present at the row too.
@@ -994,9 +1022,15 @@ class AccountMove(models.Model):
 
         # ── Buyer (B2B/B2G only; retail stays anonymous) ─────────────────────
         buyer = None
-        if partner.vat and inv_type not in TYPES_NO_BUYER:
+        # 9.2 Συγκεντρωτικό Δελτίο Αποστολής covers several deliveries at once,
+        # so it has no single counterparty: AADE demands the generic ΑΦΜ
+        # 000000000 (error 289 / MDP-0104) and the block is sent even when the
+        # partner has no VAT of its own.
+        is_aggregate_dn = inv_type == '9.2'
+        if (partner.vat or is_aggregate_dn) and inv_type not in TYPES_NO_BUYER:
             buyer = {
-                'buyerVatIdentifier': self._ilyda_vat(partner.vat),
+                'buyerVatIdentifier':
+                    '000000000' if is_aggregate_dn else self._ilyda_vat(partner.vat),
                 'buyerName': partner.name,
                 'buyerTradingName': partner.name,
                 'buyerBranch': partner.l10n_gr_edi_branch_number or 0,

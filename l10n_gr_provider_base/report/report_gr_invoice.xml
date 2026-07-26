@@ -47,6 +47,10 @@
         <field name="report_name">l10n_gr_provider_base.report_gr_invoice</field>
         <field name="report_file">l10n_gr_provider_base.report_gr_invoice</field>
         <field name="print_report_name">object.name</field>
+        <!-- Bind the GR A4 format explicitly: without it a fresh database falls
+             back to the company's default paperformat. Per-document routing
+             (A4 vs 80mm) still happens in ir_actions_report.get_paperformat(). -->
+        <field name="paperformat_id" ref="paperformat_gr_a4"/>
         <field name="binding_model_id" ref="account.model_account_move"/>
         <field name="binding_type">report</field>
     </record>

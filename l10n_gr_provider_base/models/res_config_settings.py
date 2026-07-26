@@ -69,6 +69,8 @@ class ResConfigSettings(models.TransientModel):
         # loaded before this module) — idempotent
         journal_counts = self.env['account.journal'] \
             ._l10n_gr_prov_create_journals(company)
+        # AADE §8.13 codes on the standard Odoo units (dispatch documents)
+        units = self.env['uom.uom']._l10n_gr_prov_map_units()
         return {
             'type': 'ir.actions.client',
             'tag': 'display_notification',
@@ -81,8 +83,9 @@ class ResConfigSettings(models.TransientModel):
                     '%(created)s νέα ημερολόγια, %(refund_seq)s ημερολόγια '
                     'χωρίς πλέον ακολουθία πιστωτικών (R), %(accounts)s '
                     'προεπιλεγμένοι λογαριασμοί ημερολογίων, %(print_forms)s '
-                    'ημερολόγια λιανικής σε φόρμα 80mm.',
+                    'ημερολόγια λιανικής σε φόρμα 80mm, %(units)s μονάδες '
+                    'μέτρησης με κωδικό ΑΑΔΕ.',
                     renamed=renamed, activated=activated, archived=archived,
-                    fp_fixed=fp_fixed, **journal_counts),
+                    fp_fixed=fp_fixed, units=units, **journal_counts),
             },
         }

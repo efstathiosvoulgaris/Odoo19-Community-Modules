@@ -55,6 +55,11 @@ PROVIDER_STATES = [
     ('offline', 'Offline QR (προς διαβίβαση)'),
     ('sent', 'Issued (Marked)'),
     ('error', 'Error'),
+    # The issue date has passed: AADE refuses the document (ER-30, the issue
+    # date must be the current day), so retrying can never succeed. The cron
+    # stops touching it; the manual «Send to Provider» button still works once
+    # the underlying problem is fixed.
+    ('abandoned', 'Abandoned (issue date passed)'),
 ]
 
 
@@ -792,6 +797,24 @@ class AccountMove(models.Model):
         Each record is processed in its own savepoint so a single failure
         does not roll back the entire batch.
         """
+        # 0. Give up on documents whose issue date has passed: AADE only accepts
+        # a document on its own issue date (ER-30), so further retries are noise.
+        # TF-1 'offline' documents are exempt — they carry a legal duty to be
+        # transmitted and the provider takes them late, flagged as offline.
+        stale = self.search([
+            ('state', '=', 'posted'),
+            ('l10n_gr_prov_state', 'in', ('to_send', 'error')),
+            ('l10n_gr_prov_mark', '=', False),
+            ('invoice_date', '<', fields.Date.context_today(self)),
+        ])
+        for move in stale:
+            move.l10n_gr_prov_state = 'abandoned'
+            move.message_post(body=_(
+                'Η αυτόματη επαναποστολή σταμάτησε: η ημερομηνία έκδοσης έχει '
+                'παρέλθει και η ΑΑΔΕ δεν δέχεται πλέον το παραστατικό (ER-30). '
+                'Διορθώστε το παραστατικό και στείλτε το χειροκίνητα, ή εκδώστε '
+                'νέο με τρέχουσα ημερομηνία.'))
+
         # 1. Pending sends (auto-send companies) and previous errors (all companies)
         domain = [
             ('state', '=', 'posted'),
