@@ -1,6 +1,6 @@
 # l10n_gr_provider_ilyda — ILYDA Driver
 
-**Version:** 1.8 | **Odoo:** 19 | **License:** LGPL-3  
+**Version:** 2.4 | **Odoo:** 19 | **License:** LGPL-3  
 **API ref:** ILYDA "Οδηγίες υλοποίησης eInvoicing" v1.0.6
 
 Driver implementing the ILYDA Y.PA.H.E.S. eInvoicing API for the

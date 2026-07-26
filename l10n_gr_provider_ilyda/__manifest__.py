@@ -15,6 +15,19 @@
         '\n'
         'Changelog\n'
         '---------\n'
+        '2.4 — A refund on the ΠΟΣΕ journal transmits as 8.5 instead of\n'
+        'being turned into a 5.x credit note.\n'
+        '\n'
+        '2.3 — measurementUnit is the real unit of the line (§8.13) instead of a\n'
+        'hardcoded 1, unmapped units going as 7 with their name and count;\n'
+        '9.2 transmits the generic counterpart ΑΦΜ 000000000 and no longer\n'
+        'demands a VAT on the partner; invoiceDetailType per line, with a\n'
+        '1.5 blocked before sending unless both line kinds are present.\n'
+        '\n'
+        '2.2 — Retail refunds on the ΠΛΑ journal submit as 11.4.\n'
+        '\n'
+        '2.1 — 8.2 Ειδικό Στοιχείο Τέλους Διαμονής payload shape.\n'
+        '\n'
         '2.0 — TF-1 offline QR: /api/offline-qr key lifecycle (issue, verify\n'
         'installation, revoke), connection failures on submit now raise a\n'
         'typed unreachable error that triggers the offline fallback, offline\n'
@@ -53,6 +66,7 @@
     'data': [
         'views/res_config_settings_views.xml',
     ],
+    'application': True,
     'installable': True,
     'auto_install': False,
 }

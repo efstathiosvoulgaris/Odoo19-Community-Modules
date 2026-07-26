@@ -42,6 +42,7 @@
         'views/eft_views.xml',
         'views/pos_receipt_wizard_views.xml',
     ],
+    'application': True,
     'installable': True,
     'auto_install': False,
 }

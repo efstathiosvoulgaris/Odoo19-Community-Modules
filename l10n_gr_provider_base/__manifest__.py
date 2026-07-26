@@ -17,11 +17,31 @@
         '\n'
         'Changelog\n'
         '---------\n'
-        '2.3 — 8.2 Ειδικό Στοιχείο Τέλους Διαμονής (ΤΔΙ): «Ειδικό Στοιχείο\n'
-        '(ΤΔΙ)» button on marked invoices builds the fee document server-side\n'
-        '(8.2 journal, correlation, zero line, category1_95, fee = fixed € ×\n'
-        'nights from the stay document). Journal default for the fee\n'
-        'category; 8.2 lines auto-zero price and VAT via the compute chain.\n'
+        '2.7 — Journal setup hardened: Odoo translates the sales journal\n'
+        'code «INV» to «ΤΙΜ» in Greek, silently taking the code the 1.1\n'
+        'journal needs — the chart journal is now moved to «ΠΩΛ» and left\n'
+        'otherwise untouched. Journals are created after the chart loads\n'
+        '(they used to be rewritten by the chart loader), carry an explicit\n'
+        'sequence so the picker follows myDATA order, are repaired when\n'
+        'their code or type drifts, and collisions are logged instead of\n'
+        'passing in silence.\n'
+        '\n'
+        '2.6 — AADE measurement units (§8.13) on uom.uom, stamped on the\n'
+        'standard units by the settings button; Επισήμανση (§8.15) on\n'
+        'invoice lines for Εκκαθάριση Πωλήσεων Τρίτων; the «Παραστατικό»\n'
+        'report binds its own paperformat instead of falling back to the\n'
+        'company default.\n'
+        '\n'
+        '2.5 — Serial numbers print inline under the invoice line they\n'
+        'belong to; invoice lines created off the onchange path (sale\n'
+        'invoicing, imports, POS) derive their myDATA classification and\n'
+        'cross-border 0%% tax at create.\n'
+        '\n'
+        '2.4 — The retry cron gives up on documents whose issue date has\n'
+        'passed (AADE ER-30 makes them unacceptable) with a new «abandoned»\n'
+        'state, while TF-1 offline documents keep retrying; GR A4 form with\n'
+        'repeating header and footer, unbreakable totals block and page\n'
+        'counter, plus the 80mm retail form.\n'
         '\n'
         '2.3 — 8.2 Ειδικό Στοιχείο Τέλους Διαμονής (ΤΔΙ): «Ειδικό Στοιχείο\n'
         '(ΤΔΙ)» button on marked invoices builds the fee document server-side\n'
@@ -107,6 +127,7 @@
         'views/menus.xml',
     ],
     'post_init_hook': 'post_init_hook',
+    'application': True,
     'installable': True,
     'auto_install': False,
 }

@@ -33,6 +33,7 @@
             'l10n_gr_provider_pos_eftpos/static/src/**/*',
         ],
     },
+    'application': True,
     'installable': True,
     'auto_install': True,
 }

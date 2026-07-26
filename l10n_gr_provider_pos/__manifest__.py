@@ -45,6 +45,7 @@
             'l10n_gr_provider_pos/static/src/**/*',
         ],
     },
+    'application': True,
     'installable': True,
     'auto_install': False,
 }

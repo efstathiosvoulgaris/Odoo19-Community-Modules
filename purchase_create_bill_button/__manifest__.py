@@ -23,6 +23,7 @@
     'data': [
         'views/purchase_order_views.xml',
     ],
+    'application': True,
     'installable': True,
     'auto_install': False,
 }

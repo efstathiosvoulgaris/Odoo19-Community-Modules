@@ -32,6 +32,7 @@
     'license': 'LGPL-3',
     'depends': ['base'],
     'post_init_hook': 'post_init_hook',
+    'application': True,
     'installable': True,
     'auto_install': False,
 }
