@@ -84,7 +84,12 @@ class ResConfigSettings(models.TransientModel):
                     'χωρίς πλέον ακολουθία πιστωτικών (R), %(accounts)s '
                     'προεπιλεγμένοι λογαριασμοί ημερολογίων, %(print_forms)s '
                     'ημερολόγια λιανικής σε φόρμα 80mm, %(units)s μονάδες '
-                    'μέτρησης με κωδικό ΑΑΔΕ.',
+                    'μέτρησης με κωδικό ΑΑΔΕ, %(repaired)s ημερολόγια '
+                    'επιδιορθώθηκαν (κωδικός/τύπος myDATA), %(recoded)s '
+                    'ημερολόγια του Odoo άλλαξαν κωδικό για να ελευθερωθεί ο '
+                    'κωδικός myDATA, %(ordered)s ταξινομήθηκαν, %(skipped)s δεν '
+                    'δημιουργήθηκαν επειδή ο κωδικός τους χρησιμοποιείται ήδη '
+                    '(δείτε το log).',
                     renamed=renamed, activated=activated, archived=archived,
                     fp_fixed=fp_fixed, units=units, **journal_counts),
             },

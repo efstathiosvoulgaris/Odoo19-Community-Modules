@@ -1,6 +1,10 @@
 # -*- coding: utf-8 -*-
+import logging
+
 from odoo import fields, models
 from odoo.addons.l10n_gr_edi.models.preferred_classification import INVOICE_TYPES_SELECTION
+
+_logger = logging.getLogger(__name__)
 
 from .gr_mydata import OTHER_TAXES_CATEGORY_SELECTION
 
@@ -88,6 +92,19 @@ DELIVERY_NOTE_JOURNALS = frozenset({'gr_j_1_1_dn', 'gr_j_5_1_dn'})
 # credit and third-party variants) — everything else defaults to A4.
 RETAIL_80MM_TYPES = frozenset({'11.1', '11.2', '11.3', '11.4', '11.5'})
 
+# Every code this module owns.
+GR_OWN_CODES = frozenset(code for _xmlid, _name, code, _type, _inv in GR_JOURNALS)
+
+# First sequence number of the myDATA journals (Odoo's own sit at 5/6/9).
+GR_JOURNAL_SEQUENCE_START = 20
+
+# Odoo translates the default sales journal's code «INV» into «ΤΙΜ» in Greek
+# (account/i18n/el.po), which is exactly the code the myDATA 1.1 journal needs —
+# and journal codes are unique per company, so the two cannot coexist. Give the
+# company's own journal a code that matches its name («Πωλήσεις») and keep ΤΙΜ
+# for myDATA. Keyed by the chart's xmlid suffix (account.{company_id}_{key}).
+CHART_JOURNAL_RECODE = {'sale': 'ΠΩΛ'}
+
 
 class AccountJournal(models.Model):
     _inherit = 'account.journal'
@@ -161,23 +178,89 @@ class AccountJournal(models.Model):
             and j.l10n_gr_prov_print_form != 'gr_80mm')
         retail_wrong_form.write({'l10n_gr_prov_print_form': 'gr_80mm'})
         counts['print_forms'] = len(retail_wrong_form)
+        # Order journals created before sequencing existed. Only those still at
+        # Odoo's default of 10 are touched, so a deliberate manual reordering
+        # survives the button.
+        ordered = 0
+        for position, (xmlid, _name, _code, _jtype, _inv) in enumerate(GR_JOURNALS):
+            journal = self.env.ref(
+                f'l10n_gr_provider_base.{xmlid}_{company.id}',
+                raise_if_not_found=False)
+            if journal and journal.sequence == 10:
+                journal.sequence = GR_JOURNAL_SEQUENCE_START + position
+                ordered += 1
+        counts['ordered'] = ordered
         return counts
+
+    def _l10n_gr_prov_free_chart_codes(self, company):
+        """Move the company's own chart journals off the codes myDATA needs.
+
+        Only Odoo's own journals (matched by the chart's xmlid, never a
+        hand-made one) and only when the code actually collides. A journal that
+        already carries entries keeps its code — renaming it would split its
+        document numbering — and the myDATA journal is then reported as skipped
+        instead. Returns the number of journals recoded.
+        """
+        recoded = 0
+        for key, new_code in CHART_JOURNAL_RECODE.items():
+            journal = self.env.ref(
+                f'account.{company.id}_{key}', raise_if_not_found=False)
+            if not journal or journal.code not in GR_OWN_CODES:
+                continue
+            if self.search_count([
+                ('code', '=', new_code), ('company_id', '=', company.id),
+            ]):
+                continue
+            if self.env['account.move'].search_count(
+                    [('journal_id', '=', journal.id)], limit=1):
+                _logger.warning(
+                    'Journal %s (id=%s) holds the myDATA code %s but already '
+                    'has entries — leaving it alone.',
+                    journal.name, journal.id, journal.code)
+                continue
+            journal.code = new_code
+            recoded += 1
+        return recoded
 
     def _l10n_gr_prov_create_journals(self, company):
         """Create missing Greek myDATA journals for an existing company.
         Idempotent — existing codes are skipped. Returns counts for the UI."""
         counts = self._l10n_gr_prov_journal_defaults(company)
+        counts['recoded'] = self._l10n_gr_prov_free_chart_codes(company)
         counts['created'] = 0
-        for xmlid, name, code, jtype, inv_type in GR_JOURNALS:
+        counts['repaired'] = 0
+        counts['skipped'] = 0
+        for position, (xmlid, name, code, jtype, inv_type) in enumerate(GR_JOURNALS):
             full_xmlid = f'l10n_gr_provider_base.{xmlid}_{company.id}'
-            if self.env.ref(full_xmlid, raise_if_not_found=False):
+            owned = self.env.ref(full_xmlid, raise_if_not_found=False)
+            if owned:
+                # The chart loader merges its template journals onto existing
+                # ones and rewrites their code (that is why these are not
+                # declared via @template). Restore the two load-bearing values
+                # on journals we own — the code becomes the document series,
+                # and the myDATA type drives everything downstream.
+                repair = {}
+                if owned.code != code:
+                    repair['code'] = code
+                if owned.l10n_gr_edi_inv_type_default != inv_type:
+                    repair['l10n_gr_edi_inv_type_default'] = inv_type
+                if repair:
+                    owned.write(repair)
+                    counts['repaired'] += 1
                 continue
             existing = self.search([
                 ('code', '=', code),
                 ('company_id', '=', company.id),
             ], limit=1)
             if existing:
-                # a foreign journal holds our code — leave it alone entirely
+                # Someone else's journal holds our code — leave it alone
+                # entirely (the company's default sale journal stays available
+                # for non-myDATA sales), but say so: silence here looked like
+                # «the journal vanished».
+                _logger.warning(
+                    'GR journal %s (%s) not created: code already used by '
+                    'journal %s (id=%s).', name, code, existing.name, existing.id)
+                counts['skipped'] += 1
                 continue
             default_account = self.env.ref(
                 f'account.{company.id}_{self._GR_JOURNAL_DEFAULT_ACCOUNT[jtype]}',
@@ -190,6 +273,12 @@ class AccountJournal(models.Model):
                 'type': jtype,
                 'company_id': company.id,
                 'show_on_dashboard': False,
+                # account.journal._order is 'sequence, type, code': without an
+                # explicit sequence every journal sits at the default 10 and the
+                # list falls back to alphabetical Greek codes. Number them by
+                # their position in GR_JOURNALS so the picker follows the myDATA
+                # order. Odoo's own journals sit at 5/6/9, so ours come after.
+                'sequence': GR_JOURNAL_SEQUENCE_START + position,
                 'refund_sequence': False,
                 'default_account_id': default_account.id if default_account else False,
                 'l10n_gr_edi_inv_type_default': inv_type,
