@@ -121,7 +121,7 @@ patch(PosStore.prototype, {
             try {
                 const note = await this.data.call(
                     "l10n.gr.prov.catering.order",
-                    "_l10n_gr_prov_issue",
+                    "l10n_gr_prov_issue_note",
                     [
                         {
                             config_id: this.config.id,
@@ -145,7 +145,13 @@ patch(PosStore.prototype, {
                     );
                 }
             } catch (e) {
+                // Do not stop service, but do not hide it either: a silent
+                // console warning is how the missing note went unnoticed.
                 console.warn("[GR 8.6] transmission call failed", e);
+                this.env.services.notification.add(
+                    _t("Το Δελτίο Παραγγελίας δεν στάλθηκε — δείτε τα Δελτία Παραγγελίας Εστίασης."),
+                    { type: "danger" }
+                );
             }
         }
     },

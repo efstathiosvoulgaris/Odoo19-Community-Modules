@@ -91,7 +91,7 @@ class L10nGrProvCateringOrder(models.Model):
     # ── Issue ────────────────────────────────────────────────────────────────
 
     @api.model
-    def _l10n_gr_prov_issue(self, vals):
+    def l10n_gr_prov_issue_note(self, vals):
         """Create and transmit one order note. Called from the POS when a round
         is sent to the kitchen.
 
