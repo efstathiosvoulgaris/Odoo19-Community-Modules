@@ -66,6 +66,12 @@ class PosOrder(models.Model):
             # the provider needs an account.move for every order
             self.l10n_gr_prov_timologio = self.to_invoice
             self.to_invoice = True
+            # The customer must sit on the ORDER, not only on the invoice:
+            # _create_payment_moves takes the receivable account from
+            # payment.partner_id, so an anonymous order (which stock Odoo would
+            # never invoice) produces a payment line with no account at all.
+            if not self.partner_id:
+                self.partner_id = self.config_id._l10n_gr_prov_get_walkin_partner()
         res = super()._process_saved_order(draft)
         if not draft and self.account_move and self._l10n_gr_prov_pos_applicable():
             self._l10n_gr_prov_pos_send()
