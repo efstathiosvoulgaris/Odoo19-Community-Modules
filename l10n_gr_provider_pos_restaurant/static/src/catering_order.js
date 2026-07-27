@@ -10,7 +10,7 @@ import { ProductScreen } from "@point_of_sale/app/screens/product_screen/product
  */
 patch(ProductScreen.prototype, {
     get swapButton() {
-        if (this.pos.config.module_pos_restaurant && this.pos.config.l10n_gr_prov_alp_journal_id) {
+        if (this.pos.config.module_pos_restaurant && this.pos.config.l10n_gr_prov_enabled) {
             return true;
         }
         return super.swapButton;
@@ -28,7 +28,7 @@ patch(ProductScreen.prototype, {
 patch(PosStore.prototype, {
     _grCateringEnabled() {
         return Boolean(
-            this.config.module_pos_restaurant && this.config.l10n_gr_prov_alp_journal_id
+            this.config.module_pos_restaurant && this.config.l10n_gr_prov_enabled
         );
     },
 

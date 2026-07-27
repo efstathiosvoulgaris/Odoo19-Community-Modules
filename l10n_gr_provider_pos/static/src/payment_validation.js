@@ -8,7 +8,7 @@ patch(OrderPaymentValidation.prototype, {
      * fire when the cashier explicitly asked for a Τιμολόγιο.
      */
     shouldDownloadInvoice() {
-        if (this.pos.config.l10n_gr_prov_alp_journal_id) {
+        if (this.pos.config.l10n_gr_prov_enabled) {
             return Boolean(this.order.raw?.l10n_gr_prov_timologio)
                 && super.shouldDownloadInvoice();
         }

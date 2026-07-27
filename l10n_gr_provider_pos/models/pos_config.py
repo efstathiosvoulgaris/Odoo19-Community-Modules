@@ -27,6 +27,21 @@ class PosConfig(models.Model):
         help='Χρησιμοποιείται στις ΑΛΠ όταν δεν έχει επιλεγεί πελάτης. '
              'Δημιουργήστε μία επαφή «Πελάτης Λιανικής» και επιλέξτε την εδώ.')
 
+    # account.journal is not among the models the POS loads, so the journal
+    # many2ones above cannot be evaluated in the front end — a plain boolean is
+    # the only reliable signal there that this till issues through the provider.
+    l10n_gr_prov_enabled = fields.Boolean(
+        string='Έκδοση μέσω Παρόχου',
+        compute='_compute_l10n_gr_prov_enabled')
+
+    @api.depends('l10n_gr_prov_alp_journal_id',
+                 'company_id.l10n_gr_prov_provider')
+    def _compute_l10n_gr_prov_enabled(self):
+        for config in self:
+            config.l10n_gr_prov_enabled = bool(
+                config.l10n_gr_prov_alp_journal_id
+                and config.company_id._l10n_gr_prov_active())
+
     def _l10n_gr_prov_get_walkin_partner(self):
         """The retail walk-in partner is created once by the user (a normal
         contact, e.g. «Πελάτης Λιανικής») and selected in the POS settings."""

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Greece - E-Invoicing Provider (Point of Sale)',
-    'version': '1.2',
+    'version': '1.3',
     'category': 'Accounting/Localizations',
     'summary': 'POS receipts (ΑΛΠ) and invoices (ΤΙΜ) through the e-invoicing provider',
     'description': (

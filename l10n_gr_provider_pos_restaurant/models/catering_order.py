@@ -105,6 +105,10 @@ class L10nGrProvCateringOrder(models.Model):
         if not lines:
             return {}
         config = self.env['pos.config'].browse(vals['config_id'])
+        # The front end asks on every round; the server decides. A till that is
+        # not wired to the provider issues nothing.
+        if not config.l10n_gr_prov_enabled:
+            return {}
         order = self.create({
             'company_id': config.company_id.id,
             'config_id': config.id,
