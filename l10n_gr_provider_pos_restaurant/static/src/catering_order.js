@@ -1,6 +1,5 @@
 import { patch } from "@web/core/utils/patch";
 import { PosStore } from "@point_of_sale/app/services/pos_store";
-import { changesToOrder } from "@point_of_sale/app/models/utils/order_change";
 
 /**
  * Δελτίο Παραγγελίας Εστίασης (8.6).
@@ -15,6 +14,29 @@ patch(PosStore.prototype, {
         return Boolean(
             this.config.module_pos_restaurant && this.config.l10n_gr_prov_alp_journal_id
         );
+    },
+
+    /**
+     * What this round adds, for every product.
+     *
+     * Deliberately not core's changesToOrder(): that only reports lines whose
+     * product sits in a kitchen-printer category, so a drink poured at the bar
+     * would never reach the ΔΠ. The law wants everything the customer ordered.
+     * updateLastOrderChange() records every line, so diffing against it is
+     * safe and stays correct across rounds.
+     */
+    _grRoundChanges(order) {
+        const previous = order.last_order_preparation_change?.lines || {};
+        const changes = [];
+        for (const line of order.getOrderlines()) {
+            const key = line.preparationKey;
+            const sent = previous[key]?.quantity || 0;
+            const quantity = line.getQuantity() - sent;
+            if (quantity > 0) {
+                changes.push({ uuid: line.uuid, quantity, name: line.getFullProductName() });
+            }
+        }
+        return changes;
     },
 
     /** Money for the round: prorate each line's own net/VAT by the sent qty. */
@@ -51,8 +73,7 @@ patch(PosStore.prototype, {
         let cateringLines = [];
         if (this._grCateringEnabled() && !opts.cancelled) {
             try {
-                const changes = changesToOrder(order, this.config.printerCategories, false);
-                cateringLines = this._grCateringLines(order, changes.new || []);
+                cateringLines = this._grCateringLines(order, this._grRoundChanges(order));
             } catch (e) {
                 console.warn("[GR 8.6] could not read the order changes", e);
             }
