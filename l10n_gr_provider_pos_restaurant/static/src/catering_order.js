@@ -1,5 +1,21 @@
 import { patch } from "@web/core/utils/patch";
 import { PosStore } from "@point_of_sale/app/services/pos_store";
+import { ProductScreen } from "@point_of_sale/app/screens/product_screen/product_screen";
+
+/**
+ * Core hides the Send area unless kitchen printer categories are configured
+ * (swapButton checks preparationCategories.size). Sending a round is what
+ * issues the Δελτίο Παραγγελίας, so a Greek restaurant must have that button
+ * even with no kitchen printer at all.
+ */
+patch(ProductScreen.prototype, {
+    get swapButton() {
+        if (this.pos.config.module_pos_restaurant && this.pos.config.l10n_gr_prov_alp_journal_id) {
+            return true;
+        }
+        return super.swapButton;
+    },
+});
 
 /**
  * Δελτίο Παραγγελίας Εστίασης (8.6).
