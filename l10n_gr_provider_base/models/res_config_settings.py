@@ -69,6 +69,16 @@ class ResConfigSettings(models.TransientModel):
         # loaded before this module) — idempotent
         journal_counts = self.env['account.journal'] \
             ._l10n_gr_prov_create_journals(company)
+        # No chart sets the POS receivable account, so on a fresh database every
+        # POS payment move is created with a NULL account and hits the SQL
+        # constraint («Missing required account on accountable line»). Point it
+        # at the short-term trade receivable unless the user chose one already.
+        pos_receivable = 0
+        if not company.account_default_pos_receivable_account_id:
+            account = gr_tax(self.env, company, 'l10n_gr_30_01_01_01')
+            if account:
+                company.account_default_pos_receivable_account_id = account
+                pos_receivable = 1
         # AADE §8.13 codes on the standard Odoo units (dispatch documents)
         units = self.env['uom.uom']._l10n_gr_prov_map_units()
         return {
@@ -89,8 +99,10 @@ class ResConfigSettings(models.TransientModel):
                     'ημερολόγια του Odoo άλλαξαν κωδικό για να ελευθερωθεί ο '
                     'κωδικός myDATA, %(ordered)s ταξινομήθηκαν, %(skipped)s δεν '
                     'δημιουργήθηκαν επειδή ο κωδικός τους χρησιμοποιείται ήδη '
-                    '(δείτε το log).',
+                    '(δείτε το log), %(pos_receivable)s λογαριασμός απαιτήσεων '
+                    'POS.',
                     renamed=renamed, activated=activated, archived=archived,
-                    fp_fixed=fp_fixed, units=units, **journal_counts),
+                    fp_fixed=fp_fixed, units=units, pos_receivable=pos_receivable,
+                    **journal_counts),
             },
         }
