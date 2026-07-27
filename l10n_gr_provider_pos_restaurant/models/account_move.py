@@ -21,7 +21,23 @@ class AccountMove(models.Model):
             for order in self.l10n_gr_prov_catering_order_ids
             if order.mark
         ]
-        if marks:
-            payload['aadeData']['multipleConnectedMarks'] = marks
-            payload['aadeData']['aadeSpecialInvoiceCategory'] = CATERING_SPECIAL_CATEGORY
+        if not marks:
+            return payload
+        payload['aadeData']['multipleConnectedMarks'] = marks
+        payload['aadeData']['aadeSpecialInvoiceCategory'] = CATERING_SPECIAL_CATEGORY
+        # DP-0007: a catering document is matched against the notes line by
+        # line, so its rows must carry quantities — which the base builder only
+        # emits for dispatch notes and for the 8.6 itself.
+        lines = {number: line for number, line
+                 in enumerate(self._l10n_gr_prov_ilyda_lines(), start=1)}
+        for row in payload['aadeData'].get('invoiceRowTypes') or []:
+            line = lines.get(row.get('lineNumber'))
+            if not line:
+                continue
+            row['quantity'] = line.quantity
+            unit_code, unit_title = line._l10n_gr_prov_measurement_unit()
+            row['measurementUnit'] = unit_code
+            if unit_code == 7:
+                row['otherMeasurementUnitTitle'] = unit_title
+                row['otherMeasurementUnitQuantity'] = max(int(line.quantity or 0), 1)
         return payload
