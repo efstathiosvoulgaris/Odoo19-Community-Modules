@@ -104,12 +104,11 @@
                         domain="[('state', '=', 'sent'), ('closing_move_id', '=', False)]"/>
                 <filter name="errors" string="Σφάλματα" domain="[('state', '=', 'error')]"/>
                 <separator/>
-                <filter name="today" string="Σήμερα"
-                        domain="[('create_date', '&gt;=', datetime.datetime.combine(context_today(), datetime.time(0,0,0)))]"/>
-                <group expand="0" string="Ομαδοποίηση">
-                    <filter name="group_table" string="Τραπέζι" context="{'group_by': 'table_aa'}"/>
-                    <filter name="group_state" string="Κατάσταση" context="{'group_by': 'state'}"/>
-                    <filter name="group_config" string="Ταμείο" context="{'group_by': 'config_id'}"/>
+                <filter name="filter_create_date" string="Ημερομηνία" date="create_date"/>
+                <group>
+                    <filter name="group_table" string="Τραπέζι" domain="[]" context="{'group_by': 'table_aa'}"/>
+                    <filter name="group_state" string="Κατάσταση" domain="[]" context="{'group_by': 'state'}"/>
+                    <filter name="group_config" string="Ταμείο" domain="[]" context="{'group_by': 'config_id'}"/>
                 </group>
             </search>
         </field>
