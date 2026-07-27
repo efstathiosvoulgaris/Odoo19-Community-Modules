@@ -1,12 +1,17 @@
 import { patch } from "@web/core/utils/patch";
+import { _t } from "@web/core/l10n/translation";
 import { PosStore } from "@point_of_sale/app/services/pos_store";
 import { ProductScreen } from "@point_of_sale/app/screens/product_screen/product_screen";
 
 /**
- * Core hides the Send area unless kitchen printer categories are configured
- * (swapButton checks preparationCategories.size). Sending a round is what
- * issues the Δελτίο Παραγγελίας, so a Greek restaurant must have that button
- * even with no kitchen printer at all.
+ * Make the Send button exist without kitchen printers.
+ *
+ * Two separate gates hide it. ProductScreen.swapButton checks
+ * preparationCategories.size, and the button itself is rendered only when
+ * pos.categoryCount is non-empty — and that is built from getOrderChanges(),
+ * which reports nothing at all unless the products sit in a preparation
+ * category. A Greek restaurant with no kitchen printer therefore sees only
+ * Νέα and Πληρωμή, yet still owes AADE a Δελτίο Παραγγελίας per round.
  */
 patch(ProductScreen.prototype, {
     get swapButton() {
@@ -30,6 +35,21 @@ patch(PosStore.prototype, {
         return Boolean(
             this.config.module_pos_restaurant && this.config.l10n_gr_prov_enabled
         );
+    },
+
+    /**
+     * The Send button renders only when this is non-empty, and core builds it
+     * from preparation categories alone. When none are configured, report the
+     * round's pending items ourselves so the waiter can send — and so the note
+     * gets issued. Untouched whenever core already has something to show.
+     */
+    getCategoryCount(order = this.getOrder()) {
+        const base = super.getCategoryCount(order);
+        if (base.length || !this._grCateringEnabled() || !order) {
+            return base;
+        }
+        const pending = this._grRoundChanges(order).reduce((n, c) => n + c.quantity, 0);
+        return pending ? [{ count: pending, name: _t("Παραγγελία") }] : [];
     },
 
     /**
