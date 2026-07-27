@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="seq_catering_order" model="ir.sequence">
+        <field name="name">Δελτίο Παραγγελίας Εστίασης</field>
+        <field name="code">l10n.gr.prov.catering.order</field>
+        <field name="prefix"></field>
+        <field name="padding">5</field>
+        <field name="company_id" eval="False"/>
+    </record>
+
+    <record id="view_catering_order_list" model="ir.ui.view">
+        <field name="name">l10n.gr.prov.catering.order.list</field>
+        <field name="model">l10n.gr.prov.catering.order</field>
+        <field name="arch" type="xml">
+            <list string="Δελτία Παραγγελίας Εστίασης"
+                  decoration-danger="state == 'error'"
+                  decoration-warning="state == 'sent' and not closing_move_id"
+                  decoration-muted="state == 'closed'">
+                <field name="create_date" string="Ώρα"/>
+                <field name="serial"/>
+                <field name="table_aa"/>
+                <field name="config_id" optional="show"/>
+                <field name="amount_net" optional="hide"/>
+                <field name="amount_vat" optional="hide"/>
+                <field name="amount_total" sum="Σύνολο"/>
+                <field name="mark"/>
+                <field name="closing_move_id" optional="show"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'closed'"
+                       decoration-warning="state == 'sent'"
+                       decoration-danger="state == 'error'"/>
+                <field name="currency_id" column_invisible="1"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_catering_order_form" model="ir.ui.view">
+        <field name="name">l10n.gr.prov.catering.order.form</field>
+        <field name="model">l10n.gr.prov.catering.order</field>
+        <field name="arch" type="xml">
+            <form string="Δελτίο Παραγγελίας Εστίασης">
+                <header>
+                    <button name="action_retry" type="object" string="Επανάληψη Διαβίβασης"
+                            class="oe_highlight" invisible="state not in ('draft', 'error')"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,sent,closed"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="display_name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="table_aa"/>
+                            <field name="serial"/>
+                            <field name="config_id"/>
+                            <field name="session_id"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                        </group>
+                        <group>
+                            <field name="mark"/>
+                            <field name="verification_hash"/>
+                            <field name="qr_url" widget="url"/>
+                            <field name="closing_move_id"/>
+                            <field name="pos_order_id"/>
+                            <field name="currency_id" invisible="1"/>
+                        </group>
+                    </group>
+                    <div class="alert alert-danger" role="alert" invisible="not error_message">
+                        <field name="error_message" readonly="1" nolabel="1"/>
+                    </div>
+                    <field name="line_ids" readonly="1">
+                        <list>
+                            <field name="name"/>
+                            <field name="quantity"/>
+                            <field name="vat_rate"/>
+                            <field name="net_value"/>
+                            <field name="vat_amount"/>
+                            <field name="currency_id" column_invisible="1"/>
+                        </list>
+                    </field>
+                    <group class="oe_subtotal_footer oe_right">
+                        <field name="amount_net"/>
+                        <field name="amount_vat"/>
+                        <field name="amount_total" class="oe_subtotal_footer_separator"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_catering_order_search" model="ir.ui.view">
+        <field name="name">l10n.gr.prov.catering.order.search</field>
+        <field name="model">l10n.gr.prov.catering.order</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="table_aa"/>
+                <field name="mark"/>
+                <field name="serial"/>
+                <!-- The 24h rule: an open note suspends transmission for the
+                     whole entity, so this is the filter that matters. -->
+                <filter name="open_notes" string="Ανοιχτά Δελτία"
+                        domain="[('state', '=', 'sent'), ('closing_move_id', '=', False)]"/>
+                <filter name="errors" string="Σφάλματα" domain="[('state', '=', 'error')]"/>
+                <separator/>
+                <filter name="today" string="Σήμερα"
+                        domain="[('create_date', '&gt;=', datetime.datetime.combine(context_today(), datetime.time(0,0,0)))]"/>
+                <group expand="0" string="Ομαδοποίηση">
+                    <filter name="group_table" string="Τραπέζι" context="{'group_by': 'table_aa'}"/>
+                    <filter name="group_state" string="Κατάσταση" context="{'group_by': 'state'}"/>
+                    <filter name="group_config" string="Ταμείο" context="{'group_by': 'config_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_catering_order" model="ir.actions.act_window">
+        <field name="name">Δελτία Παραγγελίας Εστίασης</field>
+        <field name="res_model">l10n.gr.prov.catering.order</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'search_default_open_notes': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Κανένα δελτίο παραγγελίας</p>
+            <p>Τα δελτία εκδίδονται αυτόματα όταν ο σερβιτόρος στέλνει την
+               παραγγελία στην κουζίνα και κλείνουν με την απόδειξη του τραπεζιού.</p>
+        </field>
+    </record>
+
+    <menuitem id="menu_catering_order"
+              name="Δελτία Παραγγελίας Εστίασης"
+              parent="l10n_gr_provider_base.menu_l10n_gr_prov_root"
+              action="action_catering_order"
+              sequence="9"/>
+
+</odoo>
