@@ -2,29 +2,32 @@
     "name": "Direct Print",
     "summary": "Print Odoo reports and POS receipts directly to local Windows printers",
     "description": """
-        Direct Print for Odoo 19
-        ========================
-        Sends PDF reports and POS receipts directly to locally installed
-        Windows printers via a lightweight local print agent service.
+Direct Print for Odoo 19
+========================
+Sends PDF reports and POS receipts directly to locally installed
+Windows printers via a lightweight local print agent service.
 
-        Features:
-        - Direct PDF report printing (no download dialog)
-        - POS receipt printing to thermal printers
-        - Per-report printer routing with copy count
-        - Offline print queue with auto-retry
-        - Configurable agent URL with automatic port detection
-        - Systray status indicator
-        - Print history log in Odoo
-        - Label printing support
-        - Settings UI for printer selection
+Features:
 
-        Requirements:
-        - Local Print Agent running on the same machine (see start_print_agent.bat)
+- Direct PDF report printing (no download dialog)
+- POS receipt printing to thermal printers
+- Per-report printer routing with copy count
+- Offline print queue with auto-retry
+- Configurable agent URL with automatic port detection
+- Systray status indicator
+- Print history log in Odoo
+- Label printing support
+- Settings UI for printer selection
 
-        Changelog
-        ---------
-        * 1.0 — Initial public release.
-    """,
+Requirements:
+
+- Local Print Agent running on the same machine (see start_print_agent.bat)
+
+Changelog
+---------
+
+* 1.0 — Initial public release.
+""",
     "version": "1.0",
     "category": "Technical",
     "author": "Efstathios Voulgaris",
