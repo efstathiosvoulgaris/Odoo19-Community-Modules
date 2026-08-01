@@ -860,26 +860,36 @@ class AccountMove(models.Model):
                 _logger.warning('B2G status poll failed for %s: %s', move.name, e)
 
     # ── Report helpers ──────────────────────────────────────────────────────
+    # Which physical form this document prints on. SINGLE SOURCE OF TRUTH for
+    # the whole print path: the QWeb routing (both entry points), the
+    # paperformat pick in ir.actions.report.get_paperformat() and the
+    # header-geometry override on the html root all call this. Never read
+    # journal_id.l10n_gr_prov_print_form directly from any of those — the
+    # journal field defaults to gr_a4, so a database without a configured
+    # provider would get the Greek paper geometry under the vanilla Odoo
+    # invoice template.
+    PRINT_FORM_REPORTS = {
+        'gr_a4': 'l10n_gr_provider_base.report_gr_invoice_document',
+        'gr_80mm': 'l10n_gr_provider_base.report_gr_invoice_80mm',
+    }
+
+    def _l10n_gr_prov_print_form(self):
+        """'standard' | 'gr_a4' | 'gr_80mm' — the journal's form, but only
+        once the document is actually routed through the provider. Anything
+        else prints on the vanilla Odoo layout and paperformat."""
+        self.ensure_one()
+        if not self.l10n_gr_prov_applicable:
+            return 'standard'
+        return self.journal_id.l10n_gr_prov_print_form or 'standard'
+
     def _get_name_invoice_report(self):
         """Route the standard Print button through the same per-journal form
-        as the «Παραστατικό» action: gr_a4/gr_80mm use the new box-grid
-        reports, standard keeps the vanilla Odoo layout (with just the QR/
-        MARK footer injected)."""
+        as the «Παραστατικό» action: gr_a4/gr_80mm use the box-grid reports,
+        standard keeps the vanilla Odoo layout (with just the QR/MARK footer
+        injected)."""
         self.ensure_one()
-        form = self.journal_id.l10n_gr_prov_print_form
-        if self.l10n_gr_prov_applicable and form == 'gr_a4':
-            return 'l10n_gr_provider_base.report_gr_invoice_document'
-        if self.l10n_gr_prov_applicable and form == 'gr_80mm':
-            return 'l10n_gr_provider_base.report_gr_invoice_80mm'
-        return super()._get_name_invoice_report()
-
-    def _l10n_gr_prov_qr_image(self):
-        self.ensure_one()
-        if not self.l10n_gr_prov_qr_url:
-            return False
-        barcode = self.env['ir.actions.report'].barcode(
-            'QR', self.l10n_gr_prov_qr_url, width=120, height=120)
-        return base64.b64encode(barcode).decode()
+        report = self.PRINT_FORM_REPORTS.get(self._l10n_gr_prov_print_form())
+        return report or super()._get_name_invoice_report()
 
     def _l10n_gr_prov_report_series_serial(self):
         """(ΣΕΙΡΑ, ΑΡΙΘΜΟΣ) for the printed form — split the sequence name."""
@@ -889,37 +899,87 @@ class AccountMove(models.Model):
             return '/'.join(parts[:-1]), parts[-1]
         return self.journal_id.code or '', (self.name or '')
 
-    def _l10n_gr_prov_vat_analysis(self):
-        """Per-rate VAT buckets for the ΑΝΑΛΥΣΗ ΥΠΟΛΟΓΙΣΜΟΥ ΦΠΑ table:
-        [{'rate', 'net', 'vat'}], highest rate first."""
+    def _l10n_gr_prov_legal_notes(self):
+        """Statements the printed form is required to carry in words.
+
+        The VAT exemption reference is the important one: a 0% line cannot
+        even be posted without l10n_gr_prov_vat_exemption (see the tax
+        guards), and the code is transmitted to myDATA as
+        vatExemptionCategory — but nothing ever printed it, so exempt,
+        intra-community and reverse-charge documents went out with no legal
+        basis stated anywhere on the page.
+
+        Distinct codes only, in line order, so a 40-line invoice with one
+        exemption prints one sentence rather than forty.
+        """
         self.ensure_one()
-        buckets = {}
+        labels = dict(self.env['account.move.line']
+                      ._fields['l10n_gr_prov_vat_exemption'].selection)
+        notes = []
+        for line in self.invoice_line_ids:
+            code = line.l10n_gr_prov_vat_exemption
+            if code:
+                text = labels.get(code) or code
+                if text not in notes:
+                    notes.append(text)
+        if self.journal_id.l10n_gr_edi_inv_type_default in TYPES_SELF_BILLED:
+            notes.append('Αυτοτιμολόγηση')
+        return notes
+
+    @staticmethod
+    def _l10n_gr_prov_reconcile_rows(rows, key, target):
+        """Push the rounding remainder onto the largest bucket so a printed
+        column sums to the move total exactly."""
+        diff = round(target - sum(r[key] for r in rows), 2)
+        if diff and rows:
+            biggest = max(rows, key=lambda r: abs(r[key]))
+            biggest[key] = round(biggest[key] + diff, 2)
+
+    def _l10n_gr_prov_vat_analysis(self):
+        """Per-rate buckets for the ΑΝΑΛΥΣΗ ΥΠΟΛΟΓΙΣΜΟΥ ΦΠΑ table:
+        [{'rate', 'net', 'vat'}], highest rate first.
+
+        The VAT per rate comes from the POSTED tax journal items, so the
+        figure on the paper is the one booked to the ledger and transmitted
+        to myDATA — not a second, independently rounded derivation off the
+        lines. The net per rate still comes from the lines, because
+        tax_base_amount is company-currency only.
+
+        Both columns are then reconciled against amount_untaxed /
+        amount_tax. Without that, a tax-included document printed ΚΑΘΑΡΗ
+        ΑΞΙΑ 26,54 here and 26,53 in the totals stack on the same page.
+        """
+        self.ensure_one()
+        nets = {}
         for line in self.invoice_line_ids.filtered(
                 lambda l: l.display_type == 'product'):
-            tax = line.tax_ids[:1]
-            rate = tax.amount if tax else 0.0
-            b = buckets.setdefault(rate, [0.0, 0.0])
-            b[0] += line.price_subtotal
-            b[1] += line.price_total - line.price_subtotal
-        return [{'rate': rate, 'net': round(net, 2), 'vat': round(vat, 2)}
-                for rate, (net, vat) in sorted(buckets.items(), key=lambda kv: -kv[0])]
+            rate = line.tax_ids[:1].amount if line.tax_ids else 0.0
+            nets[rate] = nets.get(rate, 0.0) + line.price_subtotal
+        vats = {}
+        for tax_line in self.line_ids.filtered('tax_line_id'):
+            rate = tax_line.tax_line_id.amount
+            vats[rate] = vats.get(rate, 0.0) + abs(tax_line.amount_currency)
+        rows = [{'rate': rate,
+                 'net': round(nets.get(rate, 0.0), 2),
+                 'vat': round(vats.get(rate, 0.0), 2)}
+                for rate in sorted(set(nets) | set(vats), reverse=True)]
+        self._l10n_gr_prov_reconcile_rows(rows, 'net', self.amount_untaxed)
+        self._l10n_gr_prov_reconcile_rows(rows, 'vat', self.amount_tax)
+        return rows
 
     def _l10n_gr_prov_report_totals(self):
         """The right-hand totals stack of the ΕΝΙΑΙΟ form."""
         self.ensure_one()
-        # Pre-discount NET per line. price_unit × quantity is wrong for
-        # tax-included pricing (it contains the VAT) — reconstruct from the
-        # discounted net instead; at 100% discount the subtotal is 0, so fall
-        # back to price_unit × quantity (only inflated on tax-included lines).
-        gross_before = 0.0
-        for l in self.invoice_line_ids.filtered(lambda l: l.display_type == 'product'):
-            if l.discount and l.discount < 100:
-                gross_before += l.price_subtotal / (1 - l.discount / 100.0)
-            elif l.discount:
-                gross_before += l.price_unit * l.quantity
-            else:
-                gross_before += l.price_subtotal
-        discount = round(gross_before - self.amount_untaxed, 2)
+        # gross_before is built as net + discount rather than summed
+        # independently, so ΑΞΙΑ ΠΡΟ ΕΚΠΤ. − ΕΚΠΤΩΣΗ == ΚΑΘΑΡΗ ΑΞΙΑ holds
+        # exactly and a document with no discounts prints ΕΚΠΤΩΣΗ 0,00.
+        # Summing gross_before on its own left a phantom 0,01 discount on
+        # tax-included documents.
+        discount = round(sum(
+            line._l10n_gr_prov_report_amounts()['discount']
+            for line in self.invoice_line_ids.filtered(
+                lambda l: l.display_type == 'product')), 2)
+        gross_before = round(round(self.amount_untaxed, 2) + discount, 2)
         charges = round((self.l10n_gr_prov_fees_amount or 0.0)
                         + (self.l10n_gr_prov_stamp_duty_amount or 0.0), 2)
         other_taxes = round(self.l10n_gr_prov_other_taxes_amount or 0.0, 2)

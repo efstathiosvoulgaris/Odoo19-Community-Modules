@@ -1,6 +1,6 @@
 # l10n_gr_provider_base — Greece E-Invoicing Provider Base
 
-**Version:** 2.7 | **Odoo:** 19 | **License:** LGPL-3
+**Version:** 2.8 | **Odoo:** 19 | **License:** LGPL-3
 
 Provider-agnostic base for issuing sales documents through a licensed Greek
 e-invoicing provider (Υ.ΠΑ.Η.Ε.Σ.), as required by the 2026 B2B e-invoicing

@@ -8,12 +8,13 @@
               inherit_id="account.report_invoice_document">
         <xpath expr="//div[@id='qrcode']" position="after">
             <t t-if="o.l10n_gr_prov_mark or o.l10n_gr_prov_qr_url">
-                <t t-set="prov_qr" t-value="o._l10n_gr_prov_qr_image()"/>
+                <!-- Stored PNG (computed once when the QR URL lands), not a
+                     barcode render at print time. -->
                 <div class="mt-3" name="l10n_gr_prov_markings">
                     <div class="row">
                         <div class="col-2">
-                            <img t-if="prov_qr"
-                                 t-att-src="'data:image/png;base64,' + prov_qr"
+                            <img t-if="o.l10n_gr_prov_qr_png"
+                                 t-att-src="'data:image/png;base64,%s' % o.l10n_gr_prov_qr_png.decode()"
                                  style="width: 30mm; height: 30mm;" alt="Provider QR"/>
                         </div>
                         <div class="col-10" style="font-size: 8pt;">

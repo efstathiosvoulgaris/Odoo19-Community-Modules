@@ -189,16 +189,71 @@ class AccountMoveLine(models.Model):
             return int(code), None
         return 7, (uom.name or '')[:50]
 
-    def _l10n_gr_prov_lot_names(self):
-        """SN/LN delivered against this invoice line, via its sale order lines.
-        Empty when sale/stock are not installed (no sale_line_ids field)."""
+    def _l10n_gr_prov_net_unit_price(self):
+        """price_unit with any tax-included percentage taxes stripped out."""
         self.ensure_one()
-        if 'sale_line_ids' not in self._fields:
-            return []
-        move_lines = self.sale_line_ids.move_ids.move_line_ids.filtered(
+        included = self.tax_ids.filtered(
+            lambda t: t.price_include and t.amount_type == 'percent')
+        factor = 1.0 + sum(included.mapped('amount')) / 100.0
+        return self.price_unit / factor if factor else self.price_unit
+
+    def _l10n_gr_prov_report_amounts(self):
+        """Net figures for one printed line — {unit, before, discount, after}.
+
+        price_subtotal is the only amount Odoo guarantees to be
+        tax-EXCLUSIVE; price_unit carries the VAT whenever the price list
+        includes tax. The form used to derive ΑΞΙΑ as price_unit × quantity
+        and ΕΚΠΤΩΣΗ as the gap to price_subtotal, which on a tax-included
+        document printed the gross value under ΑΞΙΑ and relabelled the VAT
+        as a discount that did not exist. Everything here therefore comes
+        off price_subtotal and the line's own discount percentage.
+        """
+        self.ensure_one()
+        after = self.price_subtotal
+        disc = self.discount or 0.0
+        if disc and disc < 100:
+            before = after / (1 - disc / 100.0)
+        elif disc:
+            # 100% discount: the subtotal is 0 and carries no information,
+            # so recover the undiscounted net from the unit price.
+            before = self._l10n_gr_prov_net_unit_price() * self.quantity
+        else:
+            before = after
+        return {
+            'unit': (before / self.quantity) if self.quantity else 0.0,
+            'before': before,
+            'discount': before - after,
+            'after': after,
+        }
+
+    def _l10n_gr_prov_lot_names(self):
+        """SN/LN delivered against these invoice lines, via their sale order
+        lines: {line_id: [names]}, batched — one traversal of
+        sale_line_ids → stock.move → stock.move.line for the whole recordset
+        instead of a query cascade per printed line.
+
+        Empty when sale/stock are not installed (no sale_line_ids field)."""
+        if 'sale_line_ids' not in self._fields or not self:
+            return {}
+        # Prefetch the whole chain once; the per-line reads below then hit
+        # the ORM cache.
+        all_smls = self.sale_line_ids.move_ids.move_line_ids
+        if not all_smls:
+            return {}
+        done = all_smls.filtered(
             lambda sml: sml.state == 'done' and sml.lot_id
             and sml._should_show_lot_in_invoice())
-        return sorted(set(move_lines.mapped('lot_id.name')))
+        if not done:
+            return {}
+        keep = set(done.ids)
+        result = {}
+        for line in self:
+            names = {sml.lot_id.name
+                     for sml in line.sale_line_ids.move_ids.move_line_ids
+                     if sml.id in keep}
+            if names:
+                result[line.id] = sorted(names)
+        return result
 
     @api.model_create_multi
     def create(self, vals_list):

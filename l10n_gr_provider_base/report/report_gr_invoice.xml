@@ -28,15 +28,34 @@
         <field name="name">GR Παραστατικό A4</field>
         <field name="format">A4</field>
         <field name="orientation">Portrait</field>
-        <!-- Top margin reserves the fixed header (masthead + document-type
-             row, repeated on every page); the bottom margin reserves the
-             fixed footer region (QR + MARK + page counter). -->
-        <field name="margin_top">85</field>
-        <field name="margin_bottom">30</field>
+        <!-- margin_top reserves the whole fixed header region (masthead +
+             document-type row + counterparty box), repeated on every page;
+             margin_bottom reserves the footer (QR + MARK + page counter).
+
+             header_spacing is NOT the space reserved for the header — it is
+             the gap between the header and the body, and wkhtmltopdf leaves
+             the header a usable band of (margin_top - header_spacing). It was
+             80, which gave a ~70mm header a 5mm band: everything above the
+             last row of the counterparty box fell off the top of the page.
+             Keep it at 0 and let margin_top alone define the region.
+
+             margin_top only has to fit the one-line repeat strip now that the
+             masthead and counterparty box render in the page flow (see the
+             note on report_gr_invoice_a4_body). 25mm is deliberately generous:
+             the strip needs about 4mm, but Odoo wraps the header region in
+             web.minimal_layout whose body adds container padding on top of
+             that, and the failure mode when the header does not fit is an
+             overlap on the lines table rather than a clip. Too large only
+             wastes white space, so err that way and trim against a printed
+             page, never against an estimate. Trimmed 25 → 10 against a printed
+             ΤΔΑ that put the strip at 25.8mm.
+             margin_bottom 24 is measured: the footer block occupies 18.3mm. -->
+        <field name="margin_top">10</field>
+        <field name="margin_bottom">24</field>
         <field name="margin_left">7</field>
         <field name="margin_right">7</field>
         <field name="header_line" eval="False"/>
-        <field name="header_spacing">80</field>
+        <field name="header_spacing">0</field>
         <field name="dpi">90</field>
     </record>
 
@@ -68,19 +87,28 @@
              so the A4 header geometry travels with the template and can never
              go stale with the DB paperformat. Only set when every document in
              the batch renders the GR A4 form. -->
-        <t t-set="l10n_gr_all_a4" t-value="bool(docs) and all(d._get_name_invoice_report() == 'l10n_gr_provider_base.report_gr_invoice_document' for d in docs)"/>
-        <t t-set="data_report_margin_top" t-value="85 if l10n_gr_all_a4 else None"/>
-        <t t-set="data_report_header_spacing" t-value="80 if l10n_gr_all_a4 else None"/>
+        <t t-set="l10n_gr_all_a4" t-value="bool(docs) and all(d._l10n_gr_prov_print_form() == 'gr_a4' for d in docs)"/>
+        <t t-set="data_report_margin_top" t-value="10 if l10n_gr_all_a4 else None"/>
+        <t t-set="data_report_header_spacing" t-value="0 if l10n_gr_all_a4 else None"/>
         <t t-call="web.html_container">
             <t t-foreach="docs" t-as="o">
-                <t t-if="o.journal_id.l10n_gr_prov_print_form == 'standard'">
-                    <t t-call="account.report_invoice_document"/>
+                <!-- Same routing decision as the standard Print button and as
+                     get_paperformat(): _l10n_gr_prov_print_form(), never the
+                     journal field on its own. -->
+                <t t-set="l10n_gr_form" t-value="o._l10n_gr_prov_print_form()"/>
+                <!-- core account.report_invoice sets the partner language on
+                     each document before calling its body; report_invoice_document
+                     dereferences `lang` on its first line, so it must exist here
+                     too. -->
+                <t t-set="lang" t-value="o.partner_id.lang"/>
+                <t t-if="l10n_gr_form == 'gr_80mm'">
+                    <t t-call="l10n_gr_provider_base.report_gr_invoice_80mm_body" t-lang="lang"/>
                 </t>
-                <t t-elif="o.journal_id.l10n_gr_prov_print_form == 'gr_80mm'">
-                    <t t-call="l10n_gr_provider_base.report_gr_invoice_80mm_body"/>
+                <t t-elif="l10n_gr_form == 'gr_a4'">
+                    <t t-call="l10n_gr_provider_base.report_gr_invoice_a4_body" t-lang="lang"/>
                 </t>
                 <t t-else="">
-                    <t t-call="l10n_gr_provider_base.report_gr_invoice_a4_body"/>
+                    <t t-call="account.report_invoice_document" t-lang="lang"/>
                 </t>
             </t>
         </t>
@@ -96,14 +124,14 @@
         <!-- Same header-geometry override for the standard Print button path;
              see the note on report_gr_invoice above. -->
         <xpath expr='//t[@t-call="web.html_container"]' position="before">
-            <t t-set="l10n_gr_all_a4" t-value="bool(docs) and all(d._get_name_invoice_report() == 'l10n_gr_provider_base.report_gr_invoice_document' for d in docs)"/>
-            <t t-set="data_report_margin_top" t-value="85 if l10n_gr_all_a4 else None"/>
-            <t t-set="data_report_header_spacing" t-value="80 if l10n_gr_all_a4 else None"/>
+            <t t-set="l10n_gr_all_a4" t-value="bool(docs) and all(d._l10n_gr_prov_print_form() == 'gr_a4' for d in docs)"/>
+            <t t-set="data_report_margin_top" t-value="10 if l10n_gr_all_a4 else None"/>
+            <t t-set="data_report_header_spacing" t-value="0 if l10n_gr_all_a4 else None"/>
         </xpath>
         <xpath expr='//t[@t-call="account.report_invoice_document"]' position="after">
-            <t t-elif="o._get_name_invoice_report() == 'l10n_gr_provider_base.report_gr_invoice_document'"
+            <t t-elif="o._l10n_gr_prov_print_form() == 'gr_a4'"
                t-call="l10n_gr_provider_base.report_gr_invoice_a4_body" t-lang="lang"/>
-            <t t-elif="o._get_name_invoice_report() == 'l10n_gr_provider_base.report_gr_invoice_80mm'"
+            <t t-elif="o._l10n_gr_prov_print_form() == 'gr_80mm'"
                t-call="l10n_gr_provider_base.report_gr_invoice_80mm_body" t-lang="lang"/>
         </xpath>
     </template>
@@ -120,17 +148,90 @@
                  form (Epsilon-style). Everything in the body flow; only a thin
                  provider line uses the repeating footer. print-color-adjust
                  forces the grey header shading to render. -->
+            <!-- NB: never pair a static style="" with t-attf-style="" on the
+                 same element — QWeb applies dynamic attributes after the
+                 static ones into the same dict, so the static style is
+                 silently dropped. Everything below folds into one
+                 t-attf-style. `band` is the grey caption strip (shading +
+                 bold + centred) used by every section header. -->
             <t t-set="grey" t-value="'background-color: #e6e6e6; -webkit-print-color-adjust: exact; print-color-adjust: exact;'"/>
-            <t t-set="cell" t-value="'border: 1px solid #000; padding: 1mm 2mm; box-sizing: border-box;'"/>
+            <t t-set="band" t-value="grey + ' font-weight: bold; text-align: center;'"/>
+            <t t-set="cell" t-value="'border: 1px solid #000 !important; padding: 1mm 2mm; box-sizing: border-box;'"/>
+            <!-- Lines-table cell: vertical dividers only. The columns run the
+                 full height of the item area but consecutive products are not
+                 boxed off from one another — the outer frame comes from the
+                 table's own border and the header row carries the only
+                 horizontal rule. -->
+            <t t-set="vcell" t-value="'border-left: 1px solid #000 !important; border-right: 1px solid #000 !important; padding: 1mm 2mm; box-sizing: border-box;'"/>
             <t t-set="series" t-value="o._l10n_gr_prov_report_series_serial()"/>
             <t t-set="plines" t-value="o.invoice_line_ids.filtered(lambda l: l.display_type == 'product')"/>
+            <!-- SN/LN for the whole document in one traversal ({line_id: [names]}),
+                 not one sale_line → stock.move → stock.move.line cascade per
+                 printed line. Follows the Inventory setting «Display Lots &amp;
+                 Serial Numbers on Invoices». -->
+            <t t-set="lots" t-value="{}"/>
+            <t groups="stock_account.group_lot_on_invoice">
+                <t t-set="lots" t-value="plines._l10n_gr_prov_lot_names()"/>
+            </t>
             <t t-set="tot" t-value="o._l10n_gr_prov_report_totals()"/>
+            <t t-set="notes" t-value="o._l10n_gr_prov_legal_notes()"/>
+            <!-- Number formatting on a Greek legal form: decimal COMMA, and a
+                 currency symbol only where the form asks for one. Never
+                 '%.2f' — that hard-codes a dot regardless of the language and
+                 was mixing «18,00» and «18.00» in adjacent columns.
+                 `num` = bare amount, `qty` = quantity, `mono` = amount with €. -->
             <t t-set="mono" t-value="{'widget': 'monetary', 'display_currency': o.currency_id}"/>
+            <t t-set="num" t-value="{'widget': 'float', 'precision': 2}"/>
+            <t t-set="qty" t-value="{'widget': 'float', 'precision': 3}"/>
 
-            <!-- ═══ Fixed header, repeated on every page: masthead + document
-                 type row. Extracted into the wkhtmltopdf header region (the
-                 paperformat's 42mm top margin reserves the space). ═══ -->
-            <div class="header">
+            <!-- ═══ Repeating header: ONE thin line only. ═══
+                 The masthead, the ΕΙΔΟΣ ΠΑΡΑΣΤΑΤΙΚΟΥ row and the counterparty
+                 box used to live here and were extracted into the wkhtmltopdf
+                 header region. That was a persistent source of broken prints:
+                 Odoo wraps the header region in web.minimal_layout, whose body
+                 carries container padding on top of the content, and the block
+                 itself grows with the customer's name / trade description. The
+                 result overflowed unpredictably — measured 63mm inside an 85mm
+                 budget rendering correctly, then 73mm inside the same 85mm
+                 budget overlapping the lines table. Rather than keep tuning
+                 margin_top against a moving target, the block now renders in
+                 normal page flow below and the header carries a one-line
+                 identifier, which is a fixed height by construction.
+                 Trade-off: on a multi-page document the counterparty box shows
+                 on page 1 only. The lines table still repeats its own column
+                 headers via table-header-group. -->
+            <!-- Border reset. web.report_assets_common boxes bare table cells,
+                 so every plain <td> on this form picked up a rule it never
+                 asked for — around the masthead, under each counterparty
+                 field, under each row of the totals stack, around the footer.
+
+                 !important is required: a plain class selector was tried and
+                 lost, which means the Odoo rule is itself !important (the
+                 80mm ticket reached the same conclusion years ago). The
+                 consequence is that the form's own grid must ALSO be
+                 !important — inline !important is the only thing that outranks
+                 a stylesheet !important — hence `cell` and `vcell` carry it.
+                 If you add a border anywhere on this form, it needs
+                 !important or it will not render.
+
+                 Repeated in all three regions because wkhtmltopdf renders the
+                 header and the footer as separate documents; a <style> in one
+                 does not reach the others. -->
+            <div class="header gra4" style="font-size: 8px; border-bottom: 1px solid #000; padding-bottom: 0.5mm;">
+                <style>.gra4 table, .gra4 tr, .gra4 td, .gra4 th { border: 0 !important; }</style>
+                <table style="width: 100%;">
+                    <tr>
+                        <td t-out="o.company_id.name"/>
+                        <td style="text-align: right;">
+                            <span t-out="o._l10n_gr_prov_doc_title()"/>
+                            <t t-if="o.name"> · <span t-out="o.name"/></t>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="page gra4" style="font-size: 10px;">
+            <style>.gra4 table, .gra4 tr, .gra4 td, .gra4 th { border: 0 !important; }</style>
             <table style="width: 100%; font-size: 10px; margin-bottom: 2mm;">
                 <tr style="vertical-align: top;">
                     <td style="width: 50%;">
@@ -139,10 +240,16 @@
                     </td>
                     <td style="width: 50%; text-align: right;">
                         <div style="font-size: 18px; font-weight: bold;" t-out="o.company_id.name"/>
+                        <!-- ΓΕΜΗ rides on the Α.Φ.Μ. line to keep the masthead
+                             compact. Now that this block is in the page flow
+                             rather than the wkhtmltopdf header region, growing
+                             it costs line space but can no longer overlap. -->
                         <div>
                             Α.Φ.Μ.: <span t-out="(o.company_id.vat or '').replace('EL', '')"/>
                             <t t-if="o.company_id.partner_id.doy"> Δ.Ο.Υ.: <span t-out="o.company_id.partner_id.doy"/></t>
+                            <t t-if="o.company_id.company_registry"> ΓΕΜΗ: <span t-out="o.company_id.company_registry"/></t>
                         </div>
+                        <div t-if="o.company_id.partner_id.drastiriotita" t-out="o.company_id.partner_id.drastiriotita"/>
                         <div t-out="', '.join(filter(None, [o.company_id.street, o.company_id.city]))"/>
                         <div t-if="o.company_id.phone">ΤΗΛ: <span t-out="o.company_id.phone"/></div>
                         <div t-if="o.company_id.email">e-mail: <span t-out="o.company_id.email"/></div>
@@ -152,7 +259,7 @@
 
                 <!-- Row 1 (repeats with the header): document type / series / number / date / time -->
                 <table style="width: 100%; border-collapse: collapse; font-size: 10px;">
-                    <tr t-attf-style="{{grey}}" style="font-weight: bold; text-align: center;">
+                    <tr t-attf-style="{{band}}">
                         <td t-attf-style="{{cell}} width: 44%;">ΕΙΔΟΣ ΠΑΡΑΣΤΑΤΙΚΟΥ</td>
                         <td t-attf-style="{{cell}} width: 10%;">ΣΕΙΡΑ</td>
                         <td t-attf-style="{{cell}} width: 12%;">ΑΡΙΘΜΟΣ</td>
@@ -164,18 +271,30 @@
                         <td t-attf-style="{{cell}}" t-out="series[0]"/>
                         <td t-attf-style="{{cell}}" t-out="series[1]"/>
                         <td t-attf-style="{{cell}}"><span t-field="o.invoice_date"/></td>
+                        <!-- On a dispatch document this column means the start
+                             of shipping, not the moment the provider accepted
+                             the transmission. Those are different facts and the
+                             label claims the first one. -->
                         <td t-attf-style="{{cell}}">
-                            <span t-if="o.l10n_gr_prov_send_datetime" t-field="o.l10n_gr_prov_send_datetime" t-options='{"format": "HH:mm"}'/>
+                            <t t-if="o.l10n_gr_prov_is_dispatch and o.l10n_gr_prov_dispatch_datetime">
+                                <span t-field="o.l10n_gr_prov_dispatch_datetime" t-options='{"format": "HH:mm"}'/>
+                            </t>
+                            <t t-elif="not o.l10n_gr_prov_is_dispatch and o.l10n_gr_prov_send_datetime">
+                                <span t-field="o.l10n_gr_prov_send_datetime" t-options='{"format": "HH:mm"}'/>
+                            </t>
                         </td>
                     </tr>
                 </table>
 
-                <!-- Row 2 (repeats with the header): counterparty | related
-                     docs + purpose + payment -->
+                <!-- Counterparty | related docs. Unboxed: the grey caption bar
+                     is enough to delimit each half, so the cells carry padding
+                     and alignment only. The captions previously used negative
+                     margins to bleed over the cell border — with the border
+                     gone they are plain full-width bars. -->
                 <table style="width: 100%; border-collapse: collapse; font-size: 10px;">
                     <tr style="vertical-align: top;">
-                        <td t-attf-style="{{cell}} width: 55%; height: 34mm;">
-                            <div t-attf-style="{{grey}}" style="font-weight: bold; text-align: center; margin: -1mm -2mm 1mm -2mm; padding: 0.5mm;">ΣΤΟΙΧΕΙΑ ΣΥΜΒΑΛΛΟΜΕΝΟΥ</div>
+                        <td style="width: 55%; height: 34mm; padding-right: 3mm;">
+                            <div t-attf-style="{{band}} padding: 0.5mm; margin-bottom: 1mm;">ΣΤΟΙΧΕΙΑ ΣΥΜΒΑΛΛΟΜΕΝΟΥ</div>
                             <table style="width: 100%;">
                                 <tr><td style="width: 26mm;"><strong>ΚΩΔΙΚΟΣ</strong> :</td><td t-out="partner.ref or ''"/></tr>
                                 <tr><td><strong>ΕΠΩΝΥΜΙΑ</strong> :</td><td t-out="partner.name"/></tr>
@@ -187,16 +306,27 @@
                                 <tr><td><strong>Δ.Ο.Υ.</strong> :</td><td t-out="partner.doy or ''"/></tr>
                             </table>
                         </td>
-                        <td t-attf-style="{{cell}} width: 45%; height: 34mm;">
-                            <div t-attf-style="{{grey}}" style="font-weight: bold; text-align: center; margin: -1mm -2mm 1mm -2mm; padding: 0.5mm;">ΣΧΕΤΙΚΑ ΠΑΡΑΣΤΑΤΙΚΑ</div>
+                        <td style="width: 45%; height: 34mm;">
+                            <div t-attf-style="{{band}} padding: 0.5mm; margin-bottom: 1mm;">ΣΧΕΤΙΚΑ ΠΑΡΑΣΤΑΤΙΚΑ</div>
                             <div t-if="o.l10n_gr_edi_correlation_id">
                                 <span t-out="o.l10n_gr_edi_correlation_id.name"/>
                                 <t t-if="o.l10n_gr_edi_correlation_id.l10n_gr_prov_mark"> — ΜΑΡΚ <span t-out="o.l10n_gr_edi_correlation_id.l10n_gr_prov_mark"/></t>
                             </div>
-                            <div style="margin-top: 8mm;">
-                                <strong>ΣΚΟΠΟΣ ΔΙΑΚΙΝΗΣΗΣ</strong> :
-                                <span t-if="o.l10n_gr_prov_is_dispatch and o.l10n_gr_prov_move_purpose"
-                                      t-out="dict(o._fields['l10n_gr_prov_move_purpose'].selection).get(o.l10n_gr_prov_move_purpose, '')"/>
+                            <!-- This box used to hold a correlation line, an 8mm
+                                 spacer and two labels. ΣΚΟΠΟΣ ΔΙΑΚΙΝΗΣΗΣ moved
+                                 to the ΔΙΑΚΙΝΗΣΗ strip in the body, which frees
+                                 the space for the delivery address and the due
+                                 date without growing the 34mm box. -->
+                            <div t-if="o.partner_shipping_id and o.partner_shipping_id != o.partner_id">
+                                <strong>ΠΑΡΑΔΟΣΗ</strong> :
+                                <span t-out="', '.join(filter(None, [
+                                    o.partner_shipping_id.name,
+                                    o.partner_shipping_id.street,
+                                    o.partner_shipping_id.city,
+                                    o.partner_shipping_id.zip]))"/>
+                            </div>
+                            <div t-if="o.invoice_date_due and o.invoice_date_due != o.invoice_date">
+                                <strong>ΗΜ. ΛΗΞΗΣ</strong> : <span t-field="o.invoice_date_due"/>
                             </div>
                             <div>
                                 <strong>ΤΡΟΠΟΣ ΠΛΗΡΩΜΗΣ</strong> :
@@ -205,59 +335,105 @@
                         </td>
                     </tr>
                 </table>
-            </div>
 
-            <div class="page" style="font-size: 10px;">
+                <!-- ΔΙΑΚΙΝΗΣΗ strip: vehicle, locations and shipping start.
+                     All of this was already captured and transmitted to the
+                     provider but never printed, so delivery notes went out
+                     without it. Deliberately in the page flow and not in
+                     div.header, which now carries only a one-line strip. -->
+                <table t-if="o.l10n_gr_prov_is_dispatch" style="width: 100%; border-collapse: collapse; margin-bottom: 1mm;">
+                    <tr t-attf-style="{{band}}">
+                        <td t-attf-style="{{cell}}" colspan="4">ΣΤΟΙΧΕΙΑ ΔΙΑΚΙΝΗΣΗΣ</td>
+                    </tr>
+                    <tr style="vertical-align: top;">
+                        <td t-attf-style="{{cell}} width: 34%;">
+                            <strong>ΣΚΟΠΟΣ</strong> :
+                            <span t-out="dict(o._fields['l10n_gr_prov_move_purpose'].selection).get(o.l10n_gr_prov_move_purpose, '')"/>
+                            <t t-if="o.l10n_gr_prov_other_move_purpose">
+                                — <span t-out="o.l10n_gr_prov_other_move_purpose"/>
+                            </t>
+                        </td>
+                        <td t-attf-style="{{cell}} width: 22%;">
+                            <strong>ΜΕΤΑΦ. ΜΕΣΟ</strong> :
+                            <span t-out="o.l10n_gr_prov_vehicle_id.name or ''"/>
+                        </td>
+                        <td t-attf-style="{{cell}} width: 22%;">
+                            <strong>ΕΝΑΡΞΗ</strong> :
+                            <span t-if="o.l10n_gr_prov_dispatch_datetime" t-field="o.l10n_gr_prov_dispatch_datetime"/>
+                        </td>
+                        <td t-attf-style="{{cell}} width: 22%;">
+                            <!-- blank branch number means the registered seat -->
+                            <strong>ΕΓΚΑΤΑΣΤΑΣΕΙΣ</strong> :
+                            <span t-out="o.l10n_gr_prov_start_shipping_branch or 'Έδρα'"/> →
+                            <span t-out="o.l10n_gr_prov_complete_shipping_branch or 'Έδρα'"/>
+                        </td>
+                    </tr>
+                    <tr t-if="o.l10n_gr_prov_reverse_delivery">
+                        <td t-attf-style="{{cell}}" colspan="4">
+                            <strong>ΑΝΤΙΣΤΡΟΦΗ ΔΙΑΚΙΝΗΣΗ</strong> —
+                            <span t-out="dict(o._fields['l10n_gr_prov_reverse_purpose'].selection).get(o.l10n_gr_prov_reverse_purpose, '')"/>
+                        </td>
+                    </tr>
+                </table>
+
                 <!-- Row 3: item table (tall fixed body) -->
-                <table style="width: 100%; border-collapse: collapse;">
+                <table style="width: 100%; border-collapse: collapse; border: 1px solid #000 !important;">
                     <!-- table-header-group: wkhtmltopdf reprints the column
                          header when the lines continue on the next page -->
                     <thead style="display: table-header-group;">
-                        <tr t-attf-style="{{grey}}" style="font-weight: bold; text-align: center;">
-                            <td t-attf-style="{{cell}} width: 14%;">ΚΩΔΙΚΟΣ</td>
-                            <td t-attf-style="{{cell}} width: 30%;">ΠΕΡΙΓΡΑΦΗ</td>
-                            <td t-attf-style="{{cell}} width: 6%;">ΜΜ</td>
-                            <td t-attf-style="{{cell}} width: 9%;">ΠΟΣ.</td>
-                            <td t-attf-style="{{cell}} width: 11%;">ΤΙΜΗ ΜΟΝ.</td>
-                            <td t-attf-style="{{cell}} width: 11%;">ΑΞΙΑ</td>
-                            <td t-attf-style="{{cell}} width: 8%;">ΕΚΠΤΩΣΗ</td>
-                            <td t-attf-style="{{cell}} width: 11%;">ΑΞΙΑ ΜΕΤΑ ΕΚΠΤ.</td>
-                            <td t-attf-style="{{cell}} width: 5%;">ΦΠΑ%</td>
+                        <tr t-attf-style="{{band}}">
+                            <td t-attf-style="{{vcell}} border-bottom: 1px solid #000 !important; width: 14%;">ΚΩΔΙΚΟΣ</td>
+                            <td t-attf-style="{{vcell}} border-bottom: 1px solid #000 !important; width: 30%;">ΠΕΡΙΓΡΑΦΗ</td>
+                            <td t-attf-style="{{vcell}} border-bottom: 1px solid #000 !important; width: 6%;">ΜΜ</td>
+                            <td t-attf-style="{{vcell}} border-bottom: 1px solid #000 !important; width: 9%;">ΠΟΣ.</td>
+                            <td t-attf-style="{{vcell}} border-bottom: 1px solid #000 !important; width: 11%;">ΤΙΜΗ ΜΟΝ.</td>
+                            <td t-attf-style="{{vcell}} border-bottom: 1px solid #000 !important; width: 11%;">ΑΞΙΑ</td>
+                            <td t-attf-style="{{vcell}} border-bottom: 1px solid #000 !important; width: 8%;">ΕΚΠΤΩΣΗ</td>
+                            <td t-attf-style="{{vcell}} border-bottom: 1px solid #000 !important; width: 11%;">ΑΞΙΑ ΜΕΤΑ ΕΚΠΤ.</td>
+                            <td t-attf-style="{{vcell}} border-bottom: 1px solid #000 !important; width: 5%;">ΦΠΑ%</td>
                         </tr>
                     </thead>
                     <tbody>
                         <t t-foreach="plines" t-as="line">
+                            <!-- Every value column is NET. price_unit is not
+                                 usable here: it carries the VAT when the price
+                                 list includes tax, which printed the gross
+                                 value under ΑΞΙΑ and the VAT under ΕΚΠΤΩΣΗ. -->
+                            <t t-set="amt" t-value="line._l10n_gr_prov_report_amounts()"/>
+                            <!-- SN/LN sits inside the ΠΕΡΙΓΡΑΦΗ cell rather than
+                                 in a row of its own (prefetched above into
+                                 `lots`): a second row read as a separate item
+                                 and drew a set of rules across the table. -->
+                            <t t-set="lot_names" t-value="lots.get(line.id) or []"/>
                             <tr style="vertical-align: top; page-break-inside: avoid;">
-                                <td t-attf-style="{{cell}}" t-out="line.product_id.default_code or ''"/>
-                                <td t-attf-style="{{cell}}" t-out="line.name or line.product_id.display_name"/>
-                                <td t-attf-style="{{cell}} text-align: center;" t-out="line.product_uom_id.name or ''"/>
-                                <td t-attf-style="{{cell}} text-align: right;" t-out="'%.3f' % line.quantity"/>
-                                <td t-attf-style="{{cell}} text-align: right;"><span t-field="line.price_unit"/></td>
-                                <td t-attf-style="{{cell}} text-align: right;" t-out="'%.2f' % (line.price_unit * line.quantity)"/>
-                                <td t-attf-style="{{cell}} text-align: right;" t-out="'%.2f' % (line.price_unit * line.quantity - line.price_subtotal)"/>
-                                <td t-attf-style="{{cell}} text-align: right; background-color: #f0f0f0; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
-                                    <span t-field="line.price_subtotal" t-options="mono"/>
+                                <td t-attf-style="{{vcell}}" t-out="line.product_id.default_code or ''"/>
+                                <td t-attf-style="{{vcell}}">
+                                    <span t-out="line.name or line.product_id.display_name"/>
+                                    <div t-if="lot_names" style="font-size: 9px;">
+                                        SN: <t t-out="', '.join(lot_names)"/>
+                                    </div>
                                 </td>
-                                <td t-attf-style="{{cell}} text-align: right;" t-out="'%g' % (line.tax_ids[:1].amount if line.tax_ids else 0)"/>
-                            </tr>
-                            <!-- SN/LN of the delivered goods, under the line they
-                                 belong to — follows the Inventory setting «Display
-                                 Lots & Serial Numbers on Invoices». -->
-                            <t t-set="lot_names" t-value="[]"/>
-                            <t groups="stock_account.group_lot_on_invoice">
-                                <t t-set="lot_names" t-value="line._l10n_gr_prov_lot_names()"/>
-                            </t>
-                            <tr t-if="lot_names" style="page-break-inside: avoid;">
-                                <td t-attf-style="{{cell}}"/>
-                                <td t-attf-style="{{cell}} font-size: 9px;" colspan="8">
-                                    SN: <t t-out="', '.join(lot_names)"/>
+                                <td t-attf-style="{{vcell}} text-align: center;" t-out="line.product_uom_id.name or ''"/>
+                                <td t-attf-style="{{vcell}} text-align: right;" t-out="line.quantity" t-options="qty"/>
+                                <td t-attf-style="{{vcell}} text-align: right;" t-out="amt['unit']" t-options="num"/>
+                                <td t-attf-style="{{vcell}} text-align: right;" t-out="amt['before']" t-options="num"/>
+                                <td t-attf-style="{{vcell}} text-align: right;" t-out="amt['discount']" t-options="num"/>
+                                <td t-attf-style="{{vcell}} text-align: right; background-color: #f0f0f0; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
+                                    <span t-out="amt['after']" t-options="num"/>
                                 </td>
+                                <td t-attf-style="{{vcell}} text-align: right;" t-out="'%g' % (line.tax_ids[:1].amount if line.tax_ids else 0)"/>
                             </tr>
                         </t>
                         <!-- filler row so the item area stays tall like the form —
                              only on short documents; with many lines it would
-                             just push the totals to an extra page -->
-                        <tr t-if="len(plines) &lt;= 8" style="height: 70mm;"><td t-attf-style="{{cell}}" colspan="9"/></tr>
+                             just push the totals to an extra page. Nine separate
+                             cells, not one colspan, so the column dividers carry
+                             on down to the bottom of the item area. -->
+                        <tr t-if="len(plines) &lt;= 8" style="height: 70mm;">
+                            <td t-attf-style="{{vcell}}"/><td t-attf-style="{{vcell}}"/><td t-attf-style="{{vcell}}"/>
+                            <td t-attf-style="{{vcell}}"/><td t-attf-style="{{vcell}}"/><td t-attf-style="{{vcell}}"/>
+                            <td t-attf-style="{{vcell}}"/><td t-attf-style="{{vcell}}"/><td t-attf-style="{{vcell}}"/>
+                        </tr>
                     </tbody>
                 </table>
 
@@ -269,37 +445,46 @@
                 <table style="width: 100%; border-collapse: collapse;">
                     <tr style="vertical-align: top;">
                         <td t-attf-style="{{cell}} width: 46%;">
+                            <!-- Legal basis for any 0% line, plus the
+                                 self-billing marker. Printed above the free-text
+                                 remarks so it cannot be lost at the bottom of a
+                                 long narration. -->
+                            <div t-if="notes" style="margin-bottom: 1mm;">
+                                <div t-foreach="notes" t-as="note"
+                                     style="font-weight: bold; font-size: 9px;" t-out="note"/>
+                            </div>
                             <div><strong>ΠΑΡΑΤΗΡΗΣΕΙΣ:</strong></div>
                             <div style="font-size: 9px;"><span t-if="o.narration" t-field="o.narration"/></div>
                         </td>
                         <td t-attf-style="{{cell}} width: 30%;">
-                            <div t-attf-style="{{grey}}" style="font-weight: bold; text-align: center; margin: -1mm -2mm 1mm -2mm; padding: 0.5mm;">ΑΝΑΛΥΣΗ ΥΠΟΛΟΓΙΣΜΟΥ ΦΠΑ</div>
+                            <div t-attf-style="{{band}} margin: -1mm -2mm 1mm -2mm; padding: 0.5mm;">ΑΝΑΛΥΣΗ ΥΠΟΛΟΓΙΣΜΟΥ ΦΠΑ</div>
                             <table style="width: 100%; border-collapse: collapse; font-size: 9px;">
                                 <tr style="font-weight: bold; text-align: center;">
-                                    <td style="border: 1px solid #999; padding: 0.5mm;">ΚΑΘΑΡΗ ΑΞΙΑ</td>
-                                    <td style="border: 1px solid #999; padding: 0.5mm;">% Φ.Π.Α.</td>
-                                    <td style="border: 1px solid #999; padding: 0.5mm;">ΑΞΙΑ Φ.Π.Α.</td>
+                                    <td style="border: 1px solid #999 !important; padding: 0.5mm;">ΚΑΘΑΡΗ ΑΞΙΑ</td>
+                                    <td style="border: 1px solid #999 !important; padding: 0.5mm;">% Φ.Π.Α.</td>
+                                    <td style="border: 1px solid #999 !important; padding: 0.5mm;">ΑΞΙΑ Φ.Π.Α.</td>
                                 </tr>
                                 <tr t-foreach="o._l10n_gr_prov_vat_analysis()" t-as="vr" style="text-align: right;">
-                                    <td style="border: 1px solid #999; padding: 0.5mm;" t-out="'%.2f' % vr['net']"/>
-                                    <td style="border: 1px solid #999; padding: 0.5mm; text-align: center;" t-out="'%g' % vr['rate']"/>
-                                    <td style="border: 1px solid #999; padding: 0.5mm;" t-out="'%.2f' % vr['vat']"/>
+                                    <td style="border: 1px solid #999 !important; padding: 0.5mm;" t-out="vr['net']" t-options="num"/>
+                                    <td style="border: 1px solid #999 !important; padding: 0.5mm; text-align: center;" t-out="'%g' % vr['rate']"/>
+                                    <td style="border: 1px solid #999 !important; padding: 0.5mm;" t-out="vr['vat']" t-options="num"/>
                                 </tr>
                             </table>
                         </td>
                         <td t-attf-style="{{cell}} width: 24%; padding: 0;">
                             <table style="width: 100%; border-collapse: collapse; font-size: 10px;">
-                                <tr><td style="padding: 0.5mm 2mm;">ΑΞΙΑ ΠΡΟ ΕΚΠΤ.</td><td style="padding: 0.5mm 2mm; text-align: right;" t-out="'%.2f' % tot['gross_before']"/></tr>
-                                <tr><td style="padding: 0.5mm 2mm;">ΕΚΠΤΩΣΗ</td><td style="padding: 0.5mm 2mm; text-align: right;" t-out="'%.2f' % tot['discount']"/></tr>
-                                <tr><td style="padding: 0.5mm 2mm;">ΚΑΘΑΡΗ ΑΞΙΑ</td><td style="padding: 0.5mm 2mm; text-align: right;" t-out="'%.2f' % tot['net']"/></tr>
-                                <tr><td style="padding: 0.5mm 2mm;">ΧΡΕΩΣΕΙΣ</td><td style="padding: 0.5mm 2mm; text-align: right;" t-out="'%.2f' % tot['charges']"/></tr>
-                                <tr><td style="padding: 0.5mm 2mm;">ΦΟΡΟΙ</td><td style="padding: 0.5mm 2mm; text-align: right;" t-out="'%.2f' % tot['other_taxes']"/></tr>
-                                <tr><td style="padding: 0.5mm 2mm;">Φ.Π.Α.</td><td style="padding: 0.5mm 2mm; text-align: right;" t-out="'%.2f' % tot['vat']"/></tr>
-                                <tr t-attf-style="{{grey}}" style="font-weight: bold; border-top: 1px solid #000; border-bottom: 1px solid #000;">
-                                    <td style="padding: 0.8mm 2mm;">ΤΕΛΙΚΗ ΑΞΙΑ</td><td style="padding: 0.8mm 2mm; text-align: right;" t-out="'%.2f' % tot['final']"/></tr>
-                                <tr><td style="padding: 0.5mm 2mm;">ΚΡΑΤΗΣΕΙΣ</td><td style="padding: 0.5mm 2mm; text-align: right;" t-out="'%.2f' % tot['withholding']"/></tr>
-                                <tr t-attf-style="{{grey}}" style="font-weight: bold; font-size: 12px; border-bottom: 1px solid #000;">
-                                    <td style="padding: 0.8mm 2mm;">ΠΛΗΡΩΤΕΟ</td><td style="padding: 0.8mm 2mm; text-align: right;" t-out="'%.2f' % tot['payable']"/></tr>
+                                <tr><td style="padding: 0.5mm 2mm;">ΑΞΙΑ ΠΡΟ ΕΚΠΤ.</td><td style="padding: 0.5mm 2mm; text-align: right;" t-out="tot['gross_before']" t-options="num"/></tr>
+                                <tr><td style="padding: 0.5mm 2mm;">ΕΚΠΤΩΣΗ</td><td style="padding: 0.5mm 2mm; text-align: right;" t-out="tot['discount']" t-options="num"/></tr>
+                                <tr><td style="padding: 0.5mm 2mm;">ΚΑΘΑΡΗ ΑΞΙΑ</td><td style="padding: 0.5mm 2mm; text-align: right;" t-out="tot['net']" t-options="num"/></tr>
+                                <tr><td style="padding: 0.5mm 2mm;">ΧΡΕΩΣΕΙΣ</td><td style="padding: 0.5mm 2mm; text-align: right;" t-out="tot['charges']" t-options="num"/></tr>
+                                <tr><td style="padding: 0.5mm 2mm;">ΦΟΡΟΙ</td><td style="padding: 0.5mm 2mm; text-align: right;" t-out="tot['other_taxes']" t-options="num"/></tr>
+                                <tr><td style="padding: 0.5mm 2mm;">Φ.Π.Α.</td><td style="padding: 0.5mm 2mm; text-align: right;" t-out="tot['vat']" t-options="num"/></tr>
+                                <!-- The two legal totals carry the currency symbol; everything above them is bare. -->
+                                <tr t-attf-style="{{grey}} font-weight: bold; border-top: 1px solid #000 !important; border-bottom: 1px solid #000 !important;">
+                                    <td style="padding: 0.8mm 2mm;">ΤΕΛΙΚΗ ΑΞΙΑ</td><td style="padding: 0.8mm 2mm; text-align: right;" t-out="tot['final']" t-options="mono"/></tr>
+                                <tr><td style="padding: 0.5mm 2mm;">ΚΡΑΤΗΣΕΙΣ</td><td style="padding: 0.5mm 2mm; text-align: right;" t-out="tot['withholding']" t-options="num"/></tr>
+                                <tr t-attf-style="{{grey}} font-weight: bold; font-size: 12px; border-bottom: 1px solid #000 !important;">
+                                    <td style="padding: 0.8mm 2mm;">ΠΛΗΡΩΤΕΟ</td><td style="padding: 0.8mm 2mm; text-align: right;" t-out="tot['payable']" t-options="mono"/></tr>
                             </table>
                         </td>
                     </tr>
@@ -320,7 +505,8 @@
 
             <!-- Fixed footer, repeated on every page: QR + provider markings.
                  The paperformat's 30mm bottom margin reserves this region. -->
-            <div class="footer" style="font-size: 8px; border-top: 1px solid #000; padding-top: 1mm;">
+            <div class="footer gra4" style="font-size: 8px; padding-top: 1mm;">
+                <style>.gra4 table, .gra4 tr, .gra4 td, .gra4 th { border: 0 !important; }</style>
                 <table style="width: 100%;">
                     <tr style="vertical-align: top;">
                         <td style="width: 24mm;">
@@ -375,6 +561,7 @@
                     <div style="font-weight: bold;" t-out="o.company_id.name"/>
                     <div t-out="', '.join(filter(None, [o.company_id.street, o.company_id.city, o.company_id.zip]))"/>
                     <div>ΑΦΜ: <span t-out="(o.company_id.vat or '').replace('EL', '')"/></div>
+                    <div t-if="o.company_id.company_registry">ΓΕΜΗ: <span t-out="o.company_id.company_registry"/></div>
                 </div>
                 <div style="text-align: center; border-top: 1px dashed #000; border-bottom: 1px dashed #000; margin: 2mm 0; padding: 1mm 0;">
                     <div style="font-weight: bold;" t-out="o._l10n_gr_prov_doc_title()"/>
@@ -390,17 +577,36 @@
                         <tr>
                             <td colspan="2" style="padding-top: 1mm;" t-out="line.name or line.product_id.display_name"/>
                         </tr>
+                        <!-- Retail is quoted GROSS: unit price and line total
+                             both include VAT, so qty × price_unit == the amount
+                             on the right. price_subtotal is net and printing it
+                             here made the line fail to multiply out. -->
                         <tr>
                             <td style="text-align: left;">
                                 <span t-out="'%g' % line.quantity"/> x
                                 <span t-field="line.price_unit"/>
                             </td>
                             <td style="text-align: right;">
-                                <span t-field="line.price_subtotal"
+                                <span t-out="line.price_total"
                                       t-options="{'widget': 'monetary', 'display_currency': o.currency_id}"/>
                             </td>
                         </tr>
                     </t>
+                </table>
+                <!-- Per-rate VAT breakdown. A single ΦΠΑ total is fine until a
+                     basket mixes 24% and 13%; same reconciled source as the A4
+                     form, so ticket and invoice can never disagree. -->
+                <table style="width: 100%; border-top: 1px dashed #000; margin-top: 2mm; padding-top: 1mm;">
+                    <tr style="font-weight: bold;">
+                        <td>ΣΥΝΤ.</td>
+                        <td style="text-align: right;">ΚΑΘΑΡΗ</td>
+                        <td style="text-align: right;">ΦΠΑ</td>
+                    </tr>
+                    <tr t-foreach="o._l10n_gr_prov_vat_analysis()" t-as="vr">
+                        <td><span t-out="'%g' % vr['rate']"/>%</td>
+                        <td style="text-align: right;" t-out="vr['net']" t-options="{'widget': 'float', 'precision': 2}"/>
+                        <td style="text-align: right;" t-out="vr['vat']" t-options="{'widget': 'float', 'precision': 2}"/>
+                    </tr>
                 </table>
                 <table style="width: 100%; border-top: 1px dashed #000; margin-top: 2mm; padding-top: 1mm;">
                     <tr><td>Καθαρή Αξία</td><td style="text-align: right;">
@@ -424,6 +630,12 @@
                                   t-options="{'widget': 'monetary', 'display_currency': o.currency_id}"/>
                         </td></tr>
                 </table>
+                <!-- Legal basis for any 0% line — same requirement on a ticket
+                     as on an invoice. -->
+                <t t-set="notes" t-value="o._l10n_gr_prov_legal_notes()"/>
+                <div t-if="notes" style="margin-top: 2mm; font-weight: bold;">
+                    <div t-foreach="notes" t-as="note" t-out="note"/>
+                </div>
                 <div style="text-align: center; margin-top: 2mm; border-top: 1px dashed #000; padding-top: 1mm;">
                     <img t-if="o.l10n_gr_prov_qr_png"
                          t-att-src="'data:image/png;base64,%s' % o.l10n_gr_prov_qr_png.decode()"
