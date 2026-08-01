@@ -39,18 +39,11 @@
              last row of the counterparty box fell off the top of the page.
              Keep it at 0 and let margin_top alone define the region.
 
-             margin_top only has to fit the one-line repeat strip now that the
-             masthead and counterparty box render in the page flow (see the
-             note on report_gr_invoice_a4_body). 25mm is deliberately generous:
-             the strip needs about 4mm, but Odoo wraps the header region in
-             web.minimal_layout whose body adds container padding on top of
-             that, and the failure mode when the header does not fit is an
-             overlap on the lines table rather than a clip. Too large only
-             wastes white space, so err that way and trim against a printed
-             page, never against an estimate. Trimmed 25 → 10 against a printed
-             ΤΔΑ that put the strip at 25.8mm.
+             There is no header region at all now — the masthead, document-type
+             row and counterparty box all render in the page flow — so
+             margin_top is just the physical top margin of the paper.
              margin_bottom 24 is measured: the footer block occupies 18.3mm. -->
-        <field name="margin_top">10</field>
+        <field name="margin_top">7</field>
         <field name="margin_bottom">24</field>
         <field name="margin_left">7</field>
         <field name="margin_right">7</field>
@@ -88,7 +81,7 @@
              go stale with the DB paperformat. Only set when every document in
              the batch renders the GR A4 form. -->
         <t t-set="l10n_gr_all_a4" t-value="bool(docs) and all(d._l10n_gr_prov_print_form() == 'gr_a4' for d in docs)"/>
-        <t t-set="data_report_margin_top" t-value="10 if l10n_gr_all_a4 else None"/>
+        <t t-set="data_report_margin_top" t-value="7 if l10n_gr_all_a4 else None"/>
         <t t-set="data_report_header_spacing" t-value="0 if l10n_gr_all_a4 else None"/>
         <t t-call="web.html_container">
             <t t-foreach="docs" t-as="o">
@@ -125,7 +118,7 @@
              see the note on report_gr_invoice above. -->
         <xpath expr='//t[@t-call="web.html_container"]' position="before">
             <t t-set="l10n_gr_all_a4" t-value="bool(docs) and all(d._l10n_gr_prov_print_form() == 'gr_a4' for d in docs)"/>
-            <t t-set="data_report_margin_top" t-value="10 if l10n_gr_all_a4 else None"/>
+            <t t-set="data_report_margin_top" t-value="7 if l10n_gr_all_a4 else None"/>
             <t t-set="data_report_header_spacing" t-value="0 if l10n_gr_all_a4 else None"/>
         </xpath>
         <xpath expr='//t[@t-call="account.report_invoice_document"]' position="after">
@@ -217,18 +210,11 @@
                  Repeated in all three regions because wkhtmltopdf renders the
                  header and the footer as separate documents; a <style> in one
                  does not reach the others. -->
-            <div class="header gra4" style="font-size: 8px; border-bottom: 1px solid #000; padding-bottom: 0.5mm;">
-                <style>.gra4 table, .gra4 tr, .gra4 td, .gra4 th { border: 0 !important; }</style>
-                <table style="width: 100%;">
-                    <tr>
-                        <td t-out="o.company_id.name"/>
-                        <td style="text-align: right;">
-                            <span t-out="o._l10n_gr_prov_doc_title()"/>
-                            <t t-if="o.name"> · <span t-out="o.name"/></t>
-                        </td>
-                    </tr>
-                </table>
-            </div>
+            <!-- No repeating header strip: the masthead and the document-type
+                 row print in the page flow just below, so a strip carrying the
+                 company name and document number only duplicated them on page
+                 one. Continuation pages therefore carry no identifier of their
+                 own — the footer's ΜΑΡΚ and page counter do that job. -->
 
             <div class="page gra4" style="font-size: 10px;">
             <style>.gra4 table, .gra4 tr, .gra4 td, .gra4 th { border: 0 !important; }</style>
