@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="res_config_settings_view_form_l10n_gr_prov_eftpos" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.l10n.gr.prov.eftpos</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="l10n_gr_provider_base.res_config_settings_view_form_l10n_gr_prov"/>
+        <field name="arch" type="xml">
+            <setting name="l10n_gr_prov_auto_setting" position="after">
+                <setting string="MegEftPos Driver" name="l10n_gr_prov_eft_driver_setting"
+                         help="Τοπική υπηρεσία MegEftPosRestServices για αυτόματη χρέωση των τερματικών. Κενό = χειροκίνητη χρέωση.">
+                    <field name="l10n_gr_prov_eft_driver_url"
+                           placeholder="http://127.0.0.1:8080"/>
+                    <field name="l10n_gr_prov_eft_license_key"
+                           placeholder="License Key" password="True"/>
+                    <field name="l10n_gr_prov_eft_vat"
+                           placeholder="ΑΦΜ άδειας (κενό = ΑΦΜ εταιρείας)"/>
+                </setting>
+            </setting>
+        </field>
+    </record>
+
+</odoo>

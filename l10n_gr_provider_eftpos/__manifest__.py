@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Greece - E-Invoicing Provider (EFT/POS Α.1155)',
-    'version': '1.1',
+    'version': '1.2',
     'category': 'Accounting/Localizations',
     'summary': 'Card-terminal payment signatures per Α.1155/2023 through the e-invoicing provider',
     'description': (
@@ -19,13 +19,19 @@
         '\n'
         'Signature cancellation with the AADE reason codes.\n'
         '\n'
-        'Phase 1 uses the manual terminal driver: the cashier charges the\n'
-        'standalone terminal (the signature reaches it through its NSP) and\n'
-        'types the transaction id back. NSP cloud drivers (Viva, Cardlink,\n'
-        '...) can be added per terminal later.\n'
+        'Terminals can be driven automatically through the ILYDA MegEftPos\n'
+        'Driver — one local REST service covering every NSP (Cardlink, Viva,\n'
+        'Mellon, ePay, Nexi, Worldline, Attica, EDPS, INSS). Odoo then charges\n'
+        'the card itself and reads back the transaction id. Terminals without\n'
+        'a driver protocol keep the manual flow: the cashier charges the\n'
+        'standalone terminal and types the transaction id back.\n'
         '\n'
         'Changelog\n'
         '---------\n'
+        '1.2 — MegEftPos Driver integration: automatic sale, refund on credit\n'
+        'notes, void when a charged payment is cancelled, and recovery of\n'
+        'interrupted transactions.\n'
+        '\n'
         '1.0 — Initial release: terminals, EFT payments menu, payment window\n'
         'on the invoice, real-time and retrograde flows, signature\n'
         'cancellation.'
@@ -39,6 +45,7 @@
     ],
     'data': [
         'security/ir.model.access.csv',
+        'views/res_config_settings_views.xml',
         'views/eft_views.xml',
         'views/pos_receipt_wizard_views.xml',
     ],

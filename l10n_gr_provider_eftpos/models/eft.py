@@ -17,6 +17,10 @@ from odoo.exceptions import UserError
 from odoo.addons.l10n_gr_provider_ilyda.models.account_move import (
     IlydaClient, TIMEOUT, _r2,
 )
+from .eft_driver import (
+    MegEftPosDriver, POS_PROTOCOLS, RESPONSE_CODES,
+    PROTOCOLS_NEED_HOST, PROTOCOLS_NEED_API_KEY, PROTOCOLS_NEED_CLIENT,
+)
 
 _logger = logging.getLogger(__name__)
 
@@ -90,6 +94,105 @@ class EftTerminal(models.Model):
         default=lambda self: self.env.company)
     active = fields.Boolean(default=True)
 
+    # ── MegEftPos driver (Α.1155 automatic charging) ─────────────────────────
+    # nsp_protocol above is ILYDA's signature hint; pos_protocol is the driver's
+    # own enum for reaching the terminal. They are related but not the same
+    # list, so both are kept.
+    pos_protocol = fields.Selection(
+        POS_PROTOCOLS, string='Πρωτόκολλο Driver',
+        help='Πρωτόκολλο επικοινωνίας του MegEftPos Driver με το τερματικό. '
+             'Κενό = το τερματικό χρεώνεται χειροκίνητα.')
+    host = fields.Char(
+        string='IP Τερματικού',
+        help='Απαιτείται για Cardlink / EDPS / Nexi TCP.')
+    port = fields.Integer(
+        string='Port Τερματικού',
+        help='Απαιτείται για Cardlink / EDPS / Nexi TCP.')
+    api_key = fields.Char(
+        string='API Key (WebECR)', groups='base.group_system',
+        help='Απαιτείται για Mellon / ePay / Nexi / Attica / Worldline. '
+             'Λαμβάνεται με εξαργύρωση του OTP που εμφανίζει το τερματικό.')
+    client_id = fields.Char(
+        string='Client ID (Viva)',
+        help='Από το POS APIs Credentials του Viva portal.')
+    client_secret = fields.Char(
+        string='Client Secret (Viva)', groups='base.group_system')
+    otp = fields.Char(
+        string='OTP Τερματικού', copy=False,
+        help='Ο εξαψήφιος κωδικός που εμφανίζει το τερματικό· εξαργυρώνεται '
+             'μία φορά για να παραχθεί το API Key.')
+
+    # Which extra fields this protocol needs — drives the form and the guard.
+    needs_host = fields.Boolean(compute='_compute_protocol_needs')
+    needs_api_key = fields.Boolean(compute='_compute_protocol_needs')
+    needs_client = fields.Boolean(compute='_compute_protocol_needs')
+
+    @api.depends('pos_protocol')
+    def _compute_protocol_needs(self):
+        for terminal in self:
+            protocol = terminal.pos_protocol
+            terminal.needs_host = protocol in PROTOCOLS_NEED_HOST
+            terminal.needs_api_key = protocol in PROTOCOLS_NEED_API_KEY
+            terminal.needs_client = protocol in PROTOCOLS_NEED_CLIENT
+
+    def _l10n_gr_prov_driver_enabled(self):
+        """True when this terminal can be charged by the driver."""
+        self.ensure_one()
+        return bool(self.pos_protocol and self.company_id.l10n_gr_prov_eft_driver_url)
+
+    def _l10n_gr_prov_pos_device(self):
+        """The PosDevice structure the driver expects."""
+        self.ensure_one()
+        if not self.pos_protocol:
+            raise UserError(_(
+                'Το τερματικό %s δεν έχει πρωτόκολλο driver.', self.display_name))
+        device = {'terminalId': self.code, 'posProtocol': self.pos_protocol}
+        if self.needs_host:
+            if not (self.host and self.port):
+                raise UserError(_(
+                    'Το πρωτόκολλο %s απαιτεί IP και port τερματικού.',
+                    self.pos_protocol))
+            device['host'] = self.host
+            device['port'] = self.port
+        if self.needs_api_key:
+            api_key = self.sudo().api_key
+            if not api_key:
+                raise UserError(_(
+                    'Το πρωτόκολλο %s απαιτεί API Key — εξαργυρώστε το OTP '
+                    'του τερματικού.', self.pos_protocol))
+            device['apiKey'] = api_key
+        if self.needs_client:
+            terminal = self.sudo()
+            if not (terminal.client_id and terminal.client_secret):
+                raise UserError(_(
+                    'Το Viva Cloud απαιτεί Client ID και Client Secret.'))
+            device['clientId'] = terminal.client_id
+            # The driver spells this field «clientSecter» (sic, v2.1.5).
+            device['clientSecter'] = terminal.client_secret
+        return device
+
+    def action_redeem_otp(self):
+        """Exchange the terminal's OTP for the WebECR API key."""
+        self.ensure_one()
+        if not self.otp:
+            raise UserError(_('Καταχωρίστε το OTP που εμφανίζει το τερματικό.'))
+        data = MegEftPosDriver(self.company_id).redeem_otp(
+            self._l10n_gr_prov_pos_device_for_otp(), self.otp)
+        api_key = (data or {}).get('apiKey')
+        if not api_key:
+            raise UserError(_('Ο driver δεν επέστρεψε API Key.'))
+        self.sudo().write({'api_key': api_key, 'otp': False})
+
+    def _l10n_gr_prov_pos_device_for_otp(self):
+        """The OTP exchange is what PRODUCES the api key, so it cannot require
+        one — send the device without it."""
+        self.ensure_one()
+        device = {'terminalId': self.code, 'posProtocol': self.pos_protocol}
+        if self.needs_host and self.host and self.port:
+            device['host'] = self.host
+            device['port'] = self.port
+        return device
+
 
 class EftPayment(models.Model):
     _name = 'l10n.gr.prov.eft.payment'
@@ -102,6 +205,7 @@ class EftPayment(models.Model):
         domain="[('move_type', 'in', ('out_invoice', 'out_refund')), ('state', '=', 'posted')]")
     company_id = fields.Many2one(related='move_id.company_id', store=True)
     currency_id = fields.Many2one(related='move_id.currency_id')
+    move_type = fields.Selection(related='move_id.move_type')
     partner_id = fields.Many2one(related='move_id.partner_id', string='Πελάτης')
     terminal_id = fields.Many2one(
         'l10n.gr.prov.eft.terminal', string='Τερματικό', required=True,
@@ -127,9 +231,42 @@ class EftPayment(models.Model):
         help='Ανενεργή υπογραφή: αχρησιμοποίητες υπογραφές διαβιβάζονται '
              'αυτόματα στην ΑΑΔΕ ως «Ανοιχτά Παραστατικά» μετά από 24 ώρες.')
 
+    signed_content = fields.Char(
+        string='Υπογεγραμμένο Περιεχόμενο', readonly=True, copy=False,
+        help='Η συμβολοσειρά που υπέγραψε ο πάροχος (signedContent). '
+             'Διαβιβάζεται στον MegEftPos Driver ως providerInput.')
+
     transaction_id = fields.Char(
         string='Ταυτότητα Συναλλαγής', copy=False,
-        help='Το transaction id που επιστρέφει το τερματικό μετά τη χρέωση.')
+        help='Το transaction id που διαβιβάζεται στην ΑΑΔΕ. Με τον MegEftPos '
+             'Driver είναι το nspReferenceNumber της συναλλαγής· χωρίς driver '
+             'το καταχωρεί ο χειριστής από το τερματικό.')
+
+    # ── MegEftPos driver result ──────────────────────────────────────────────
+    driver_response_code = fields.Selection(
+        RESPONSE_CODES, string='Απάντηση Τερματικού', readonly=True, copy=False)
+    driver_message = fields.Char(
+        string='Μήνυμα NSP', readonly=True, copy=False)
+    ecr_reference = fields.Char(
+        string='ECR Reference', readonly=True, copy=False,
+        help='Μοναδικός κωδικός συναλλαγής του driver — με αυτόν αναζητείται '
+             'η συναλλαγή στην τράπεζα και ανακτάται μια διακοπείσα χρέωση.')
+    nsp_reference = fields.Char(
+        string='NSP Reference', readonly=True, copy=False)
+    bank_auth_code = fields.Char(
+        string='Κωδικός Έγκρισης Τράπεζας', readonly=True, copy=False)
+    receipt_number = fields.Char(
+        string='Αριθμός Απόδειξης POS', readonly=True, copy=False)
+    card_type = fields.Char(string='Τύπος Κάρτας', readonly=True, copy=False)
+    card_number = fields.Char(string='Κάρτα', readonly=True, copy=False)
+    driver_enabled = fields.Boolean(
+        compute='_compute_driver_enabled',
+        help='Το τερματικό μπορεί να χρεωθεί αυτόματα από τον driver.')
+    origin_payment_id = fields.Many2one(
+        'l10n.gr.prov.eft.payment', string='Αρχική Χρέωση', copy=False,
+        help='Η χρέωση κάρτας που επιστρέφεται. Σε πιστωτικό συμπληρώνεται '
+             'από το αρχικό παραστατικό — ο driver χρειάζεται τους κωδικούς '
+             'της για να εκτελέσει Refund.')
     payment_method_mark = fields.Char(
         string='MARK Πληρωμής', readonly=True, copy=False,
         help='Το paymentMethodMark της ΑΑΔΕ (ετεροχρονισμένη διαβίβαση).')
@@ -140,6 +277,12 @@ class EftPayment(models.Model):
     _sql_constraints = [
         ('amount_positive', 'CHECK(amount > 0)', 'Το ποσό πρέπει να είναι θετικό.'),
     ]
+
+    @api.depends('terminal_id')
+    def _compute_driver_enabled(self):
+        for pay in self:
+            pay.driver_enabled = bool(
+                pay.terminal_id and pay.terminal_id._l10n_gr_prov_driver_enabled())
 
     @api.depends('signature_expiry', 'state')
     def _compute_signature_expired(self):
@@ -156,15 +299,21 @@ class EftPayment(models.Model):
 
     @api.onchange('move_id')
     def _onchange_move_id(self):
-        """Default the amount to what is still unassigned to EFT payments."""
+        """Default the amount to what is still unassigned to EFT payments, and
+        on a credit note point at the charge it reverses."""
         for pay in self:
             move = pay.move_id
-            if not move or pay.amount:
+            if not move:
                 continue
-            assigned = sum(move.l10n_gr_prov_eft_payment_ids.filtered(
-                lambda p: p.state != 'cancelled' and p.id != pay._origin.id
-            ).mapped('amount'))
-            pay.amount = max(move._l10n_gr_prov_payable() - assigned, 0.0)
+            if not pay.amount:
+                assigned = sum(move.l10n_gr_prov_eft_payment_ids.filtered(
+                    lambda p: p.state != 'cancelled' and p.id != pay._origin.id
+                ).mapped('amount'))
+                pay.amount = max(move._l10n_gr_prov_payable() - assigned, 0.0)
+            if move.move_type == 'out_refund' and not pay.origin_payment_id:
+                pay.origin_payment_id = move.reversed_entry_id \
+                    .l10n_gr_prov_eft_payment_ids.filtered(
+                        lambda p: p.driver_response_code == 'APPROVED')[:1]
 
     # ── Flow ──────────────────────────────────────────────────────────────────
     def _client(self):
@@ -224,6 +373,9 @@ class EftPayment(models.Model):
             'signature_uid': sig.get('uid'),
             'signed_at': self._epoch_to_dt(sig.get('signedAt')),
             'signature_expiry': self._epoch_to_dt(sig.get('signatureExpirationDate')),
+            # The string the provider actually signed. The terminal driver
+            # needs it as providerInput, and it is only ever returned here.
+            'signed_content': sig.get('signedContent'),
             'state': 'signed',
         })
         move.message_post(body=_(
@@ -231,9 +383,180 @@ class EftPayment(models.Model):
             '%(terminal)s (λήξη %(expiry)s).',
             amount=f'{self.amount:.2f}', terminal=terminal.display_name,
             expiry=self.signature_expiry or '—'))
-        # keep the dialog open on step 2 (charge the terminal, enter the
-        # transaction id) — returning nothing would close it
+        # With a driver, charge the card straight away — the signature exists
+        # for exactly this and expires. Otherwise keep the dialog open so the
+        # cashier can charge the terminal by hand and type the id.
+        if self.driver_enabled:
+            return self.action_charge_terminal()
         return self._reopen()
+
+    # ── Driver-side charging ────────────────────────────────────────────────
+
+    def _driver_amounts(self):
+        """The money block every driver request carries."""
+        self.ensure_one()
+        move = self.move_id
+        return {
+            'amount': _r2(self.amount),
+            'invoiceAmount': _r2(move._l10n_gr_prov_payable()),
+            'netAmount': _r2(move.amount_untaxed),
+            'vatAmount': _r2(move.amount_tax),
+            'tpAmount': _r2(self.tip_amount) if self.tip_amount else 0,
+        }
+
+    def _driver_signature_block(self):
+        """Α.1155 fields tying the charge to the provider's signature."""
+        self.ensure_one()
+        signed_at = self.signed_at
+        return {
+            'providerId': 'ILYDA',
+            'providerInput': self.signed_content or '',
+            'providerSignature': self.signature or '',
+            'providerUid': self.signature_uid or '',
+            # the driver wants seconds, Odoo stores a naive UTC datetime
+            'signatureTimestamp': int(signed_at.timestamp()) if signed_at else 0,
+            'paymentMethodId': 'BANK_CARD',
+        }
+
+    def _store_driver_result(self, data):
+        """Keep whatever the terminal answered, approved or not.
+
+        nspReferenceNumber is the value AADE expects as transactionId — the
+        spec marks it «Αποστέλλεται στην ΑΑΔΕ» — so it becomes our
+        transaction_id rather than anything the cashier types.
+        """
+        self.ensure_one()
+        code = data.get('responseCode')
+        message = ' '.join(filter(None, (
+            data.get('nspResponseCode'), data.get('nspResponseCodeDescripton'),
+            data.get('nspResponseCodeDescription'))))
+        vals = {
+            'driver_response_code': code if code in dict(RESPONSE_CODES) else 'UNKNOWN',
+            'driver_message': message or False,
+            'ecr_reference': data.get('ecrReferenceNumber') or self.ecr_reference,
+            'nsp_reference': data.get('nspReferenceNumber') or self.nsp_reference,
+            'bank_auth_code': data.get('bankAuthorizatonCode')
+                              or data.get('bankAuthorizationCode') or False,
+            'receipt_number': data.get('receiptNumber') or False,
+            'card_type': data.get('cardType') or False,
+            'card_number': data.get('cardNumber') or False,
+        }
+        if data.get('nspReferenceNumber'):
+            vals['transaction_id'] = data['nspReferenceNumber']
+        if data.get('tpAmount'):
+            vals['tip_amount'] = data['tpAmount']
+        self.write(vals)
+        return code
+
+    def _original_transaction_block(self):
+        """The references of the sale a refund reverses."""
+        self.ensure_one()
+        origin = self.origin_payment_id
+        if not origin.nsp_reference:
+            raise UserError(_(
+                'Για επιστροφή χρημάτων χρειάζεται η αρχική χρέωση κάρτας '
+                '(πεδίο «Αρχική Χρέωση») με κωδικούς από το τερματικό.'))
+        return {
+            'ecrReferenceNumber': origin.ecr_reference or '',
+            'nspReferenceNumber': origin.nsp_reference,
+            'bankAuthorizatonCode': origin.bank_auth_code or '',
+            'receiptNumber': origin.receipt_number or '',
+        }
+
+    def action_charge_terminal(self):
+        """Charge (or refund) the card through the MegEftPos driver.
+
+        A credit note reverses a specific earlier charge, so it goes to
+        /refund carrying that charge's references; everything else is a sale.
+        """
+        self.ensure_one()
+        if self.state != 'signed':
+            raise UserError(_('Χρειάζεται πρώτα υπογραφή παρόχου.'))
+        if not self.driver_enabled:
+            raise UserError(_(
+                'Το τερματικό %s δεν είναι συνδεδεμένο με τον MegEftPos Driver.',
+                self.terminal_id.display_name))
+        is_refund = self.move_id.move_type == 'out_refund'
+        request = dict(self._driver_amounts(), **self._driver_signature_block())
+        request['cashier'] = self.env.user.name
+        if is_refund:
+            request.update(self._original_transaction_block())
+        driver = MegEftPosDriver(self.move_id.company_id)
+        device = self.terminal_id._l10n_gr_prov_pos_device()
+        data = (driver.refund if is_refund else driver.sale)(device, request)
+        code = self._store_driver_result(data)
+        if code != 'APPROVED':
+            # No raise: rolling back would throw away ecrReferenceNumber, which
+            # is the only handle for recovering an interrupted transaction.
+            self.move_id.message_post(body=_(
+                'Α.1155: η συναλλαγή κάρτας δεν εγκρίθηκε (%(code)s) %(msg)s',
+                code=code or '—', msg=self.driver_message or ''))
+            return self._reopen()
+        self.move_id.message_post(body=_(
+            'Α.1155: %(kind)s %(amount)s εγκρίθηκε — έγκριση τράπεζας '
+            '%(auth)s, NSP ref %(nsp)s.',
+            kind=_('επιστροφή') if is_refund else _('χρέωση κάρτας'),
+            amount=f'{self.amount:.2f}', auth=self.bank_auth_code or '—',
+            nsp=self.nsp_reference or '—'))
+        return self.action_complete()
+
+    def _void_terminal(self):
+        """Reverse an approved charge on the terminal (same-day cancellation).
+
+        Called when the payment is cancelled: the money must go back before the
+        provider signature is released.
+        """
+        self.ensure_one()
+        request = dict(self._driver_amounts(), **self._driver_signature_block())
+        request.update({
+            'ecrReferenceNumber': self.ecr_reference or '',
+            'nspReferenceNumber': self.nsp_reference,
+            'bankAuthorizatonCode': self.bank_auth_code or '',
+            'receiptNumber': self.receipt_number or '',
+        })
+        request['cashier'] = self.env.user.name
+        data = MegEftPosDriver(self.move_id.company_id).void(
+            self.terminal_id._l10n_gr_prov_pos_device(), request)
+        code = (data or {}).get('responseCode')
+        if code != 'APPROVED':
+            raise UserError(_(
+                'Η ακύρωση της χρέωσης στο τερματικό δεν εγκρίθηκε: %(code)s '
+                '%(msg)s', code=dict(RESPONSE_CODES).get(code, code or '—'),
+                msg=(data or {}).get('nspResponseCodeDescripton') or ''))
+        self.move_id.message_post(body=_(
+            'Α.1155: ακυρώθηκε στο τερματικό η χρέωση %(amount)s (NSP ref '
+            '%(nsp)s).', amount=f'{self.amount:.2f}', nsp=self.nsp_reference))
+
+    def action_recover_pending(self):
+        """Ask the terminal what became of a transaction we lost the answer to.
+
+        A dropped connection or a timeout leaves the charge in an unknown
+        state; the driver keeps it pending and can still report the outcome.
+        """
+        self.ensure_one()
+        driver = MegEftPosDriver(self.move_id.company_id)
+        device = self.terminal_id._l10n_gr_prov_pos_device()
+        if self.ecr_reference:
+            found = driver.pending_by_ecr(device, self.ecr_reference)
+        elif self.nsp_reference:
+            found = driver.pending_by_nsp(device, self.nsp_reference)
+        else:
+            found = driver.pending_all(device)
+            if len(found) > 1:
+                raise UserError(_(
+                    'Το τερματικό έχει %s εκκρεμείς συναλλαγές — δεν μπορεί να '
+                    'ταυτοποιηθεί η σωστή. Ελέγξτε το τερματικό.', len(found)))
+        if not found:
+            raise UserError(_(
+                'Ο driver δεν βρήκε εκκρεμή συναλλαγή — η χρέωση δεν '
+                'ολοκληρώθηκε στο τερματικό.'))
+        code = self._store_driver_result(found[0])
+        if code != 'APPROVED':
+            return self._reopen()
+        self.move_id.message_post(body=_(
+            'Α.1155: ανακτήθηκε εγκεκριμένη χρέωση %(amount)s — NSP ref '
+            '%(nsp)s.', amount=f'{self.amount:.2f}', nsp=self.nsp_reference or '—'))
+        return self.action_complete()
 
     def _reopen(self):
         return {
@@ -349,6 +672,9 @@ class EftPayment(models.Model):
         if self.state == 'submitted':
             raise UserError(_(
                 'Η πληρωμή έχει διαβιβαστεί — η υπογραφή δεν ακυρώνεται.'))
+        if self.driver_response_code == 'APPROVED' and self.nsp_reference:
+            # The card was actually charged — give the money back first.
+            self._void_terminal()
         if self.state in ('signed', 'paid') and self.signature:
             if not self.cancel_reason:
                 raise UserError(_('Επιλέξτε Αιτία Ακύρωσης.'))

@@ -6,20 +6,67 @@
         <field name="name">l10n.gr.prov.eft.terminal.list</field>
         <field name="model">l10n.gr.prov.eft.terminal</field>
         <field name="arch" type="xml">
-            <list editable="bottom">
+            <list>
                 <field name="name"/>
                 <field name="code"/>
                 <field name="nsp_protocol"/>
+                <field name="pos_protocol"/>
                 <field name="company_id" groups="base.group_multi_company"/>
                 <field name="active" widget="boolean_toggle"/>
             </list>
         </field>
     </record>
 
+    <record id="view_eft_terminal_form" model="ir.ui.view">
+        <field name="name">l10n.gr.prov.eft.terminal.form</field>
+        <field name="model">l10n.gr.prov.eft.terminal</field>
+        <field name="arch" type="xml">
+            <form string="Τερματικό EFT/POS">
+                <sheet>
+                    <field name="needs_host" invisible="1"/>
+                    <field name="needs_api_key" invisible="1"/>
+                    <field name="needs_client" invisible="1"/>
+                    <div class="oe_title">
+                        <h1><field name="name" placeholder="π.χ. Ταμείο 1"/></h1>
+                    </div>
+                    <group>
+                        <group string="Ταυτότητα">
+                            <field name="code"/>
+                            <field name="nsp_protocol"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                            <field name="active" widget="boolean_toggle"/>
+                        </group>
+                        <group string="MegEftPos Driver">
+                            <field name="pos_protocol"/>
+                            <field name="host" invisible="not needs_host"
+                                   required="needs_host"/>
+                            <field name="port" invisible="not needs_host"
+                                   required="needs_host"/>
+                            <field name="client_id" invisible="not needs_client"
+                                   required="needs_client"/>
+                            <field name="client_secret" password="True"
+                                   invisible="not needs_client"
+                                   required="needs_client"/>
+                            <field name="api_key" password="True"
+                                   invisible="not needs_api_key" readonly="1"/>
+                            <label for="otp" invisible="not needs_api_key"/>
+                            <div class="o_row" invisible="not needs_api_key">
+                                <field name="otp" placeholder="OTP τερματικού"/>
+                                <button name="action_redeem_otp" type="object"
+                                        string="Εξαργύρωση" class="btn-link"
+                                        invisible="not otp"/>
+                            </div>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
     <record id="action_eft_terminal" model="ir.actions.act_window">
         <field name="name">Τερματικά EFT/POS</field>
         <field name="res_model">l10n.gr.prov.eft.terminal</field>
-        <field name="view_mode">list</field>
+        <field name="view_mode">list,form</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">Καταχωρίστε τα τερματικά καρτών</p>
             <p>Το Terminal ID και το πρωτόκολλο NSP κάθε μηχανήματος POS
@@ -38,12 +85,19 @@
                 <field name="state" invisible="1"/>
                 <field name="signature_expired" invisible="1"/>
                 <field name="company_id" invisible="1"/>
+                <field name="driver_enabled" invisible="1"/>
                 <widget name="web_ribbon" title="Ληγμένη" bg_color="text-bg-danger"
                         invisible="not signature_expired"/>
                 <div class="alert alert-info" role="alert"
-                     invisible="state != 'signed'">
+                     invisible="state != 'signed' or driver_enabled">
                     Η υπογραφή εκδόθηκε. Χρεώστε τώρα την κάρτα στο τερματικό
                     και καταχωρίστε την Ταυτότητα Συναλλαγής από την απόδειξή του.
+                </div>
+                <div class="alert alert-danger" role="alert"
+                     invisible="not driver_response_code or driver_response_code == 'APPROVED'">
+                    Η συναλλαγή στο τερματικό δεν εγκρίθηκε. Δοκιμάστε ξανά τη
+                    χρέωση ή, αν διακόπηκε η επικοινωνία, ανακτήστε την εκκρεμή
+                    συναλλαγή.
                 </div>
                 <group>
                     <group>
@@ -52,13 +106,30 @@
                         <field name="amount" readonly="state != 'draft'"/>
                         <field name="tip_amount" invisible="state == 'draft'"
                                readonly="state not in ('draft', 'signed')"/>
+                        <field name="move_type" invisible="1"/>
+                        <field name="origin_payment_id" readonly="state != 'draft'"
+                               invisible="move_type != 'out_refund'"/>
                     </group>
                     <group>
                         <field name="transaction_id" invisible="state == 'draft'"
-                               readonly="state not in ('signed',)"/>
+                               readonly="driver_enabled or state not in ('signed',)"/>
                         <field name="payment_method_mark"
                                invisible="not payment_method_mark"/>
                         <field name="signature_expiry" invisible="state == 'draft'"/>
+                    </group>
+                </group>
+                <group string="Τερματικό" invisible="not driver_response_code">
+                    <group>
+                        <field name="driver_response_code"/>
+                        <field name="driver_message"/>
+                        <field name="bank_auth_code"/>
+                        <field name="receipt_number"/>
+                    </group>
+                    <group>
+                        <field name="card_type"/>
+                        <field name="card_number"/>
+                        <field name="ecr_reference"/>
+                        <field name="nsp_reference"/>
                     </group>
                 </group>
                 <group string="Ακύρωση" invisible="state not in ('signed', 'paid')">
@@ -70,9 +141,18 @@
                     <button name="action_request_signature" type="object"
                             string="OK — Έκδοση Υπογραφής" class="btn-primary"
                             invisible="state != 'draft'"/>
+                    <button name="action_charge_terminal" type="object"
+                            string="Χρέωση Τερματικού" class="btn-primary"
+                            invisible="state != 'signed' or not driver_enabled"/>
+                    <button name="action_recover_pending" type="object"
+                            string="Ανάκτηση Εκκρεμούς"
+                            invisible="state != 'signed' or not driver_enabled
+                                       or not driver_response_code
+                                       or driver_response_code == 'APPROVED'"/>
                     <button name="action_complete" type="object"
-                            string="Ολοκλήρωση Αποστολής" class="btn-primary"
-                            invisible="state != 'signed'"/>
+                            string="Ολοκλήρωση Αποστολής"
+                            class="btn-primary"
+                            invisible="state != 'signed' or driver_enabled"/>
                     <button name="action_cancel" type="object"
                             string="Ακύρωση Υπογραφής"
                             invisible="state not in ('signed', 'paid')"/>
