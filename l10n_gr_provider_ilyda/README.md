@@ -243,6 +243,44 @@ Before submission the driver checks:
 
 ## Changelog
 
+### 2.4 — ΠΟΣΕ refunds
+- A refund on the ΠΟΣΕ journal transmits as **8.5**, instead of being turned
+  into a 5.x credit note.
+
+### 2.3 — Real units, 9.2, invoiceDetailType
+- `measurementUnit` is the line's actual unit (§8.13) rather than a hardcoded
+  1; an unmapped unit goes as 7 carrying its name and count.
+- 9.2 transmits the generic counterpart ΑΦΜ `000000000` and no longer demands a
+  VAT on the partner.
+- `invoiceDetailType` per line, with a 1.5 blocked before sending unless both
+  line kinds are present.
+
+### 2.2 — Retail refunds
+- Refunds on the ΠΛΑ journal submit as 11.4.
+
+### 2.1 — 8.2 Ειδικό Στοιχείο Τέλους Διαμονής
+- Payload shape for the accommodation fee document.
+
+### 2.0 — TF-1 offline QR
+- `/api/offline-qr` key lifecycle: issue, verify installation, revoke.
+- A connection failure on submit raises a typed *unreachable* error, which is
+  what triggers the base module's offline fallback — anything else would have
+  been recorded as a rejection.
+- The offline JWS payload is built from the same sources as the submit payload.
+- A recovered document with no provider `invoiceId` gets a chatter note saying
+  its PDF must be uploaded by hand.
+
+### 1.9 — Search & reconciliation, TF-2
+- UID lookups (`by-uid`, `by-mark`, `by-authentication-code`) and the TF-2
+  pending queue (`pending`, `by-uid`).
+- Recovery **adopts** a MARK issued during a lost-response submission instead of
+  resending it — the duplicate guard.
+- TF-2 responses (MQ001/MQ002 + I9999/I0004) store the identifier and QR and
+  mark the document queued rather than rejected; I0008 re-issues adopt the
+  original marking.
+- Local myDATA UID computation (SHA-1 / ISO-8859-7), self-checked against the
+  identifiers the provider returns.
+
 ### 1.8 — Combined invoice + delivery note (ΤΔΑ/ΠΤΔΑ)
 - Documents on «Τιμολόγιο – Δελτίο Αποστολής» journals send
   `isDeliveryNote: true` with aadeMovePurpose, otherDeliveryNoteHeader
