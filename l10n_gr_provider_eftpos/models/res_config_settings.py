@@ -11,3 +11,7 @@ class ResConfigSettings(models.TransientModel):
         related='company_id.l10n_gr_prov_eft_license_key', readonly=False)
     l10n_gr_prov_eft_vat = fields.Char(
         related='company_id.l10n_gr_prov_eft_vat', readonly=False)
+    l10n_gr_prov_eft_driver_user = fields.Char(
+        related='company_id.l10n_gr_prov_eft_driver_user', readonly=False)
+    l10n_gr_prov_eft_driver_password = fields.Char(
+        related='company_id.l10n_gr_prov_eft_driver_password', readonly=False)

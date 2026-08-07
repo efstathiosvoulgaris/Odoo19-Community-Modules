@@ -18,7 +18,7 @@ from odoo.addons.l10n_gr_provider_ilyda.models.account_move import (
     IlydaClient, TIMEOUT, _r2,
 )
 from .eft_driver import (
-    MegEftPosDriver, POS_PROTOCOLS, RESPONSE_CODES,
+    MegEftPosDriver, POS_PROTOCOLS, RESPONSE_CODES, PAYMENT_METHODS,
     PROTOCOLS_NEED_HOST, PROTOCOLS_NEED_API_KEY, PROTOCOLS_NEED_CLIENT,
 )
 
@@ -212,6 +212,19 @@ class EftPayment(models.Model):
         domain="[('company_id', '=', company_id)]")
     amount = fields.Monetary(string='Ποσό', currency_field='currency_id', required=True)
     tip_amount = fields.Monetary(string='Φιλοδώρημα', currency_field='currency_id')
+    installments = fields.Integer(
+        string='Δόσεις', default=0,
+        help='Πλήθος δόσεων για τη χρέωση της κάρτας. 0 ή 1 = εφάπαξ. '
+             'Υποστηρίζεται μόνο από όσους NSP προσφέρουν δόσεις.')
+    payment_method = fields.Selection(
+        PAYMENT_METHODS, string='Μέσο Πληρωμής', required=True,
+        default='BANK_CARD', copy=False,
+        help='Τι προεπιλέγεται στο τερματικό: κάρτα ή IRIS (το τερματικό '
+             'εμφανίζει QR στον πελάτη). Και τα δύο είναι συναλλαγές EFT/POS '
+             'και διαβιβάζονται ως τρόπος πληρωμής τύπου 7.\n'
+             'Προσοχή: η προεπιλογή δεν υποστηρίζεται από όλους τους NSP — αν '
+             'δεν υποστηρίζεται, το τερματικό εμφανίζει όλες τις επιλογές και '
+             'ο πελάτης επιλέγει επιτόπου.')
     state = fields.Selection([
         ('draft', 'Πρόχειρη'),
         ('signed', 'Με Υπογραφή'),
@@ -223,7 +236,11 @@ class EftPayment(models.Model):
     # Signature (InvoiceSignature) as returned by the provider
     signature = fields.Text(string='Υπογραφή Παρόχου', readonly=True, copy=False)
     signing_author = fields.Char(string='Αναγν. ΥΠΑΗΕΣ', readonly=True, copy=False)
-    signature_uid = fields.Char(string='UID Υπογραφής', readonly=True, copy=False)
+    signature_uid = fields.Char(
+        string='UID Υπογραφής (hash)', readonly=True, copy=False,
+        help='Το uidHash της υπογραφής — το SHA-1 του uid, που είναι και το '
+             'πρώτο πεδίο του signedContent. Ο driver το περιμένει ως '
+             'providerUid.')
     signed_at = fields.Datetime(string='Έκδοση Υπογραφής', readonly=True, copy=False)
     signature_expiry = fields.Datetime(string='Λήξη Υπογραφής', readonly=True, copy=False)
     signature_expired = fields.Boolean(
@@ -236,6 +253,21 @@ class EftPayment(models.Model):
         help='Η συμβολοσειρά που υπέγραψε ο πάροχος (signedContent). '
              'Διαβιβάζεται στον MegEftPos Driver ως providerInput.')
 
+    # What the provider actually signed for. Α.1155 §5.3 ties the signature to
+    # both an amount ceiling and the document's own totals, and neither can be
+    # re-derived later: signedContent orders these fields differently per NSP.
+    signature_amount = fields.Monetary(
+        string='Ποσό Υπογραφής', currency_field='currency_id',
+        readonly=True, copy=False,
+        help='Το πληρωτέο για το οποίο εκδόθηκε η υπογραφή. Η πληρωμή δεν '
+             'επιτρέπεται να το ξεπερνά.')
+    signature_net = fields.Monetary(
+        currency_field='currency_id', readonly=True, copy=False)
+    signature_vat = fields.Monetary(
+        currency_field='currency_id', readonly=True, copy=False)
+    signature_gross = fields.Monetary(
+        currency_field='currency_id', readonly=True, copy=False)
+
     transaction_id = fields.Char(
         string='Ταυτότητα Συναλλαγής', copy=False,
         help='Το transaction id που διαβιβάζεται στην ΑΑΔΕ. Με τον MegEftPos '
@@ -247,6 +279,18 @@ class EftPayment(models.Model):
         RESPONSE_CODES, string='Απάντηση Τερματικού', readonly=True, copy=False)
     driver_message = fields.Char(
         string='Μήνυμα NSP', readonly=True, copy=False)
+    preloaded_at = fields.Datetime(
+        string='Προφορτώθηκε', readonly=True, copy=False,
+        help='Πότε στάλθηκε η υπογραφή στο τερματικό ώστε ο πελάτης να '
+             'πληρώσει αργότερα (ετεροχρονισμένη συναλλαγή, Α.1155 §4).')
+    paid_amount = fields.Monetary(
+        string='Ποσό που Χρεώθηκε', currency_field='currency_id',
+        readonly=True, copy=False,
+        help='Το paidAmount που επέστρεψε το τερματικό. Αν διαφέρει από το '
+             'ζητούμενο ποσό, αυτό είναι που πραγματικά χρεώθηκε στην κάρτα.')
+    original_amount = fields.Monetary(
+        string='Αρχικό Ποσό POS', currency_field='currency_id',
+        readonly=True, copy=False)
     ecr_reference = fields.Char(
         string='ECR Reference', readonly=True, copy=False,
         help='Μοναδικός κωδικός συναλλαγής του driver — με αυτόν αναζητείται '
@@ -370,12 +414,20 @@ class EftPayment(models.Model):
         self.write({
             'signature': sig.get('signature'),
             'signing_author': sig.get('signingAuthor'),
-            'signature_uid': sig.get('uid'),
+            # providerUid must be the uidHash, not the uid: every driver
+            # example has providerUid == the first segment of providerInput,
+            # which is the SHA-1 hash. Fall back to uid if the provider omits it.
+            'signature_uid': sig.get('uidHash') or sig.get('uid'),
             'signed_at': self._epoch_to_dt(sig.get('signedAt')),
             'signature_expiry': self._epoch_to_dt(sig.get('signatureExpirationDate')),
             # The string the provider actually signed. The terminal driver
             # needs it as providerInput, and it is only ever returned here.
             'signed_content': sig.get('signedContent'),
+            # what this signature is bound to — checked again before it is used
+            'signature_amount': sig.get('amount') or 0.0,
+            'signature_net': sig.get('netAmount') or 0.0,
+            'signature_vat': sig.get('vatAmount') or 0.0,
+            'signature_gross': sig.get('grossAmount') or 0.0,
             'state': 'signed',
         })
         move.message_post(body=_(
@@ -390,19 +442,65 @@ class EftPayment(models.Model):
             return self.action_charge_terminal()
         return self._reopen()
 
+    def _check_signature_usable(self):
+        """Α.1155 §5.3, checked before the signature leaves for the terminal.
+
+        The provider enforces all of this too, but only once the document is
+        transmitted — by then the card has been charged, and unwinding that
+        costs a Void. Cheaper to refuse here.
+        """
+        self.ensure_one()
+        if self.signature_expired:
+            raise UserError(_(
+                'Η υπογραφή του παρόχου έληξε στις %(expiry)s και δεν μπορεί '
+                'να χρησιμοποιηθεί. Ακυρώστε την πληρωμή και ζητήστε νέα '
+                'υπογραφή.', expiry=self.signature_expiry))
+        # «Το ποσό του τρόπου πληρωμής ΠΡΕΠΕΙ να είναι ίσο ή μικρότερο από το
+        # πληρωτέο της υπογραφής» — reachable because amount stays writable.
+        if self.signature_amount and _r2(self.amount) > _r2(self.signature_amount):
+            raise UserError(_(
+                'Το ποσό %(amount)s ξεπερνά το ποσό της υπογραφής '
+                '%(signed)s. Ακυρώστε την πληρωμή και ζητήστε νέα υπογραφή '
+                'για το σωστό ποσό.',
+                amount=f'{self.amount:.2f}', signed=f'{self.signature_amount:.2f}'))
+        # «Η υπογραφή πρέπει να αφορά το συγκεκριμένο παραστατικό»: same net,
+        # vat and gross. Only drifts if the document was edited after signing.
+        move = self.move_id
+        drift = [
+            (label, signed, current)
+            for label, signed, current in (
+                (_('καθαρή αξία'), self.signature_net, move.amount_untaxed),
+                (_('ΦΠΑ'), self.signature_vat, move.amount_tax),
+                (_('σύνολο'), self.signature_gross, move._l10n_gr_prov_payable()),
+            )
+            if signed and _r2(signed) != _r2(current)
+        ]
+        if drift:
+            raise UserError(_(
+                'Το παραστατικό άλλαξε μετά την έκδοση της υπογραφής '
+                '(%(fields)s). Ακυρώστε την πληρωμή και ζητήστε νέα υπογραφή.',
+                fields='; '.join(
+                    f'{label}: {signed:.2f} → {current:.2f}'
+                    for label, signed, current in drift)))
+
     # ── Driver-side charging ────────────────────────────────────────────────
 
     def _driver_amounts(self):
         """The money block every driver request carries."""
         self.ensure_one()
         move = self.move_id
-        return {
+        block = {
             'amount': _r2(self.amount),
             'invoiceAmount': _r2(move._l10n_gr_prov_payable()),
             'netAmount': _r2(move.amount_untaxed),
             'vatAmount': _r2(move.amount_tax),
-            'tpAmount': _r2(self.tip_amount) if self.tip_amount else 0,
+            'tipAmount': _r2(self.tip_amount) if self.tip_amount else 0,
         }
+        # Optional everywhere, and NSPs that do not offer δόσεις reject a value:
+        # only send it when instalments were actually asked for.
+        if self.installments > 1:
+            block['installments'] = self.installments
+        return block
 
     def _driver_signature_block(self):
         """Α.1155 fields tying the charge to the provider's signature."""
@@ -413,9 +511,13 @@ class EftPayment(models.Model):
             'providerInput': self.signed_content or '',
             'providerSignature': self.signature or '',
             'providerUid': self.signature_uid or '',
-            # the driver wants seconds, Odoo stores a naive UTC datetime
-            'signatureTimestamp': int(signed_at.timestamp()) if signed_at else 0,
-            'paymentMethodId': 'BANK_CARD',
+            # The driver wants epoch seconds. Odoo stores a *naive UTC*
+            # datetime and datetime.timestamp() reads a naive value as local
+            # time — on a Greek server that is 2-3 hours off, so say UTC.
+            'signatureTimestamp': int(
+                signed_at.replace(tzinfo=timezone.utc).timestamp()
+            ) if signed_at else 0,
+            'paymentMethodId': self.payment_method,
         }
 
     def _store_driver_result(self, data):
@@ -427,31 +529,85 @@ class EftPayment(models.Model):
         """
         self.ensure_one()
         code = data.get('responseCode')
+        # driverError is set by MegEftPosDriver.transaction when the call
+        # failed at the driver rather than at the NSP (unreachable terminal,
+        # timeout): without it a COMMUNICATION_ERROR would carry no reason.
         message = ' '.join(filter(None, (
-            data.get('nspResponseCode'), data.get('nspResponseCodeDescripton'),
-            data.get('nspResponseCodeDescription'))))
+            data.get('nspResponseCode'), data.get('nspResponseCodeDescription'),
+            data.get('nspResponseCodeDescripton'), data.get('driverError'))))
         vals = {
             'driver_response_code': code if code in dict(RESPONSE_CODES) else 'UNKNOWN',
             'driver_message': message or False,
             'ecr_reference': data.get('ecrReferenceNumber') or self.ecr_reference,
             'nsp_reference': data.get('nspReferenceNumber') or self.nsp_reference,
-            'bank_auth_code': data.get('bankAuthorizatonCode')
-                              or data.get('bankAuthorizationCode') or False,
+            'bank_auth_code': data.get('bankAuthorizationCode')
+                              or data.get('bankAuthorizatonCode') or False,
             'receipt_number': data.get('receiptNumber') or False,
             'card_type': data.get('cardType') or False,
             'card_number': data.get('cardNumber') or False,
+            'paid_amount': data.get('paidAmount') or 0.0,
+            'original_amount': data.get('originalAmount') or 0.0,
         }
         if data.get('nspReferenceNumber'):
             vals['transaction_id'] = data['nspReferenceNumber']
-        if data.get('tpAmount'):
-            vals['tip_amount'] = data['tpAmount']
+        if data.get('tipAmount'):
+            vals['tip_amount'] = data['tipAmount']
+        # The customer may have picked a different method on the terminal.
+        # NONE_PAYMENT_METHOD means the NSP does not report it — keep what we
+        # asked for, which is exactly what the spec tells the ERP to do.
+        method = data.get('paymentMethodId')
+        if method in dict(PAYMENT_METHODS):
+            vals['payment_method'] = method
         self.write(vals)
         return code
 
+    def _reconcile_paid_amount(self):
+        """Make the transmitted amount the one the card actually paid.
+
+        The terminal is the source of truth for what was charged: the customer
+        may settle less, or the NSP may round. Transmitting our requested
+        figure instead would put a number in the myDATA type-7 line that never
+        happened, so adopt paidAmount and leave the shortfall unassigned for
+        the user to cover with another payment method.
+
+        NSPs disagree on whether paidAmount includes the tip, so a value
+        matching either reading is taken as agreement.
+        """
+        self.ensure_one()
+        paid = _r2(self.paid_amount)
+        if not paid:
+            return  # NSP does not report it — nothing to reconcile against
+        requested, tip = _r2(self.amount), _r2(self.tip_amount)
+        if paid in (requested, _r2(requested + tip)):
+            return
+        if paid > requested:
+            # Over the signature's ceiling — the provider will reject the
+            # document, so surface it now while a Void is still the answer.
+            raise UserError(_(
+                'Το τερματικό χρέωσε %(paid)s ενώ ζητήθηκαν %(asked)s. Το '
+                'επιπλέον ποσό δεν καλύπτεται από την υπογραφή — ακυρώστε τη '
+                'χρέωση στο τερματικό.',
+                paid=f'{paid:.2f}', asked=f'{requested:.2f}'))
+        self.amount = paid
+        self.move_id.message_post(body=_(
+            'Α.1155: το τερματικό χρέωσε %(paid)s αντί για %(asked)s — η '
+            'πληρωμή προσαρμόστηκε. Υπόλοιπο %(rest)s προς εξόφληση με άλλο '
+            'τρόπο πληρωμής.',
+            paid=f'{paid:.2f}', asked=f'{requested:.2f}',
+            rest=f'{requested - paid:.2f}'))
+
     def _original_transaction_block(self):
-        """The references of the sale a refund reverses."""
+        """The references of the sale a refund reverses.
+
+        Viva Cloud gained «Ελεύθερο Refund» in driver v2.1.08: it refunds to
+        the card without quoting an earlier charge, which is the only way to
+        credit a customer whose original sale went through another channel.
+        Every other NSP needs the references.
+        """
         self.ensure_one()
         origin = self.origin_payment_id
+        if not origin and self.terminal_id.pos_protocol == 'VIVA_CLOUD':
+            return {}
         if not origin.nsp_reference:
             raise UserError(_(
                 'Για επιστροφή χρημάτων χρειάζεται η αρχική χρέωση κάρτας '
@@ -459,7 +615,7 @@ class EftPayment(models.Model):
         return {
             'ecrReferenceNumber': origin.ecr_reference or '',
             'nspReferenceNumber': origin.nsp_reference,
-            'bankAuthorizatonCode': origin.bank_auth_code or '',
+            'bankAuthorizationCode': origin.bank_auth_code or '',
             'receiptNumber': origin.receipt_number or '',
         }
 
@@ -472,6 +628,7 @@ class EftPayment(models.Model):
         self.ensure_one()
         if self.state != 'signed':
             raise UserError(_('Χρειάζεται πρώτα υπογραφή παρόχου.'))
+        self._check_signature_usable()
         if not self.driver_enabled:
             raise UserError(_(
                 'Το τερματικό %s δεν είναι συνδεδεμένο με τον MegEftPos Driver.',
@@ -492,6 +649,7 @@ class EftPayment(models.Model):
                 'Α.1155: η συναλλαγή κάρτας δεν εγκρίθηκε (%(code)s) %(msg)s',
                 code=code or '—', msg=self.driver_message or ''))
             return self._reopen()
+        self._reconcile_paid_amount()
         self.move_id.message_post(body=_(
             'Α.1155: %(kind)s %(amount)s εγκρίθηκε — έγκριση τράπεζας '
             '%(auth)s, NSP ref %(nsp)s.',
@@ -499,6 +657,53 @@ class EftPayment(models.Model):
             amount=f'{self.amount:.2f}', auth=self.bank_auth_code or '—',
             nsp=self.nsp_reference or '—'))
         return self.action_complete()
+
+    def action_preload_terminal(self):
+        """Push the signature to the terminal for the customer to pay later.
+
+        Α.1155 §4: an already-issued document is settled by preloading its
+        pending signature onto the payment means; the customer then pays at
+        the terminal on their own time. Nothing is charged here — the outcome
+        arrives later through «Ανάκτηση Συναλλαγής».
+        """
+        self.ensure_one()
+        if self.state != 'signed':
+            raise UserError(_('Χρειάζεται πρώτα υπογραφή παρόχου.'))
+        self._check_signature_usable()
+        if not self.driver_enabled:
+            raise UserError(_(
+                'Το τερματικό %s δεν είναι συνδεδεμένο με τον MegEftPos Driver.',
+                self.terminal_id.display_name))
+        move = self.move_id
+        request = dict(self._driver_amounts(), **self._driver_signature_block())
+        request['cashier'] = self.env.user.name
+        # Mandatory on Cardlink, harmless elsewhere: the document being paid.
+        request['receiptNumber'] = move.name or ''
+        issue_date = move.invoice_date or fields.Date.context_today(self)
+        request['receiptTimestamp'] = int(datetime.combine(
+            issue_date, datetime.min.time(), tzinfo=timezone.utc).timestamp())
+        data = MegEftPosDriver(move.company_id).preload(
+            self.terminal_id._l10n_gr_prov_pos_device(), request)
+        code = (data or {}).get('responseCode')
+        if code != 'APPROVED':
+            raise UserError(_(
+                'Η προφόρτωση στο τερματικό δεν έγινε δεκτή: %(code)s %(msg)s',
+                code=dict(RESPONSE_CODES).get(code, code or '—'),
+                msg=(data or {}).get('nspResponseCodeDescription')
+                    or (data or {}).get('nspResponseCodeDescripton')
+                    or (data or {}).get('driverError') or ''))
+        # Only the handle for finding the transaction later — deliberately not
+        # the driver result fields, because nothing has been charged yet.
+        self.write({
+            'preloaded_at': fields.Datetime.now(),
+            'ecr_reference': data.get('ecrReferenceNumber') or self.ecr_reference,
+        })
+        move.message_post(body=_(
+            'Α.1155: προφορτώθηκε στο τερματικό %(terminal)s πληρωμή '
+            '%(amount)s. Μετά την πληρωμή από τον πελάτη, χρησιμοποιήστε την '
+            '«Ανάκτηση Συναλλαγής».',
+            terminal=self.terminal_id.display_name, amount=f'{self.amount:.2f}'))
+        return self._reopen()
 
     def _void_terminal(self):
         """Reverse an approved charge on the terminal (same-day cancellation).
@@ -511,7 +716,7 @@ class EftPayment(models.Model):
         request.update({
             'ecrReferenceNumber': self.ecr_reference or '',
             'nspReferenceNumber': self.nsp_reference,
-            'bankAuthorizatonCode': self.bank_auth_code or '',
+            'bankAuthorizationCode': self.bank_auth_code or '',
             'receiptNumber': self.receipt_number or '',
         })
         request['cashier'] = self.env.user.name
@@ -522,7 +727,9 @@ class EftPayment(models.Model):
             raise UserError(_(
                 'Η ακύρωση της χρέωσης στο τερματικό δεν εγκρίθηκε: %(code)s '
                 '%(msg)s', code=dict(RESPONSE_CODES).get(code, code or '—'),
-                msg=(data or {}).get('nspResponseCodeDescripton') or ''))
+                msg=(data or {}).get('nspResponseCodeDescription')
+                    or (data or {}).get('nspResponseCodeDescripton')
+                    or (data or {}).get('driverError') or ''))
         self.move_id.message_post(body=_(
             'Α.1155: ακυρώθηκε στο τερματικό η χρέωση %(amount)s (NSP ref '
             '%(nsp)s).', amount=f'{self.amount:.2f}', nsp=self.nsp_reference))
@@ -553,6 +760,7 @@ class EftPayment(models.Model):
         code = self._store_driver_result(found[0])
         if code != 'APPROVED':
             return self._reopen()
+        self._reconcile_paid_amount()
         self.move_id.message_post(body=_(
             'Α.1155: ανακτήθηκε εγκεκριμένη χρέωση %(amount)s — NSP ref '
             '%(nsp)s.', amount=f'{self.amount:.2f}', nsp=self.nsp_reference or '—'))
@@ -580,6 +788,7 @@ class EftPayment(models.Model):
         self.ensure_one()
         if self.state != 'signed':
             raise UserError(_('Χρειάζεται πρώτα υπογραφή παρόχου.'))
+        self._check_signature_usable()
         if not self.transaction_id:
             raise UserError(_(
                 'Συμπληρώστε την Ταυτότητα Συναλλαγής από το τερματικό.'))
@@ -591,6 +800,9 @@ class EftPayment(models.Model):
 
     def _payment_method_dict(self):
         return {
+            # Always 7. IRIS at the terminal is a settlement mode inside the
+            # EFT/POS transaction, not a separate rail — same terminal, same
+            # signature. Type 8 is IRIS *direct*, which never touches a POS.
             'type': 7,
             'amount': _r2(self.amount),
             **({'tipAmount': _r2(self.tip_amount)} if self.tip_amount else {}),

@@ -10,9 +10,17 @@ class ResCompany(models.Model):
     # by hand and types the transaction id.
     l10n_gr_prov_eft_driver_url = fields.Char(
         string='MegEftPos Driver URL',
-        help='Διεύθυνση του MegEftPosRestServices, π.χ. http://127.0.0.1:8080. '
-             'Κενό = χειροκίνητη χρέωση τερματικού (ο χειριστής καταχωρεί την '
-             'Ταυτότητα Συναλλαγής).')
+        help='Διεύθυνση του MegEftPosRestServices, π.χ. http://127.0.0.1:8187 '
+             '(η προεπιλεγμένη port του rest.server.port). Κενό = χειροκίνητη '
+             'χρέωση τερματικού (ο χειριστής καταχωρεί την Ταυτότητα Συναλλαγής).')
+    # Only when MegEftPosRestServices.config sets
+    # rest.authorization.method=BASIC_AUTH; with NONE leave both empty.
+    l10n_gr_prov_eft_driver_user = fields.Char(
+        string='Driver Username',
+        help='Μόνο αν ο REST Wrapper τρέχει με rest.authorization.method='
+             'BASIC_AUTH. Κενό = χωρίς πιστοποίηση.')
+    l10n_gr_prov_eft_driver_password = fields.Char(
+        string='Driver Password', groups='base.group_system')
     l10n_gr_prov_eft_license_key = fields.Char(
         string='MegEftPos License Key', groups='base.group_system',
         help='Το License Key του driver, εκδίδεται ανά ΑΦΜ εμπόρου από την ΙΛΥΔΑ.')

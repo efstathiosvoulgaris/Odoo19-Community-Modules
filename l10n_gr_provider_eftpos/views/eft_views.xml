@@ -86,12 +86,19 @@
                 <field name="signature_expired" invisible="1"/>
                 <field name="company_id" invisible="1"/>
                 <field name="driver_enabled" invisible="1"/>
+                <field name="preloaded_at" invisible="1"/>
                 <widget name="web_ribbon" title="Ληγμένη" bg_color="text-bg-danger"
                         invisible="not signature_expired"/>
                 <div class="alert alert-info" role="alert"
                      invisible="state != 'signed' or driver_enabled">
                     Η υπογραφή εκδόθηκε. Χρεώστε τώρα την κάρτα στο τερματικό
                     και καταχωρίστε την Ταυτότητα Συναλλαγής από την απόδειξή του.
+                </div>
+                <div class="alert alert-warning" role="alert"
+                     invisible="not preloaded_at or driver_response_code">
+                    Η υπογραφή είναι φορτωμένη στο τερματικό. Όταν ο πελάτης
+                    πληρώσει, πατήστε «Ανάκτηση Εκκρεμούς» για να καταχωριστεί
+                    η συναλλαγή.
                 </div>
                 <div class="alert alert-danger" role="alert"
                      invisible="not driver_response_code or driver_response_code == 'APPROVED'">
@@ -104,11 +111,16 @@
                         <field name="move_id" readonly="state != 'draft'"/>
                         <field name="terminal_id" readonly="state != 'draft'"/>
                         <field name="amount" readonly="state != 'draft'"/>
+                        <field name="payment_method" widget="radio"
+                               options="{'horizontal': True}"
+                               readonly="state != 'draft'"/>
                         <field name="tip_amount" invisible="state == 'draft'"
                                readonly="state not in ('draft', 'signed')"/>
+                        <field name="installments" readonly="state != 'draft'"/>
                         <field name="move_type" invisible="1"/>
                         <field name="origin_payment_id" readonly="state != 'draft'"
-                               invisible="move_type != 'out_refund'"/>
+                               invisible="move_type != 'out_refund'"
+                               help="Κενό επιτρέπεται μόνο σε Viva Cloud (ελεύθερο refund)."/>
                     </group>
                     <group>
                         <field name="transaction_id" invisible="state == 'draft'"
@@ -116,6 +128,7 @@
                         <field name="payment_method_mark"
                                invisible="not payment_method_mark"/>
                         <field name="signature_expiry" invisible="state == 'draft'"/>
+                        <field name="signature_amount" invisible="state == 'draft'"/>
                     </group>
                 </group>
                 <group string="Τερματικό" invisible="not driver_response_code">
@@ -128,6 +141,7 @@
                     <group>
                         <field name="card_type"/>
                         <field name="card_number"/>
+                        <field name="paid_amount" invisible="not paid_amount"/>
                         <field name="ecr_reference"/>
                         <field name="nsp_reference"/>
                     </group>
@@ -143,12 +157,20 @@
                             invisible="state != 'draft'"/>
                     <button name="action_charge_terminal" type="object"
                             string="Χρέωση Τερματικού" class="btn-primary"
-                            invisible="state != 'signed' or not driver_enabled"/>
+                            invisible="state != 'signed' or not driver_enabled
+                                       or preloaded_at"/>
+                    <button name="action_preload_terminal" type="object"
+                            string="Προφόρτωση στο Τερματικό"
+                            invisible="state != 'signed' or not driver_enabled
+                                       or preloaded_at or driver_response_code"/>
+                    <!-- after a preload there is no response code yet, so the
+                         recovery button has to stand on preloaded_at too -->
                     <button name="action_recover_pending" type="object"
                             string="Ανάκτηση Εκκρεμούς"
                             invisible="state != 'signed' or not driver_enabled
-                                       or not driver_response_code
-                                       or driver_response_code == 'APPROVED'"/>
+                                       or (not preloaded_at
+                                           and (not driver_response_code
+                                                or driver_response_code == 'APPROVED'))"/>
                     <button name="action_complete" type="object"
                             string="Ολοκλήρωση Αποστολής"
                             class="btn-primary"

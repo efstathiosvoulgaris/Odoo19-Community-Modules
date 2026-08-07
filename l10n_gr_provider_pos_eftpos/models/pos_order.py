@@ -22,9 +22,9 @@ class PosOrder(models.Model):
             if p.l10n_gr_prov_eft_signature:
                 if round(amount, 2) > 0:
                     eft_lines.append((0, 0, {
-                        # A payment carrying an Α.1155 signature is a card
-                        # payment — always type 7 (AADE PM-0037: only 7/8 may
-                        # carry transactionId/terminalId/signature).
+                        # A payment carrying an Α.1155 signature went through
+                        # the EFT/POS — always type 7, whether the customer
+                        # tapped a card or paid the terminal's IRIS QR.
                         'payment_type': '7',
                         'amount': round(amount, 2),
                         'transaction_id': p.l10n_gr_prov_eft_transaction_id,

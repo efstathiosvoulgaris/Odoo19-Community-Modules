@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""MegEftPos Driver — REST wrapper client (ILYDA driver v2.1.5).
+"""MegEftPos Driver — REST wrapper client (ILYDA driver v2.1.10).
 
 The driver is a local Windows service sitting between the ERP and the card
 terminal, giving one API for every NSP (Cardlink, Viva, Mellon, ePay, Nexi,
@@ -37,6 +37,7 @@ POS_PROTOCOLS = [
     ('MELLON_WEB_ECR', 'Mellon — Common Web'),
     ('EPAY_WEB_ECR', 'ePay — Common Web'),
     ('NEXI_WEB_ECR', 'Nexi — Common Web'),
+    ('NEXI_SOFT_POS_WEB_ECR', 'Nexi — SoftPOS Web ECR'),
     ('NEXI_COMMON_TCP_SOCKET', 'Nexi — TCP Socket'),
     ('ATTICA_WEB_ECR', 'Attica — Common Web'),
     ('VIVA_CLOUD', 'Viva Cloud'),
@@ -48,8 +49,17 @@ PROTOCOLS_NEED_HOST = ('CARDLINK_DLL', 'EDPS_JSON', 'EDPS_COMMON_TCP_SOCKET',
                        'NEXI_COMMON_TCP_SOCKET')
 # WebECR protocols authenticate with an API key redeemed from an OTP.
 PROTOCOLS_NEED_API_KEY = ('MELLON_WEB_ECR', 'EPAY_WEB_ECR', 'NEXI_WEB_ECR',
-                          'ATTICA_WEB_ECR', 'WORLDLINE_WEB_ECR', 'EDPS_WEB_ECR')
+                          'NEXI_SOFT_POS_WEB_ECR', 'ATTICA_WEB_ECR',
+                          'WORLDLINE_WEB_ECR', 'EDPS_WEB_ECR')
 PROTOCOLS_NEED_CLIENT = ('VIVA_CLOUD',)
+
+# Παράρτημα Α — PAYMENT_METHOD. NONE_PAYMENT_METHOD is what an NSP answers
+# when it cannot tell the ERP what the customer picked, so it is a valid
+# response value but never something we ask for.
+PAYMENT_METHODS = [
+    ('BANK_CARD', 'Τραπεζική Κάρτα'),
+    ('IRIS', 'IRIS'),
+]
 
 # Παράρτημα Α — RESPONSE_CODE
 RESPONSE_CODES = [
@@ -82,20 +92,44 @@ class MegEftPosDriver:
         # The ΑΦΜ the licence was issued for — on test keys ILYDA binds a
         # different one than the company's own, so it is configurable.
         self.vat = company._l10n_gr_prov_eft_driver_vat()
+        # MegEftPosRestServices.config → rest.authorization.method: with
+        # BASIC_AUTH the service rejects unauthenticated calls with 401.
+        driver = company.sudo()
+        user = (driver.l10n_gr_prov_eft_driver_user or '').strip()
+        self.auth = (user, driver.l10n_gr_prov_eft_driver_password or '') if user else None
+        if self.auth:
+            # HTTP Basic Auth is latin-1 by spec; Greek here fails deep inside
+            # requests with an unreadable UnicodeEncodeError, so say it plainly.
+            try:
+                ''.join(self.auth).encode('latin-1')
+            except UnicodeEncodeError:
+                raise UserError(_(
+                    'Τα στοιχεία σύνδεσης του MegEftPos Driver δέχονται μόνο '
+                    'λατινικούς χαρακτήρες. Αν ο driver τρέχει με '
+                    'rest.authorization.method=NONE, αφήστε τα κενά.'))
 
     def _post(self, path, payload):
         url = f'{self.base}{path}'
         _logger.info('MegEftPos %s payload: %s', path, payload)
+        # Transport and parsing are caught separately: json() raises ValueError,
+        # and so does a bad Basic Auth credential (UnicodeEncodeError) — sharing
+        # one handler leaves `resp` unbound on the second.
         try:
-            resp = requests.post(url, json=payload, timeout=TIMEOUT)
+            resp = requests.post(url, json=payload, auth=self.auth, timeout=TIMEOUT)
             resp.raise_for_status()
-            data = resp.json()
         except requests.RequestException as e:
             raise UserError(_(
                 'Ο MegEftPos Driver δεν απαντά (%(url)s): %(err)s',
                 url=url, err=e))
+        try:
+            data = resp.json()
         except ValueError:
-            raise UserError(_('Μη αναγνώσιμη απάντηση από τον MegEftPos Driver.'))
+            # Not JSON. Usually the Windows HTTP stack answering instead of the
+            # driver — e.g. «Invalid Hostname» when the URL uses 127.0.0.1 but
+            # rest.server.host is localhost. Show it: the body names the cause.
+            raise UserError(_(
+                'Μη αναγνώσιμη απάντηση από τον MegEftPos Driver (%(url)s): '
+                '%(body)s', url=url, body=(resp.text or '')[:300]))
         _logger.info('MegEftPos %s response: %s', path, data)
         return data
 
@@ -114,6 +148,28 @@ class MegEftPosDriver:
                 msg=error.get('errorMessage') or ''))
         return (data or {}).get('data') or {}
 
+    @classmethod
+    def transaction(cls, data):
+        """Return a transaction result, raising only when none was produced.
+
+        The driver answers a failed charge with BOTH a TransactionResponse and
+        errorLevel=EL_ERROR. Raising on the error level would roll the write
+        back and discard ecrReferenceNumber — the only handle for recovering a
+        charge that may have gone through. So keep the result and fold the
+        driver's error into it; the caller decides on responseCode.
+
+        An empty data block means nothing was attempted (bad licence, rejected
+        body): there is nothing to preserve, so raise.
+        """
+        payload = (data or {}).get('data') or {}
+        if not payload:
+            return cls.check(data)
+        error = (data or {}).get('error') or {}
+        if error.get('errorLevel') == 'EL_ERROR':
+            payload = dict(payload, driverError=' '.join(filter(None, (
+                error.get('errorCode'), error.get('errorMessage')))))
+        return payload
+
     def _envelope(self, pos_device, request=None):
         body = {
             'licenseKey': self.license_key,
@@ -127,19 +183,19 @@ class MegEftPosDriver:
     # ── Transactions ─────────────────────────────────────────────────────────
 
     def sale(self, pos_device, request):
-        return self.check(self._post(
+        return self.transaction(self._post(
             '/api/v1/transaction/sale', self._envelope(pos_device, request)))
 
     def refund(self, pos_device, request):
-        return self.check(self._post(
+        return self.transaction(self._post(
             '/api/v1/transaction/refund', self._envelope(pos_device, request)))
 
     def void(self, pos_device, request):
-        return self.check(self._post(
+        return self.transaction(self._post(
             '/api/v1/transaction/void', self._envelope(pos_device, request)))
 
     def preload(self, pos_device, request):
-        return self.check(self._post(
+        return self.transaction(self._post(
             '/api/v1/transaction/preload', self._envelope(pos_device, request)))
 
     # ── Recovery ─────────────────────────────────────────────────────────────

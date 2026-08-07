@@ -10,11 +10,16 @@
                 <setting string="MegEftPos Driver" name="l10n_gr_prov_eft_driver_setting"
                          help="Τοπική υπηρεσία MegEftPosRestServices για αυτόματη χρέωση των τερματικών. Κενό = χειροκίνητη χρέωση.">
                     <field name="l10n_gr_prov_eft_driver_url"
-                           placeholder="http://127.0.0.1:8080"/>
+                           placeholder="http://127.0.0.1:8187"/>
                     <field name="l10n_gr_prov_eft_license_key"
                            placeholder="License Key" password="True"/>
                     <field name="l10n_gr_prov_eft_vat"
                            placeholder="ΑΦΜ άδειας (κενό = ΑΦΜ εταιρείας)"/>
+                    <field name="l10n_gr_prov_eft_driver_user"
+                           placeholder="Username (μόνο με BASIC_AUTH)"/>
+                    <field name="l10n_gr_prov_eft_driver_password"
+                           placeholder="Password" password="True"
+                           invisible="not l10n_gr_prov_eft_driver_user"/>
                 </setting>
             </setting>
         </field>

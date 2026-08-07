@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Greece - E-Invoicing Provider (POS EFT/POS Α.1155)',
-    'version': '1.0',
+    'version': '1.3',
     'category': 'Accounting/Localizations',
     'summary': 'Card-terminal payment signatures (Α.1155) inside the Point of Sale',
     'description': (
@@ -14,7 +14,18 @@
         'signature and transactionId — the POS equivalent of the backend\n'
         'eftpos payment window.\n'
         '\n'
-        'Phase 1: manual terminal driver (cashier types the transaction id).\n'
+        'Terminals wired to the MegEftPos Driver are charged by the software\n'
+        'itself and the transaction id comes back automatically; standalone\n'
+        'terminals keep the manual flow, where the cashier charges the machine\n'
+        'and types the id. A customer paying the IRIS QR on the terminal is\n'
+        'the same EFT/POS transaction as a card and transmits as myDATA type 7;\n'
+        'IRIS direct (type 8, no terminal) is outside Α.1155 and untouched.\n'
+        '\n'
+        'A charge that is not followed by a validated order is given back: the\n'
+        'terminal is voided and the signature released when a later payment\n'
+        'fails, when validation is abandoned, or when the cashier removes a\n'
+        'charged line — which now asks first instead of dropping it silently.\n'
+        '\n'
         'Auto-install when both the POS provider and the EFT/POS modules are\n'
         'present.'
     ),
