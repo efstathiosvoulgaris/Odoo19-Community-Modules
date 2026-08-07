@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Greece - E-Invoicing Provider (Restaurant Order Notes 8.6)',
-    'version': '1.0',
+    'version': '1.1',
     'category': 'Accounting/Localizations',
     'summary': 'Δελτίο Παραγγελίας Εστίασης (8.6) from the restaurant Point of Sale',
     'description': (
@@ -25,9 +25,16 @@
         '\n'
         'Changelog\n'
         '---------\n'
+        '1.1 — Cancellation, both routes of §4. Removing an already-sent item\n'
+        'issues an «αρνητικό» note (rows with recType 7, priced from the note\n'
+        'that transmitted them, so a deleted orderline is still credited);\n'
+        'cancelling the order issues a «Καθολική Ακύρωση 8.6» — a zero-value\n'
+        'note with totalCancelDeliveryOrders and the cancelled MARKs in\n'
+        'multipleConnectedMarks. Same action on the back-office list for notes\n'
+        'left open by an offline till.\n'
+        '\n'
         '1.0 — Phase 1: issue 8.6 on send-to-kitchen, close the table with the\n'
-        'ΑΛΠ carrying the connected marks. (Phase 2: negative notes for\n'
-        'returns, «Καθολική Ακύρωση», open-order monitor from the provider.)'
+        'ΑΛΠ carrying the connected marks.'
     ),
     'author': 'Efstathios Voulgaris',
     'support': 'efstathiosvoulgaris@gmail.com',

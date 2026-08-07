@@ -17,8 +17,14 @@
                   decoration-danger="state == 'error'"
                   decoration-warning="state == 'sent' and not closing_move_id"
                   decoration-muted="state == 'closed'">
+                <header>
+                    <button name="action_total_cancel" type="object"
+                            string="Καθολική Ακύρωση 8.6"
+                            confirm="Θα διαβιβαστεί μηδενικό δελτίο 8.6 που κλείνει οριστικά τα επιλεγμένα δελτία. Συνέχεια;"/>
+                </header>
                 <field name="create_date" string="Ώρα"/>
                 <field name="serial"/>
+                <field name="kind" optional="show"/>
                 <field name="table_aa"/>
                 <field name="config_id" optional="show"/>
                 <field name="amount_net" optional="hide"/>
@@ -29,6 +35,7 @@
                 <field name="state" widget="badge"
                        decoration-success="state == 'closed'"
                        decoration-warning="state == 'sent'"
+                       decoration-muted="state == 'cancelled'"
                        decoration-danger="state == 'error'"/>
                 <field name="currency_id" column_invisible="1"/>
             </list>
@@ -43,6 +50,10 @@
                 <header>
                     <button name="action_retry" type="object" string="Επανάληψη Διαβίβασης"
                             class="oe_highlight" invisible="state not in ('draft', 'error')"/>
+                    <button name="action_total_cancel" type="object"
+                            string="Καθολική Ακύρωση 8.6"
+                            confirm="Θα διαβιβαστεί μηδενικό δελτίο 8.6 που κλείνει οριστικά αυτό το δελτίο. Συνέχεια;"
+                            invisible="state != 'sent' or closing_move_id or kind == 'cancel'"/>
                     <field name="state" widget="statusbar"
                            statusbar_visible="draft,sent,closed"/>
                 </header>
@@ -54,6 +65,7 @@
                         <group>
                             <field name="table_aa"/>
                             <field name="serial"/>
+                            <field name="kind"/>
                             <field name="config_id"/>
                             <field name="session_id"/>
                             <field name="company_id" groups="base.group_multi_company"/>
@@ -64,6 +76,8 @@
                             <field name="qr_url" widget="url"/>
                             <field name="closing_move_id"/>
                             <field name="pos_order_id"/>
+                            <field name="cancelled_note_ids" widget="many2many_tags"
+                                   invisible="kind != 'cancel'"/>
                             <field name="currency_id" invisible="1"/>
                         </group>
                     </group>
