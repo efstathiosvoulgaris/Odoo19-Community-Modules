@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Greece - E-Invoicing Provider (Point of Sale)',
-    'version': '1.3',
+    'version': '1.6',
     'category': 'Accounting/Localizations',
     'summary': 'POS receipts (ΑΛΠ) and invoices (ΤΙΜ) through the e-invoicing provider',
     'description': (
@@ -25,6 +25,25 @@
         '\n'
         'Changelog\n'
         '---------\n'
+        '1.6 — The till prints the LEGAL DOCUMENT, not an Odoo receipt: the\n'
+        'posted account.move rendered on the journal\'s Greek form (ΑΛΠ 80mm,\n'
+        'ΤΙΜ A4) with ΜΑΡΚ, provider QR and authentication code. The thermal\n'
+        'receipt remains only where there is no document to print — an order\n'
+        'that never reached the provider — and the restaurant «Λογαριασμός»\n'
+        'now prints «ΔΕΝ ΑΠΟΤΕΛΕΙ ΦΟΡΟΛΟΓΙΚΟ ΣΤΟΙΧΕΙΟ».\n'
+        '\n'
+        '1.5 — The receipt markings block is gated on the till, not on the\n'
+        'document state. A send that failed at validation left the state empty,\n'
+        'which hid the whole block — including its own «ΔΕΝ ΔΙΑΒΙΒΑΣΤΗΚΕ»\n'
+        'fallback — so the customer got a plain receipt indistinguishable from\n'
+        'a legal one.\n'
+        '\n'
+        '1.4 — Seeds the card method («Κάρτα-POS», myDATA type 7) as well.\n'
+        'Odoo creates its own only while the company has no bank-journal\n'
+        'payment method at all, so seeding the Greek ones first suppressed it\n'
+        'permanently — leaving tills with no card method, and the Α.1155\n'
+        'signature flow with nothing to act on.\n'
+        '\n'
         '1.0 — Phase A: ΑΛΠ/ΤΙΜ/ΠΛΑ issuance, synchronous send, receipt\n'
         'markings, payment type mapping. (Phase B: Α.1155 EFT signatures in\n'
         'the payment screen.)'

@@ -7,11 +7,15 @@
              self-service «Need an invoice?» portal QR block is redundant and
              confusing next to the AADE QR. -->
         <xpath expr="//div[hasclass('flex-row')]" position="attributes">
-            <attribute name="t-if">order.company.point_of_sale_use_ticket_qr_code and order.finalized and !order.l10n_gr_prov_state</attribute>
+            <attribute name="t-if">order.company.point_of_sale_use_ticket_qr_code and order.finalized and !order.config.l10n_gr_prov_enabled</attribute>
         </xpath>
+        <!-- Gated on the TILL, never on the document's state: a send that fails
+             at validation (provider down, EFT/POS unreachable) leaves the state
+             empty, and gating on it printed a plain receipt with no MARK, no QR
+             and no warning at all — indistinguishable from a legal one. -->
         <xpath expr="//div[hasclass('before-footer')]" position="before">
             <div class="pos-receipt-center-align" style="margin-top: 8px;"
-                 t-if="order.l10n_gr_prov_state">
+                 t-if="order.config.l10n_gr_prov_enabled">
                 <t t-if="order.l10n_gr_prov_mark">
                     <img t-if="order.l10n_gr_prov_qr_url"
                          t-att-src="grProvQr(order.l10n_gr_prov_qr_url)"
@@ -34,8 +38,22 @@
                         Ηλεκτρονική τιμολόγηση μέσω Παρόχου Υ.ΠΑ.Η.Ε.Σ. — Α.1035/2020
                     </div>
                 </t>
+                <t t-elif="!order.finalized">
+                    <!-- The restaurant «Λογαριασμός»: printed before the order
+                         is validated, so nothing was transmitted and nothing
+                         was supposed to be. It must say so in words. -->
+                    <div><strong>ΔΕΝ ΑΠΟΤΕΛΕΙ ΦΟΡΟΛΟΓΙΚΟ ΣΤΟΙΧΕΙΟ</strong></div>
+                    <div style="font-size: 9px;">
+                        Προσωρινός λογαριασμός — το νόμιμο παραστατικό εκδίδεται
+                        με την εξόφληση.
+                    </div>
+                </t>
                 <t t-else="">
                     <div>ΔΕΝ ΔΙΑΒΙΒΑΣΤΗΚΕ — θα επαναληφθεί αυτόματα</div>
+                    <div style="font-size: 9px;">
+                        Ζητήστε αντίγραφο με τα στοιχεία διαβίβασης (ΜΑΡΚ) από το
+                        ταμείο, όταν ολοκληρωθεί η αποστολή στον Πάροχο.
+                    </div>
                 </t>
             </div>
         </xpath>

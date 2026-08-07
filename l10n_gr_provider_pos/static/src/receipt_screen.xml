@@ -1,24 +1,31 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates id="template" xml:space="preserve">
 
-    <!-- ΤΙΜ (explicit Τιμολόγιο): the legal document is the downloaded PDF —
-         no thermal receipt. ΑΛΠ/ΠΛΑ keep the receipt as the legal print. -->
+    <!-- The legal document (ΑΛΠ on 80mm, ΤΙΜ on A4) is what the till prints —
+         see legal_print.js. The thermal receipt is shown and printed only when
+         there is no document to print, i.e. the order never reached the
+         provider: it then carries the TF-1/TF-2 notice. -->
     <t t-name="l10n_gr_provider_pos.ReceiptScreen"
        t-inherit="point_of_sale.ReceiptScreen" t-inherit-mode="extension">
-        <xpath expr="//button[hasclass('print')][1]" position="attributes">
-            <attribute name="t-if">!currentOrder.l10n_gr_prov_timologio</attribute>
+        <xpath expr="//OrderReceipt" position="attributes">
+            <attribute name="t-if">!currentOrder.l10n_gr_prov_doc_name</attribute>
         </xpath>
         <xpath expr="//button[hasclass('print')][2]" position="attributes">
-            <attribute name="t-if">pos.config.basic_receipt and !currentOrder.l10n_gr_prov_timologio</attribute>
-        </xpath>
-        <xpath expr="//OrderReceipt" position="attributes">
-            <attribute name="t-if">!currentOrder.l10n_gr_prov_timologio</attribute>
+            <attribute name="t-if">pos.config.basic_receipt and !currentOrder.l10n_gr_prov_doc_name</attribute>
         </xpath>
         <xpath expr="//OrderReceipt" position="before">
-            <div t-if="currentOrder.l10n_gr_prov_timologio"
+            <div t-if="currentOrder.l10n_gr_prov_doc_name"
                  class="alert alert-info m-3 text-center">
-                Εκδόθηκε Τιμολόγιο <t t-out="currentOrder.l10n_gr_prov_doc_name"/> —
-                το PDF είναι το νόμιμο παραστατικό (κατέβηκε αυτόματα).
+                <div>
+                    Εκδόθηκε <t t-out="currentOrder.l10n_gr_prov_doc_name"/> —
+                    το εκτυπωμένο παραστατικό είναι το νόμιμο στοιχείο.
+                </div>
+                <div t-if="currentOrder.l10n_gr_prov_mark">
+                    ΜΑΡΚ: <t t-out="currentOrder.l10n_gr_prov_mark"/>
+                </div>
+                <div t-else="" class="text-danger">
+                    ΔΕΝ ΔΙΑΒΙΒΑΣΤΗΚΕ ΑΚΟΜΑ — θα επαναληφθεί αυτόματα.
+                </div>
             </div>
         </xpath>
     </t>

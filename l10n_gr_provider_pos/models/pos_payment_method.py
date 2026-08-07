@@ -44,6 +44,45 @@ class PosPaymentMethod(models.Model):
             return '5'    # Επί Πιστώσει
         return '3'
 
+    def _l10n_gr_prov_ensure_card_method(self, company, journal):
+        """Make sure a card (type 7) method exists before seeding ours.
+
+        Odoo creates its own «Card» method only when the company has NO
+        bank-journal payment method yet — `pos.config.
+        _create_journal_and_payment_methods()` guards on exactly that. Every
+        method we seed rides the bank journal, so seeding before the first POS
+        is created suppresses Odoo's card method permanently, and a till with
+        no type-7 method can never trigger the Α.1155 signature flow. Creating
+        it here closes that window whichever order the two happen in.
+        """
+        bank_methods = self.search([
+            ('journal_id.type', '=', 'bank'),
+            ('company_id', 'in', company.parent_ids.ids),
+            # our own seeds override the type away from 7, so they do not count
+            ('l10n_gr_prov_payment_type', 'in', (False, '7')),
+        ])
+        if bank_methods:
+            return 0
+        xmlid = f'gr_pm_card_{company.id}'
+        if self.env.ref(f'l10n_gr_provider_pos.{xmlid}', raise_if_not_found=False):
+            return 0
+        method = self.create({
+            'name': 'Κάρτα-POS',
+            'company_id': company.id,
+            'journal_id': journal.id,
+            # left blank on purpose: a bank method derives to 7 on its own
+            # (_l10n_gr_prov_mydata_type), so there is no stored value to rot.
+            'sequence': 1,
+        })
+        self.env['ir.model.data'].create({
+            'name': xmlid,
+            'module': 'l10n_gr_provider_pos',
+            'model': 'pos.payment.method',
+            'res_id': method.id,
+            'noupdate': True,
+        })
+        return 1
+
     def _l10n_gr_prov_create_pos_payment_methods(self, company):
         """Create the Greek POS payment methods missing from a standard setup.
 
@@ -56,7 +95,7 @@ class PosPaymentMethod(models.Model):
         ], limit=1)
         if not journal:
             return 0
-        created = 0
+        created = self._l10n_gr_prov_ensure_card_method(company, journal)
         for xmlid, name, code in GR_POS_PAYMENT_METHODS:
             full_xmlid = f'l10n_gr_provider_pos.{xmlid}_{company.id}'
             if self.env.ref(full_xmlid, raise_if_not_found=False):

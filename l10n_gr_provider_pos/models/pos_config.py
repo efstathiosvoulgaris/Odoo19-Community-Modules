@@ -75,7 +75,7 @@ class ResConfigSettings(models.TransientModel):
         created = self.env['pos.payment.method'] \
             ._l10n_gr_prov_create_pos_payment_methods(self.company_id)
         res['params']['message'] += _(
-            ' %(created)s νέοι τρόποι πληρωμής POS (από %(total)s ελληνικούς) — '
-            'ενεργοποιήστε όσους θέλετε ανά ταμείο.',
+            ' %(created)s νέοι τρόποι πληρωμής POS (από %(total)s ελληνικούς '
+            '+ κάρτα) — ενεργοποιήστε όσους θέλετε ανά ταμείο.',
             created=created, total=len(GR_POS_PAYMENT_METHODS))
         return res
