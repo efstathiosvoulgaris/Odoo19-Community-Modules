@@ -25,7 +25,8 @@ class L10nGrProvEftTerminal(models.Model):
         The realtime sign endpoint signs against the document totals + series +
         invoice type — none of which need the serial number — so it works at
         payment time. `vals`: config_id, amount, net, vat, gross, vat_rate,
-        is_timologio. Returns the signature dict, or {'error': <text>}.
+        is_timologio, is_refund (amounts always positive, like the document).
+        Returns the signature dict, or {'error': <text>}.
 
         When the terminal is driven by the MegEftPos Driver the card is also
         charged here and `transaction_id` comes back alongside the signature,
@@ -40,10 +41,9 @@ class L10nGrProvEftTerminal(models.Model):
                 'Δεν έχει οριστεί τερματικό EFT/POS στο POS (Ρυθμίσεις → '
                 'Πάροχος myDATA → Τερματικό Α.1155).')}
         company = terminal.company_id
-        journal = (config.l10n_gr_prov_tim_journal_id if vals.get('is_timologio')
-                   else config.l10n_gr_prov_alp_journal_id)
+        journal = self._l10n_gr_prov_pos_sign_journal(config, vals)
         if not journal:
-            return {'error': _('Δεν έχει οριστεί ημερολόγιο ΑΛΠ/ΤΙΜ στο POS.')}
+            return {'error': _('Δεν έχει οριστεί ημερολόγιο ΑΛΠ/ΤΙΜ/ΠΛΠ στο POS.')}
         body = {
             'amount': _r2(vals['amount']),
             'terminalId': terminal.code,
@@ -74,8 +74,17 @@ class L10nGrProvEftTerminal(models.Model):
             'signing_author': sig.get('signingAuthor'),
             'terminal_code': terminal.code,
         }
-        if not terminal._l10n_gr_prov_driver_enabled():
-            return result  # standalone terminal: the cashier charges it
+        if vals.get('is_refund') or not terminal._l10n_gr_prov_driver_enabled():
+            # standalone terminal: the cashier charges it.
+            # ponytail: refunds are always charged by hand, even on a driver
+            # terminal. A driver Refund must quote the original Sale's
+            # ecr/nsp/bankAuth/receipt references, and the payment screen has
+            # no reliable handle on the refunded order's payments — the
+            # backend flow asks the user to pick the «Αρχική Χρέωση» for
+            # exactly this reason. Α.1155 only requires the signature, which
+            # this path issues; wire driver.refund here if tills start doing
+            # enough card returns for the manual step to hurt.
+            return result
         charge = terminal._l10n_gr_prov_pos_charge(sig, vals)
         if charge.get('error'):
             # Nothing was charged, so release the signature rather than leave
@@ -85,6 +94,26 @@ class L10nGrProvEftTerminal(models.Model):
             return charge
         result.update(charge)
         return result
+
+    def _l10n_gr_prov_pos_sign_journal(self, config, vals):
+        """The series the signature is issued against.
+
+        A return is a credit document with its own series — ΠΛΠ 11.4 for
+        retail, ΠΙΣΤ 5.1 for a ΤΙΜ — never the sale journal, mirroring
+        `pos.order._l10n_gr_prov_pos_journal()`.
+        """
+        is_timologio = bool(vals.get('is_timologio'))
+        if not vals.get('is_refund'):
+            return (config.l10n_gr_prov_tim_journal_id if is_timologio
+                    else config.l10n_gr_prov_alp_journal_id)
+        if not is_timologio and config.l10n_gr_prov_pla_journal_id:
+            return config.l10n_gr_prov_pla_journal_id
+        return self.env['account.journal'].search([
+            ('company_id', '=', config.company_id.id),
+            ('type', '=', 'sale'),
+            ('l10n_gr_edi_inv_type_default', '=', '5.1' if is_timologio else '11.4'),
+            ('l10n_gr_prov_delivery_note', '=', False),
+        ], limit=1)
 
     def _l10n_gr_prov_pos_charge(self, sig, vals):
         """Charge the card for a POS order through the MegEftPos Driver.

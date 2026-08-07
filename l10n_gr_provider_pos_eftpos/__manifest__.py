@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Greece - E-Invoicing Provider (POS EFT/POS Α.1155)',
-    'version': '1.3',
+    'version': '1.4',
     'category': 'Accounting/Localizations',
     'summary': 'Card-terminal payment signatures (Α.1155) inside the Point of Sale',
     'description': (
@@ -25,6 +25,12 @@
         'terminal is voided and the signature released when a later payment\n'
         'fails, when validation is abandoned, or when the cashier removes a\n'
         'charged line — which now asks first instead of dropping it silently.\n'
+        '\n'
+        'Returns are signed too: §5.3 makes signature and transactionId\n'
+        'mandatory on every type-7 payment line, credit documents included, so\n'
+        'a refund to card takes its own signature against the ΠΛΠ (11.4) or\n'
+        'ΠΙΣΤ (5.1) series. The refund itself is made on the terminal by the\n'
+        'cashier, who types the transaction id back.\n'
         '\n'
         'Auto-install when both the POS provider and the EFT/POS modules are\n'
         'present.'

@@ -85,8 +85,15 @@ paths are covered:
 | Situation | Behaviour |
 |-----------|-----------|
 | A later card line fails after an earlier one was charged | The earlier charges are voided. |
-| Validation abandoned after charging (customer dialog cancelled, etc.) | Everything charged in that attempt is voided. |
-| Cashier removes a charged payment line | Asks for confirmation; the line is removed **only if** the void succeeds. |
+| Validation abandoned after charging (customer dialog cancelled, etc.) | Everything signed in that attempt is unwound. |
+| Cashier removes a signed payment line | Asks for confirmation; the line is removed **only if** the unwind succeeds. |
+
+Unwinding means two different things. A **driver-charged** line is voided on the
+terminal, which also releases its signature. A line the cashier charged on a
+**standalone** terminal cannot be voided from Odoo — its signature is released
+and the cashier is told, by name and amount, to reverse the money on the
+terminal themselves. Either way the signature never survives the attempt: an
+unused one reaches AADE as an «Ανοιχτό Παραστατικό» after 24 hours.
 
 Void on the terminal happens first, then the provider signature is released —
 it was never spent on a transmitted document.
@@ -169,6 +176,29 @@ raising, so the payment screen can show a dialog.
 
 ---
 
+## Returns
+
+An order whose `priceIncl` is negative is a credit document. §5.3 makes
+`signature` and `transactionId` mandatory on **every** type-7 payment line, so
+a refund to card is signed like a sale — against the credit series (ΠΛΠ 11.4,
+or ΠΙΣΤ 5.1 when the original was a ΤΙΜ), with amounts sent positive as the
+document itself carries them.
+
+The refund is judged by the amount rather than `order.isRefund`, which Odoo
+only sets for the Refund action: an order typed in with negative quantities is
+just as much a credit document, and `_l10n_gr_prov_pos_journal()` treats it
+that way too.
+
+**The money is given back by the cashier on the terminal**, even on a
+driver-connected one, and the transaction id is typed into the popup. A driver
+`Refund` has to quote the original Sale's `ecrReferenceNumber`,
+`nspReferenceNumber`, `bankAuthorizationCode` and `receiptNumber`; the payment
+screen has no dependable handle on the refunded order's payment lines, which is
+why the backend flow makes the user pick the «Αρχική Χρέωση» explicitly.
+Α.1155 requires the signature, not the automation.
+
+---
+
 ## Known gap
 
 Nothing reverses a charge once the order has been **validated**. The recovery
@@ -178,6 +208,16 @@ on the terminal, or the backend EFT payment screen.
 ---
 
 ## Changelog
+
+### 1.4 — Returns are signed, no leaked signatures
+- A signature taken for a **standalone** terminal was never released when the
+  validation was abandoned or the line deleted: only driver-charged lines were
+  tracked, so the signature expired into an «Ανοιχτό Παραστατικό». Every signed
+  line is now unwound.
+- A card refund used to be skipped entirely (`getAmount() > 0`), so the credit
+  document was transmitted with an unsigned type-7 line. It now takes its own
+  signature against the credit series, and the cashier refunds on the terminal
+  and enters the transaction id.
 
 ### 1.3 — IRIS is type 7
 - Corrected 1.1: IRIS at an EFT/POS transmits as myDATA type 7 like any card.

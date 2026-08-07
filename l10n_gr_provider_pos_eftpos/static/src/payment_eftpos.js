@@ -56,24 +56,36 @@ patch(OrderPaymentValidation.prototype, {
         if (!this._grEftEnabled()) {
             return await super.askBeforeValidation();
         }
-        // Anything charged from here on is money already taken, so every path
-        // that abandons the validation has to give it back.
-        const charged = [];
-        if (!(await this._grSignCardPayments(charged))) {
-            await this._grVoidCharges(this.order, charged);
+        // Every line touched here holds a live provider signature, and a
+        // signature left unused reaches AADE as an «Ανοιχτό Παραστατικό» after
+        // 24h — so every path that abandons the validation has to release
+        // them, and give back whatever money was taken.
+        const touched = [];
+        if (!(await this._grSignCardPayments(touched))) {
+            await this._grVoidCharges(this.order, touched);
             return false;
         }
         const proceed = await super.askBeforeValidation();
         if (proceed === false) {
-            await this._grVoidCharges(this.order, charged);
+            await this._grVoidCharges(this.order, touched);
         }
         return proceed;
     },
 
-    async _grSignCardPayments(charged) {
+    async _grSignCardPayments(touched) {
         const order = this.order;
+        // A return is a credit document, and §5.3 makes signature and
+        // transactionId mandatory on every type-7 payment line — credit ones
+        // included. Its amounts are negative in Odoo and positive on the wire,
+        // like the credit document itself.
+        // Judged by the amount, not `order.isRefund`: that flag is only set by
+        // the Refund action, while an order typed in with negative quantities
+        // is just as much a credit document. `_l10n_gr_prov_pos_journal()`
+        // picks the credit series the same way.
+        const isRefund = order.priceIncl < 0;
+        const abs = (n) => Math.abs(n);
         const cardLines = order.payment_ids.filter(
-            (l) => this._grIsCardLine(l) && l.getAmount() > 0 && !l.l10n_gr_prov_eft_signature
+            (l) => this._grIsCardLine(l) && l.getAmount() !== 0 && !l.l10n_gr_prov_eft_signature
         );
         for (const line of cardLines) {
             // 1. Request the provider signature for this card amount.
@@ -85,12 +97,13 @@ patch(OrderPaymentValidation.prototype, {
                     [
                         {
                             config_id: order.config_id.id,
-                            amount: line.getAmount(),
-                            net: order.priceExcl,
-                            vat: order.amountTaxes,
-                            gross: order.priceIncl,
+                            amount: abs(line.getAmount()),
+                            net: abs(order.priceExcl),
+                            vat: abs(order.amountTaxes),
+                            gross: abs(order.priceIncl),
                             vat_rate: this._grVatRate(order),
                             is_timologio: Boolean(order.to_invoice),
+                            is_refund: isRefund,
                         },
                     ]
                 );
@@ -115,10 +128,17 @@ patch(OrderPaymentValidation.prototype, {
             let txId = result.transaction_id;
             if (!txId) {
                 txId = await makeAwaitable(this.pos.dialog, TextInputPopup, {
-                    title: _t(
-                        "Χρέωση κάρτας %s (Α.1155) — Ταυτότητα Συναλλαγής",
-                        this.pos.env.utils.formatCurrency(line.getAmount())
-                    ),
+                    title: isRefund
+                        ? _t(
+                              "Επιστροφή %s στην κάρτα (Α.1155) — κάντε την " +
+                                  "επιστροφή στο τερματικό και καταχωρίστε την " +
+                                  "Ταυτότητα Συναλλαγής",
+                              this.pos.env.utils.formatCurrency(abs(line.getAmount()))
+                          )
+                        : _t(
+                              "Χρέωση κάρτας %s (Α.1155) — Ταυτότητα Συναλλαγής",
+                              this.pos.env.utils.formatCurrency(line.getAmount())
+                          ),
                     placeholder: _t("Ταυτότητα Συναλλαγής τερματικού"),
                 });
                 if (!txId) {
@@ -141,9 +161,9 @@ patch(OrderPaymentValidation.prototype, {
             line.l10n_gr_prov_eft_ecr_reference = result.ecr_reference;
             line.l10n_gr_prov_eft_bank_auth_code = result.bank_auth_code;
             line.l10n_gr_prov_eft_receipt_number = result.receipt_number;
-            if (result.transaction_id) {
-                charged.push(line);
-            }
+            // Every signed line, not only the driver-charged ones: a manually
+            // charged line holds a signature that has to be released too.
+            touched.push(line);
         }
         return true;
     },
@@ -178,34 +198,54 @@ patch(OrderPaymentValidation.prototype, {
             ]
         );
         if (result?.ok) {
-            // Clear the Α.1155 trail: this line no longer stands for a payment.
-            for (const field of [
-                "signature",
-                "signing_author",
-                "terminal_code",
-                "transaction_id",
-                "signed_content",
-                "signature_uid",
-                "signature_ts",
-                "ecr_reference",
-                "bank_auth_code",
-                "receipt_number",
-            ]) {
-                line[`l10n_gr_prov_eft_${field}`] = false;
-            }
+            this._grClearLine(line);
         }
         return result;
     },
 
+    /** The line no longer stands for a payment: drop the Α.1155 trail. */
+    _grClearLine(line) {
+        for (const field of [
+            "signature",
+            "signing_author",
+            "terminal_code",
+            "transaction_id",
+            "signed_content",
+            "signature_uid",
+            "signature_ts",
+            "ecr_reference",
+            "bank_auth_code",
+            "receipt_number",
+        ]) {
+            line[`l10n_gr_prov_eft_${field}`] = false;
+        }
+    },
+
     /**
-     * Give back every charge made during this validation attempt.
+     * Unwind every line touched during this validation attempt.
      *
-     * A failure here is shown, never swallowed: the customer's money is on
-     * the card and somebody has to reverse it from the terminal by hand.
+     * Driver-charged lines are voided on the terminal, which also releases
+     * their signature. A line the cashier charged by hand cannot be voided
+     * from here — only its signature is released, and the cashier is told to
+     * reverse the money on the terminal themselves.
+     *
+     * A failure is shown, never swallowed: the customer's money is on the card
+     * and somebody has to reverse it from the terminal by hand.
      */
     async _grVoidCharges(order, lines) {
         const failed = [];
+        const manual = [];
         for (const line of lines) {
+            if (!this._grIsCharged(line)) {
+                // Manual terminal: no driver, so nothing to void — but the
+                // signature is live and must not be left to expire.
+                if (line.l10n_gr_prov_eft_transaction_id) {
+                    manual.push(this.pos.env.utils.formatCurrency(line.getAmount()));
+                }
+                await this._grCancelSignature(order, line.l10n_gr_prov_eft_signature);
+                this._grClearLine(line);
+                continue;
+            }
             let result;
             try {
                 result = await this._grVoidCharge(order, line);
@@ -227,6 +267,17 @@ patch(OrderPaymentValidation.prototype, {
                     "Έχει χρεωθεί κάρτα και η ακύρωση απέτυχε. Ακυρώστε τη " +
                         "συναλλαγή από το τερματικό.\n\n%s",
                     failed.join("\n")
+                ),
+            });
+        }
+        if (manual.length) {
+            this.pos.dialog.add(AlertDialog, {
+                title: _t("Ακυρώστε τη συναλλαγή στο τερματικό"),
+                body: _t(
+                    "Η υπογραφή ακυρώθηκε, αλλά η κάρτα χρεώθηκε χειροκίνητα " +
+                        "και δεν μπορεί να ακυρωθεί από εδώ. Ακυρώστε τη " +
+                        "συναλλαγή στο τερματικό.\n\n%s",
+                    manual.join("\n")
                 ),
             });
         }
@@ -256,7 +307,9 @@ patch(PaymentScreen.prototype, {
             pos: this.pos,
             orderUuid: this.currentOrder.uuid,
         });
-        if (!line || !validation._grIsCharged(line)) {
+        // Any signed line, not only a driver-charged one: a manually charged
+        // line still holds a live signature that has to be released.
+        if (!line || !line.l10n_gr_prov_eft_signature) {
             return super.deletePaymentLine(uuid);
         }
         this.dialog.add(ConfirmationDialog, {
@@ -269,9 +322,10 @@ patch(PaymentScreen.prototype, {
             confirmLabel: _t("Ακύρωση στο τερματικό"),
             confirm: async () => {
                 await validation._grVoidCharges(this.currentOrder, [line]);
-                // _grVoidCharges clears the trail only on success; a still
-                // charged line stays put, with its own error already shown.
-                if (!validation._grIsCharged(line)) {
+                // The trail is cleared only once the line no longer stands for
+                // a payment; a failed void leaves it in place, with its own
+                // error already shown.
+                if (!line.l10n_gr_prov_eft_signature) {
                     super.deletePaymentLine(uuid);
                 }
             },
