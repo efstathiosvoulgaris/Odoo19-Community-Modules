@@ -318,9 +318,10 @@ class EftPayment(models.Model):
     cancel_reason = fields.Selection(CANCEL_REASONS, string='Αιτία Ακύρωσης', copy=False)
     cancel_reason_text = fields.Char(string='Περιγραφή Αιτίας', copy=False)
 
-    _sql_constraints = [
-        ('amount_positive', 'CHECK(amount > 0)', 'Το ποσό πρέπει να είναι θετικό.'),
-    ]
+    _amount_positive = models.Constraint(
+        'CHECK(amount > 0)',
+        'Το ποσό πρέπει να είναι θετικό.',
+    )
 
     @api.depends('terminal_id')
     def _compute_driver_enabled(self):

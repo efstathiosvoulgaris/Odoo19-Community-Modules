@@ -113,10 +113,10 @@ class L10nGrProvVehicle(models.Model):
     company_id = fields.Many2one(
         'res.company', default=lambda self: self.env.company)
 
-    _sql_constraints = [
-        ('name_company_uniq', 'unique(name, company_id)',
-         'Το όχημα υπάρχει ήδη.'),
-    ]
+    _name_company_uniq = models.Constraint(
+        'unique(name, company_id)',
+        'Το όχημα υπάρχει ήδη.',
+    )
 
 
 class AccountMove(models.Model):

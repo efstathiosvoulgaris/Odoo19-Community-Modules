@@ -24,11 +24,10 @@ class L10nGrProvClsDefault(models.Model):
     company_id = fields.Many2one('res.company', string='Εταιρεία',
                                  default=lambda s: s.env.company)
 
-    _sql_constraints = [(
-        'uniq_type_product_company',
+    _uniq_type_product_company = models.Constraint(
         'unique(inv_type, product_type, company_id)',
         'Υπάρχει ήδη προεπιλογή για αυτόν τον τύπο και είδος.',
-    )]
+    )
 
     @api.model
     def get_default(self, inv_type, product_type, company_id=None):
