@@ -1,5 +1,7 @@
 # Skroutz Connector for Odoo 19
 
+**Version:** 1.7 | **Odoo:** 19 | **License:** LGPL-3
+
 Connects Odoo 19 to the [Skroutz Marketplace](https://www.skroutz.gr) via:
 - XML product feed (for Skroutz to crawl)
 - Order webhook (Skroutz pushes order events to Odoo)
@@ -64,6 +66,24 @@ The product is included in the feed when it is **published on the website** and 
 If the [`l10n_gr_partner`](https://github.com/) addon is installed, the street number from the shipping address is written to the partner's `arithmos_odou` field instead of being concatenated into the street name.
 
 ## Changelog
+
+### 1.7
+- Dispatch with no tracking codes at all no longer raises (`list(None)`).
+- Dropped `notify_by_email=False` from the order chatter post — Odoo 19 removed
+  the argument, so every notification raised instead of being posted.
+
+### 1.6
+- Skroutz menu moved from Website → eCommerce to Sales.
+- «Create Sale Order» moved into the header, next to Accept / Reject / Sync.
+
+### 1.5
+- Manual «Create Sale Order» button replaces auto-creation on accept.
+- Accept skips the wizard for standard orders (the API offers no pickup options
+  for them); standard orders dispatch through `/dispatched`, FBS orders through
+  `/tracking_details`.
+- `fulfilled_by_skroutz` stored from the webhook payload; Origin column on the
+  sale order list; public read access on `product.brand` for website visitors.
+- `pickup_location` / `pickup_window` are Char — Skroutz uses string ids.
 
 ### 1.4
 - Added dedicated `skroutz_mpn` field on products; `default_code` (Internal Reference) is no longer used as MPN

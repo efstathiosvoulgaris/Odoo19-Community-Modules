@@ -1,5 +1,7 @@
 # Greek Translation Fixes (l10n_gr_translation_fixes)
 
+**Version:** 1.1 | **Odoo:** 19 | **License:** LGPL-3
+
 Curated corrections for the Greek (el_GR) translation of Odoo 19 Community,
 packaged as a self-deploying module.
 

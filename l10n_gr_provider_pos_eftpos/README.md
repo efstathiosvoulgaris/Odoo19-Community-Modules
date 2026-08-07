@@ -1,6 +1,6 @@
 # l10n_gr_provider_pos_eftpos — Α.1155 in the Point of Sale
 
-**Version:** 1.3 | **Odoo:** 19 | **License:** LGPL-3
+**Version:** 1.5 | **Odoo:** 19 | **License:** LGPL-3
 **Spec refs:** Α.1155/2023 · ILYDA MegEftPos Driver v2.1.10
 
 Brings the Α.1155 EFT/POS signature flow into the Point of Sale. Auto-installs
@@ -27,9 +27,11 @@ backend lines link through `eft_payment_id`, POS lines leave it empty.
 
 **Point of Sale → Configuration → Settings → Πάροχος myDATA (ΑΛΠ / ΤΙΜ / ΠΛΑ)**
 
-| Setting | Description |
-|---------|-------------|
-| **Τερματικό Α.1155** | The card terminal this POS charges. Required — without it, card payments cannot be signed. |
+| Setting | Default | Description |
+|---------|---------|-------------|
+| **Τερματικό Α.1155** | — | The card terminal this POS charges. Required — without it, card payments cannot be signed. |
+| **Υποχρεωτική Υπογραφή Α.1155** | off | Refuses a card sale the terminal did not answer for. With it off, the cashier may charge the machine by hand and type the transaction id in. Turning it on releases any signature already taken rather than pairing it with a typed id. |
+| **Μέγιστες Δόσεις** | 0 | 0 or 1 = never asked. Higher, and the cashier is asked for δόσεις before the charge; the count goes to the driver only when > 1. Supported only by NSPs that offer instalments. |
 
 Everything else (driver URL, licence, protocols, API keys) is configured on the
 terminal and the company in `l10n_gr_provider_eftpos`.
@@ -208,6 +210,13 @@ on the terminal, or the backend EFT payment screen.
 ---
 
 ## Changelog
+
+### 1.5 — Per-till card rules
+- **Υποχρεωτική Υπογραφή Α.1155** (default off): a card line the terminal did
+  not answer for can no longer be completed with a hand-typed transaction id.
+  The signature already taken is released first, so nothing is left live.
+- **Μέγιστες Δόσεις** (default 0): asks the cashier for δόσεις before the
+  charge and sends `installments` to the driver only when > 1.
 
 ### 1.4 — Returns are signed, no leaked signatures
 - A signature taken for a **standalone** terminal was never released when the

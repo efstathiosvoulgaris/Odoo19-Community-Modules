@@ -1,6 +1,6 @@
 # l10n_gr_provider_base — Greece E-Invoicing Provider Base
 
-**Version:** 2.8 | **Odoo:** 19 | **License:** LGPL-3
+**Version:** 2.9 | **Odoo:** 19 | **License:** LGPL-3
 
 Provider-agnostic base for issuing sales documents through a licensed Greek
 e-invoicing provider (Υ.ΠΑ.Η.Ε.Σ.), as required by the 2026 B2B e-invoicing
@@ -164,6 +164,89 @@ myDATA QR code when `l10n_gr_prov_mark` is set. It shows:
 ---
 
 ## Changelog
+
+### 2.9 — Constraints that never existed
+- Odoo 19 stopped reading `_sql_constraints`, so the uniqueness rules on
+  Προεπιλογές Χαρακτηρισμού (τύπος/είδος/εταιρεία) and on Οχήματα
+  (όνομα/εταιρεία) were silently absent from the database. Ported to
+  `models.Constraint`.
+
+### 2.8 — A4/80mm print rework
+- One source of truth for the form (`_l10n_gr_prov_print_form`): paper choice,
+  QWeb routing and header geometry all read it, so a database with no provider
+  configured prints the plain Odoo form instead of the Odoo template laid over
+  Greek geometry.
+- Issuer block, μηχανογραφικός τίτλος and buyer moved out of the repeating
+  wkhtmltopdf header into page flow — header height no longer depends on
+  customer data (`margin_top` 85 → 10).
+- Amount correctness: ΑΞΙΑ/ΕΚΠΤΩΣΗ computed from `price_subtotal` (a
+  VAT-inclusive pricelist used to print gross value and the VAT as a discount);
+  ΑΝΑΛΥΣΗ ΦΠΑ read from the posted tax lines, so it matches the totals column
+  exactly. Decimal comma throughout.
+- Legal markings that were stored but never printed: vatExemptionCategory,
+  «Αυτοτιμολόγηση» (3.1/3.2), ΣΤΟΙΧΕΙΑ ΔΙΑΚΙΝΗΣΗΣ, ΓΕΜΗ and issuer activity,
+  delivery address, due date. ΩΡΑ ΑΠΟΣΤΟΛΗΣ shows the dispatch start, not the
+  transmission moment.
+- 80mm receipt lines print gross (`price_total`) with VAT analysis per rate.
+
+### 2.7 — Journal setup hardened
+- Odoo translates the sales journal code «INV» to «ΤΙΜ» in Greek, taking the
+  code the 1.1 journal needs; the chart journal is moved to «ΠΩΛ» instead.
+- Journals are created after the chart loads, carry an explicit sequence so the
+  picker follows myDATA order, are repaired when code or type drifts, and
+  collisions are logged rather than passed over.
+
+### 2.6 — Units, Επισήμανση, paperformat
+- AADE measurement units (§8.13) on `uom.uom`, stamped by the settings button.
+- Επισήμανση (§8.15) on invoice lines for Εκκαθάριση Πωλήσεων Τρίτων.
+- The «Παραστατικό» report binds its own paperformat; the POS receivable
+  account is set, without which every POS payment fails on a fresh database.
+
+### 2.5 — Classification off the onchange path
+- Serial numbers print inline under their invoice line.
+- Lines created outside the onchange path (sale invoicing, imports, POS) derive
+  their myDATA classification and cross-border 0% tax at create.
+
+### 2.4 — The retry queue gives up
+- Documents whose issue date has passed are unacceptable to AADE (ER-30); the
+  cron abandons them with a new «abandoned» state. TF-1 offline documents keep
+  retrying.
+
+### 2.3 — 8.2 Ειδικό Στοιχείο Τέλους Διαμονής (ΤΔΙ)
+- Button on marked invoices builds the fee document server-side (8.2 journal,
+  correlation, zero line, category1_95, fee = fixed € × nights from the stay
+  document); journal default per property fee category; per-night amount
+  recomputed from category/correlation.
+
+### 2.2 — «Διαβιβάσεις» log
+- Every provider-routed document in one list (state, MARK, send date,
+  PDF-uploaded flag, error) with filters for pending / errors / PDF backlog and
+  grouping by state, journal or month.
+
+### 2.1 — myDATA menu, tax guards, tax tidy-up
+- Consolidated «myDATA» menu in the Accounting bar; vehicles get their own
+  screen; Ρυθμίσεις myDATA visible to Accounting managers only.
+- Tax guards (admin-toggleable, default on): posting is blocked with a listed
+  reason on a line without VAT, a tax outside the document type's allowed set,
+  0% without an exemption reason, a missing classification, or an island-rate
+  inconsistency.
+- Τακτοποίηση Καταλόγου Φόρων: self-explanatory Greek tax names, unused «EU
+  Other» variants archived; internal matching switched from names to chart
+  xmlids so renames are safe.
+
+### 2.0 — TF-1 offline QR (Α.1112/2025)
+- Offline signing keys (issue/verify/revoke through the provider), automatic
+  fallback to a locally signed JWS QR when the provider is unreachable, new
+  «offline» state with forced retries and a 1-day deadline warning, offline
+  notice on the PDF. Send button hidden while queued (TF-2).
+
+### 1.9 — Provider search & reconciliation
+- «Ανάκτηση από Πάροχο» action and myDATA UID field; a failed document is
+  looked up at the provider before any retry resend, so a resend cannot
+  duplicate it.
+- New «queued» state for TF-2 (provider accepted, AADE offline): the PDF prints
+  the provider QR with a waiting notice and the cron polls until the MARK
+  arrives.
 
 ### 1.8 — ΤΔΑ/ΠΤΔΑ, dispatch planning data, UI tabs
 - **Τιμολόγιο–Δελτίο Αποστολής (ΤΔΑ) & Πιστωτικό ΤΔΑ**: new journal flag

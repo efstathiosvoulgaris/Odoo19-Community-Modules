@@ -1,5 +1,7 @@
 # pos_community_addons
 
+**Version:** 1.8 | **Odoo:** 19 Community | **License:** LGPL-3
+
 Coffee-shop optimised POS restaurant UI for **Odoo 19 Community** with `pos_restaurant`.
 
 ## Features
@@ -17,13 +19,33 @@ Tables on the floor plan can be renamed with any text (e.g. "Window 1", "Bar", "
 - Red border + glow on occupied tables.
 - Minimum 65 × 65 px touch target on mobile for position-mode tables.
 
-### Streamlined coffee-shop UI
-Removes POS restaurant features that are not useful in a coffee-shop context:
-- **Course / Σειρά Πιάτων button** removed from both mobile and desktop layouts.
-- **Select Partner button** removed from the mobile action bar.
-- **"New" button** (desktop) removed — the Payment button is sufficient.
-- Mobile layout replaces the "New" button with a direct "Pay" button.
-- Invoice, Tip, and Customer buttons hidden on mobile via CSS.
+### Streamlined coffee-shop UI — «Απλοποιημένο Ταμείο»
+An option, **not** a deletion: *Point of Sale → Configuration → Settings → PoS
+Interface → Απλοποιημένο Ταμείο*. On by default for restaurant tills, off
+everywhere else. While it is on:
+- **Course / Σειρά Πιάτων button** hidden on both mobile and desktop layouts.
+- **Select Partner button** hidden in the mobile action bar.
+- **"New" button** (desktop) hidden — the Payment button is sufficient; the
+  mobile layout shows a direct "Pay" button in its place.
+- Tip and Customer buttons hidden on mobile via CSS.
+
+Untick it on a till that needs a customer on the order — a bar issuing a
+Τιμολόγιο (ΤΙΜ) to a company, for instance, which needs the customer selector
+to pick a partner with ΑΦΜ.
+
+> Nodes are hidden with `position="attributes"`, never removed with
+> `position="replace"`. A node an override deletes is gone from **every** till
+> in the database, new ones included, and no setting can bring it back — which
+> is exactly how ΤΙΜ issuance was blocked before 1.8. Core `t-if` conditions
+> are preserved, since `position="attributes"` overwrites them otherwise.
+
+### Customer receipt is skipped on a fiscal till
+The clean `CustomerReceipt` template applies only where the receipt is not a
+legal document. On a till issuing through `l10n_gr_provider_pos` the thermal
+receipt is what prints when the sale never reached the provider, and it must
+carry the ΜΑΡΚ/QR block or the TF-1/TF-2 notice — both inherits of
+`point_of_sale.OrderReceipt`. The choice is made per session in
+`PosStore.afterProcessServerData`, once the config is known.
 
 ### Send-to-kitchen always available
 Patches `ProductScreen.swapButton` so the Send / Payment button area is always shown for restaurant sessions, regardless of whether preparation printer categories are configured.
@@ -92,6 +114,18 @@ Non-restaurant POS configurations are unaffected. All patches check `pos.config.
 ---
 
 ## Changelog
+
+### 1.8
+- The streamlined UI became the per-till option «Απλοποιημένο Ταμείο»
+  (`pos_ca_simple_ui`, POS settings → PoS Interface), defaulting to on for
+  restaurant tills and off elsewhere.
+- Buttons are hidden, not removed. The customer selector and the «Τιμολόγιο»
+  button had been deleted outright, which killed them on every till in the
+  database and made ΤΙΜ issuance impossible; the payment-screen override is
+  gone entirely and the actionpad one now sets attributes, preserving the core
+  conditions it used to overwrite.
+- `OrderReceipt.template` is chosen per session instead of at module load, so a
+  provider till keeps Odoo's receipt and its legal markings block.
 
 ### 1.7
 - Floor plan: minimum 65 × 65 px touch target for position-mode tables on screens ≤ 768 px.

@@ -1,6 +1,6 @@
 # l10n_gr_provider_eftpos — EFT/POS Interconnection (Α.1155)
 
-**Version:** 1.6 | **Odoo:** 19 | **License:** LGPL-3
+**Version:** 1.9 | **Odoo:** 19 | **License:** LGPL-3
 **Spec refs:** Α.1155/2023 · ILYDA «Οδηγίες υλοποίησης A1155 POS» v1.3 ·
 ILYDA MegEftPos Driver v2.1.10 · «Οδηγός Διασύνδεσης ERP με POS»
 
@@ -271,6 +271,11 @@ to be based on a wrong premise. IRIS at a terminal is type 7, so the §5.3
 ---
 
 ## Changelog
+
+### 1.9 — A constraint that never existed
+- Odoo 19 stopped reading `_sql_constraints`, so the CHECK keeping an EFT
+  payment amount positive was never created in the database. Ported to
+  `models.Constraint`.
 
 ### 1.8 — Instalments, Viva free refund
 - `installments` on the payment, sent only when greater than 1 (optional in

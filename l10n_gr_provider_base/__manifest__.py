@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Greece - E-Invoicing Provider (Base)',
-    'version': '2.8',
+    'version': '2.9',
     'category': 'Accounting/Localizations',
     'summary': 'Issue invoices through a licensed Greek e-invoicing provider (Y.PA.H.E.S.)',
     'description': (
@@ -17,6 +17,11 @@
         '\n'
         'Changelog\n'
         '---------\n'
+        '2.9 — Odoo 19 dropped _sql_constraints: the class attribute is no\n'
+        'longer read, so the uniqueness rules on Προεπιλογές Χαρακτηρισμού\n'
+        '(τύπος/είδος/εταιρεία) and on Οχήματα (όνομα/εταιρεία) were never\n'
+        'created in the database. Ported to models.Constraint.\n'
+        '\n'
         '2.8 — Αναδιάρθρωση εκτύπωσης A4/80mm. Ενιαία δρομολόγηση φόρμας\n'
         '(_l10n_gr_prov_print_form): η επιλογή χαρτιού, το QWeb routing και\n'
         'η γεωμετρία κεφαλίδας διαβάζουν πλέον την ίδια πηγή — σε βάση χωρίς\n'

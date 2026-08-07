@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Greece - E-Invoicing Provider (EFT/POS Α.1155)',
-    'version': '1.8',
+    'version': '1.9',
     'category': 'Accounting/Localizations',
     'summary': 'Card-terminal payment signatures per Α.1155/2023 through the e-invoicing provider',
     'description': (
@@ -28,6 +28,10 @@
         '\n'
         'Changelog\n'
         '---------\n'
+        '1.9 — Odoo 19 dropped _sql_constraints, so the CHECK that keeps an EFT\n'
+        'payment amount positive was never created in the database. Ported to\n'
+        'models.Constraint.\n'
+        '\n'
         '1.8 — Driver 2.1.10 leftovers: instalments (δόσεις) on the card\n'
         'charge, and Viva Cloud «ελεύθερο refund» — a credit note on a Viva\n'
         'terminal no longer needs the original charge.\n'

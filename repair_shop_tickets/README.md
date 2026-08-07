@@ -1,5 +1,7 @@
 # Repair Shop Tickets
 
+**Version:** 1.3 | **Odoo:** 19 | **License:** LGPL-3
+
 An Odoo 19 module for managing repair jobs in a repair/service shop.
 
 ## Features

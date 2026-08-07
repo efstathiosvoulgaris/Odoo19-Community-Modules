@@ -1,5 +1,7 @@
 # Purchase: Create Bill button
 
+**Version:** 1.0 | **Odoo:** 19 | **License:** LGPL-3
+
 Restores the one-click **Create Bill** button on the purchase order form, which
 Odoo 19 removed in favour of the "Upload Bill" digitization widget.
 

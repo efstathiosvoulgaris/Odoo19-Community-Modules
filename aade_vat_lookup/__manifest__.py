@@ -42,6 +42,8 @@ AADE VAT Lookup
 
 Changelog
 ---------
+* 1.1 — Τα credentials και ο ΑΦΜ περνούν από XML escaping πριν μπουν στο
+  SOAP envelope· ένας χαρακτήρας `&` στον κωδικό TaxisNet χαλούσε το αίτημα.
 * 1.0 — Initial public release.
 """,
     "version": "1.1",

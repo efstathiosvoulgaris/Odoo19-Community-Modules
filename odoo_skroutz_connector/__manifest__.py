@@ -7,6 +7,9 @@
     'description': (
         'Changelog\n'
         '---------\n'
+        '* 1.7 — Dispatch with no tracking codes no longer raises; dropped the\n'
+        '        notify_by_email argument Odoo 19 removed, which made every\n'
+        '        order notification raise instead of posting.\n'
         '* 1.6 — Skroutz menu moved from Website > eCommerce to Sales.\n'
         '        Create Sale Order moved to the header next to Accept/Reject/Sync.\n'        '* 1.5 — Manual "Create Sale Order" button replaces auto-create on accept.\n'
         '        Accept skips wizard for standard orders (no pickup options from API).\n'
