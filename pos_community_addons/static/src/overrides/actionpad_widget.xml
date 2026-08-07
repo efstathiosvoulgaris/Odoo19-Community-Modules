@@ -1,20 +1,32 @@
 <?xml version='1.0' encoding='utf-8'?>
 <templates>
 
-    <!-- Mobile actionpad: remove SelectPartnerButton and Course button -->
+    <!-- Mobile actionpad: hide SelectPartnerButton and Course button.
+         Hidden, never removed: a deleted node cannot be brought back by a
+         setting, and a till that issues Τιμολόγια has to be able to name the
+         customer. Per-till option «Απλοποιημένο Ταμείο». -->
     <t t-name="pos_community_addons.ActionpadOverrides"
        t-inherit="point_of_sale.ActionpadWidget"
        t-inherit-mode="extension">
-        <xpath expr="//SelectPartnerButton" position="replace"/>
-        <xpath expr="//button[@t-on-click='()=>this.pos.addCourse()']" position="replace"/>
+        <xpath expr="//SelectPartnerButton" position="attributes">
+            <attribute name="t-if">!pos.config.pos_ca_simple_ui</attribute>
+        </xpath>
+        <!-- keeps the core condition; only adds ours -->
+        <xpath expr="//button[@t-on-click='()=>this.pos.addCourse()']" position="attributes">
+            <attribute name="t-if">pos.config.module_pos_restaurant and !this.currentOrder.isRefund and !pos.config.pos_ca_simple_ui</attribute>
+        </xpath>
     </t>
 
-    <!-- Desktop control buttons row: remove SelectPartnerButton and Course button -->
+    <!-- Desktop control buttons row: same two buttons, same option -->
     <t t-name="pos_community_addons.ControlButtonsOverrides"
        t-inherit="point_of_sale.ControlButtons"
        t-inherit-mode="extension">
-        <xpath expr="//SelectPartnerButton" position="replace"/>
-        <xpath expr="//button[hasclass('course-btn')]" position="replace"/>
+        <xpath expr="//SelectPartnerButton" position="attributes">
+            <attribute name="t-if">!props.showRemainingButtons and !pos.config.pos_ca_simple_ui</attribute>
+        </xpath>
+        <xpath expr="//button[hasclass('course-btn')]" position="attributes">
+            <attribute name="t-if">pos.config.module_pos_restaurant and !props.showRemainingButtons and !pos.getOrder()?.isRefund and !pos.config.pos_ca_simple_ui</attribute>
+        </xpath>
     </t>
 
     <!-- Desktop ActionpadWidget: remove "New" button (coffee shop doesn't need another-round ordering) -->

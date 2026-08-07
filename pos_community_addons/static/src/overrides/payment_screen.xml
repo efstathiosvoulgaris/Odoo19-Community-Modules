@@ -13,10 +13,10 @@
         </xpath>
     </t>
 
-    <t t-name="pos_community_addons.PaymentScreenButtons"
-       t-inherit="point_of_sale.PaymentScreenButtons"
-       t-inherit-mode="extension">
-        <xpath expr="//button[hasclass('js_invoice')]" position="replace"/>
-    </t>
+    <!-- The «Τιμολόγιο» button used to be deleted here. It is a fiscal feature:
+         a customer may ask for a ΤΙΜ instead of an ΑΛΠ, and a deleted node
+         cannot be brought back by a setting. Visibility is now the per-till
+         option «Έκδοση Τιμολογίου (ΤΙΜ) από το ταμείο»
+         (l10n_gr_provider_pos) — untick it for the same result as before. -->
 
 </templates>

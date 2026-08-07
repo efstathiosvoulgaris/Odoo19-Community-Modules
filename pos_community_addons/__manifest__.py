@@ -2,11 +2,24 @@
 {
     "name": "POS Community Addons",
     "summary": "Restaurant POS customizations: kitchen receipts, floor plan styling, streamlined UI",
-    "version": "1.7",
+    "version": "1.8",
     "description": """Coffee-shop optimised POS restaurant UI for Odoo 19 Community.
 
 Changelog
 ---------
+
+* 1.8 — UI cleanup became a per-till option instead of a deletion
+
+  - New setting «Απλοποιημένο Ταμείο» (POS settings → PoS Interface) hides the
+    customer selector and the course buttons. It defaults to on for restaurant
+    tills and off everywhere else, so a retail till gets the customer selector
+    back and a bar can turn it on to issue a Τιμολόγιο.
+
+  - The buttons are now hidden, not removed. A node deleted by an override
+    cannot be brought back by any setting, which is how the customer selector
+    disappeared from every till in the database — including new ones — and
+    blocked ΤΙΜ issuance. Same reasoning applied to the «Τιμολόγιο» button on
+    the payment screen, whose removal is gone (see l10n_gr_provider_pos).
 
 * 1.7 — Mobile UX improvements
 
@@ -90,6 +103,9 @@ Changelog
     "category": "Point of Sale",
     "license": "LGPL-3",
     "depends": ["pos_restaurant"],
+    "data": [
+        "views/pos_config_views.xml",
+    ],
     "assets": {
       'point_of_sale._assets_pos': [
             "pos_community_addons/static/src/floor_screen/floor_screen.js",

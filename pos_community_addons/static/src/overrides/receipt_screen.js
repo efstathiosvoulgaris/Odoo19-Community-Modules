@@ -66,8 +66,27 @@ patch(PosOrderline.prototype, {
     },
 });
 
-// Replace Odoo's default receipt with our clean customer receipt.
-OrderReceipt.template = "pos_community_addons.CustomerReceipt";
+// ---------------------------------------------------------------------------
+// The clean customer receipt replaces Odoo's — but only where the receipt is
+// not a fiscal document.
+//
+// On a till that issues through the e-invoicing provider, the thermal receipt
+// is what gets printed when the sale never reached the provider (offline, send
+// failure), and the law wants the ΜΑΡΚ/QR block or the TF-1/TF-2 notice on it.
+// That block is an inherit of point_of_sale.OrderReceipt, so swapping the
+// template away from it printed a receipt with no markings and no warning —
+// indistinguishable from a legal one. Decided per session, once the config is
+// known, because `template` is read at render time.
+// ---------------------------------------------------------------------------
+patch(PosStore.prototype, {
+    async afterProcessServerData() {
+        const result = await super.afterProcessServerData(...arguments);
+        OrderReceipt.template = this.config?.l10n_gr_prov_enabled
+            ? "point_of_sale.OrderReceipt"
+            : "pos_community_addons.CustomerReceipt";
+        return result;
+    },
+});
 
 // ---------------------------------------------------------------------------
 // Browser print fallback for receipt printer failures.

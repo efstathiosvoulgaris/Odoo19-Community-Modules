@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="res_config_settings_view_form_pos_ca" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.pos.community.addons</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="point_of_sale.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <block id="pos_interface_section" position="inside">
+                <setting string="Απλοποιημένο Ταμείο" name="pos_ca_simple_ui_setting"
+                         help="Κρύβει την επιλογή πελάτη και τα κουμπιά σειράς (course) από την οθόνη προϊόντων — για ταμείο μπαρ/καφέ όπου κάθε πώληση είναι ανώνυμη. Ξεμαρκάρετέ το σε ταμείο που χρειάζεται πελάτη, π.χ. για έκδοση Τιμολογίου (ΤΙΜ). Προεπιλογή: ενεργό στα ταμεία εστίασης, ανενεργό στα υπόλοιπα.">
+                    <field name="pos_pos_ca_simple_ui"/>
+                </setting>
+            </block>
+        </field>
+    </record>
+
+</odoo>
