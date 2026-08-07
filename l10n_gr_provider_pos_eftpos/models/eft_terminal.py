@@ -25,7 +25,8 @@ class L10nGrProvEftTerminal(models.Model):
         The realtime sign endpoint signs against the document totals + series +
         invoice type — none of which need the serial number — so it works at
         payment time. `vals`: config_id, amount, net, vat, gross, vat_rate,
-        is_timologio, is_refund (amounts always positive, like the document).
+        is_timologio, is_refund, installments (amounts always positive, like
+        the document).
         Returns the signature dict, or {'error': <text>}.
 
         When the terminal is driven by the MegEftPos Driver the card is also
@@ -176,6 +177,10 @@ class L10nGrProvEftTerminal(models.Model):
             'vatAmount': _r2(vals.get('vat') or 0),
             'tipAmount': 0,
             'cashier': self.env.user.name,
+            # Optional everywhere, and NSPs without δόσεις reject a value:
+            # only sent when instalments were actually asked for.
+            **({'installments': int(vals['installments'])}
+               if int(vals.get('installments') or 0) > 1 else {}),
             'providerId': 'ILYDA',
             'providerInput': sig.get('signed_content') or '',
             'providerSignature': sig.get('signature') or '',

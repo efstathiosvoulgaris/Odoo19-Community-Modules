@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Greece - E-Invoicing Provider (Restaurant Order Notes 8.6)',
-    'version': '1.1',
+    'version': '1.2',
     'category': 'Accounting/Localizations',
     'summary': 'Δελτίο Παραγγελίας Εστίασης (8.6) from the restaurant Point of Sale',
     'description': (
@@ -25,6 +25,12 @@
         '\n'
         'Changelog\n'
         '---------\n'
+        '1.2 — Per-till options in POS settings (all on by default): issue\n'
+        'notes per round, auto «Καθολική Ακύρωση» on cancel, auto negative\n'
+        'note on item removal, and an hourly alert for notes approaching the\n'
+        '24h limit — the one thing nobody notices until the provider suspends\n'
+        'transmission.\n'
+        '\n'
         '1.1 — Cancellation, both routes of §4. Removing an already-sent item\n'
         'issues an «αρνητικό» note (rows with recType 7, priced from the note\n'
         'that transmitted them, so a deleted orderline is still credited);\n'

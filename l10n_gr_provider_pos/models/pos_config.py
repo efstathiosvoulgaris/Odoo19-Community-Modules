@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from odoo import api, fields, models, _
-from odoo.exceptions import UserError
+from odoo.exceptions import UserError, ValidationError
 
 from .pos_payment_method import GR_POS_PAYMENT_METHODS
 
@@ -34,6 +34,30 @@ class PosConfig(models.Model):
         string='Έκδοση μέσω Παρόχου',
         compute='_compute_l10n_gr_prov_enabled')
 
+    l10n_gr_prov_print_mode = fields.Selection([
+        ('legal', 'Νόμιμο παραστατικό (ΑΛΠ 80mm / ΤΙΜ A4)'),
+        ('receipt', 'Απόδειξη ταμείου με ΜΑΡΚ και QR'),
+        ('both', 'Και τα δύο'),
+    ], string='Τι Εκτυπώνει το Ταμείο', default='legal', required=True,
+        help='Το νόμιμο παραστατικό είναι το εκτυπωμένο account.move στη '
+             'φόρμα του ημερολογίου — ό,τι ακριβώς δίνει και το λογιστήριο. '
+             'Η απόδειξη ταμείου είναι το θερμικό δελτίο του Odoo με τα '
+             'στοιχεία διαβίβασης (ΜΑΡΚ, QR, Συμβ. Αυθεντικοποίησης).')
+    l10n_gr_prov_allow_tim = fields.Boolean(
+        string='Έκδοση Τιμολογίου (ΤΙΜ) από το Ταμείο', default=True,
+        help='Εμφανίζει το κουμπί «Τιμολόγιο» στην οθόνη πληρωμής, για πελάτη '
+             'που ζητά τιμολόγιο αντί για απόδειξη. Απαιτεί ημερολόγιο ΤΙΜ και '
+             'επιλεγμένο πελάτη με ΑΦΜ.')
+    l10n_gr_prov_send_failure = fields.Selection([
+        ('ignore', 'Συνέχεια — το παραστατικό μπαίνει σε ουρά επανάληψης'),
+        ('warn', 'Συνέχεια με προειδοποίηση στον ταμία'),
+        ('block', 'Διακοπή της πώλησης'),
+    ], string='Αποτυχία Διαβίβασης', default='ignore', required=True,
+        help='Τι γίνεται όταν η διαβίβαση στον πάροχο αποτύχει τη στιγμή της '
+             'πληρωμής. Η διακοπή επιστρέφει την παραγγελία στο ταμείο '
+             'ΑΚΥΡΩΤΗ: κατάλληλη για κατάστημα που δεν επιτρέπεται να δώσει '
+             'αδιαβίβαστο παραστατικό, ακατάλληλη για εστίαση με κίνηση.')
+
     @api.depends('l10n_gr_prov_alp_journal_id',
                  'company_id.l10n_gr_prov_provider')
     def _compute_l10n_gr_prov_enabled(self):
@@ -41,6 +65,16 @@ class PosConfig(models.Model):
             config.l10n_gr_prov_enabled = bool(
                 config.l10n_gr_prov_alp_journal_id
                 and config.company_id._l10n_gr_prov_active())
+
+    @api.constrains('l10n_gr_prov_allow_tim', 'l10n_gr_prov_tim_journal_id')
+    def _check_l10n_gr_prov_allow_tim(self):
+        for config in self:
+            if (config.l10n_gr_prov_allow_tim
+                    and config.l10n_gr_prov_alp_journal_id
+                    and not config.l10n_gr_prov_tim_journal_id):
+                raise ValidationError(_(
+                    'Για να εκδίδει το ταμείο Τιμολόγιο (ΤΙΜ) πρέπει πρώτα να '
+                    'οριστεί το «Ημερολόγιο ΤΙΜ (1.1)» στις ρυθμίσεις του POS.'))
 
     def _l10n_gr_prov_get_walkin_partner(self):
         """The retail walk-in partner is created once by the user (a normal
@@ -66,6 +100,12 @@ class ResConfigSettings(models.TransientModel):
         related='pos_config_id.l10n_gr_prov_pla_journal_id', readonly=False)
     pos_l10n_gr_prov_walkin_partner_id = fields.Many2one(
         related='pos_config_id.l10n_gr_prov_walkin_partner_id', readonly=False)
+    pos_l10n_gr_prov_print_mode = fields.Selection(
+        related='pos_config_id.l10n_gr_prov_print_mode', readonly=False)
+    pos_l10n_gr_prov_allow_tim = fields.Boolean(
+        related='pos_config_id.l10n_gr_prov_allow_tim', readonly=False)
+    pos_l10n_gr_prov_send_failure = fields.Selection(
+        related='pos_config_id.l10n_gr_prov_send_failure', readonly=False)
 
     def action_l10n_gr_prov_tidy_taxes(self):
         """Also create the Greek POS payment methods Odoo doesn't ship (IRIS,

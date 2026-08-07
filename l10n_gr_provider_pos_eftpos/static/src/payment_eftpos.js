@@ -2,6 +2,7 @@ import { patch } from "@web/core/utils/patch";
 import { _t } from "@web/core/l10n/translation";
 import { AlertDialog } from "@web/core/confirmation_dialog/confirmation_dialog";
 import { TextInputPopup } from "@point_of_sale/app/components/popups/text_input_popup/text_input_popup";
+import { NumberPopup } from "@point_of_sale/app/components/popups/number_popup/number_popup";
 import { makeAwaitable } from "@point_of_sale/app/utils/make_awaitable_dialog";
 import OrderPaymentValidation from "@point_of_sale/app/utils/order_payment_validation";
 import { PaymentScreen } from "@point_of_sale/app/screens/payment_screen/payment_screen";
@@ -72,6 +73,35 @@ patch(OrderPaymentValidation.prototype, {
         return proceed;
     },
 
+    /**
+     * Δόσεις for this charge: 0 when the till doesn't offer them, null when
+     * the cashier backed out. Asked BEFORE the signature is requested — the
+     * signature is spent on the charge that follows it, so nothing may sit
+     * between the two that the cashier can abandon.
+     */
+    async _grAskInstallments() {
+        const max = this.pos.config.l10n_gr_prov_eft_max_installments || 0;
+        if (max < 2) {
+            return 0;
+        }
+        const answer = await makeAwaitable(this.pos.dialog, NumberPopup, {
+            title: _t("Δόσεις (1 = εφάπαξ, έως %s)", max),
+            startingValue: 1,
+        });
+        if (answer === undefined || answer === null || answer === "") {
+            return null;
+        }
+        const count = Math.trunc(Number(answer));
+        if (!(count >= 1 && count <= max)) {
+            this.pos.dialog.add(AlertDialog, {
+                title: _t("Μη έγκυρες δόσεις"),
+                body: _t("Δώστε αριθμό από 1 έως %s.", max),
+            });
+            return null;
+        }
+        return count;
+    },
+
     async _grSignCardPayments(touched) {
         const order = this.order;
         // A return is a credit document, and §5.3 makes signature and
@@ -88,6 +118,12 @@ patch(OrderPaymentValidation.prototype, {
             (l) => this._grIsCardLine(l) && l.getAmount() !== 0 && !l.l10n_gr_prov_eft_signature
         );
         for (const line of cardLines) {
+            // 0. Δόσεις, when the till offers them and this is a charge.
+            const installments = isRefund ? 0 : await this._grAskInstallments();
+            if (installments === null) {
+                return false;
+            }
+
             // 1. Request the provider signature for this card amount.
             let result;
             try {
@@ -104,6 +140,7 @@ patch(OrderPaymentValidation.prototype, {
                             vat_rate: this._grVatRate(order),
                             is_timologio: Boolean(order.to_invoice),
                             is_refund: isRefund,
+                            installments: installments,
                         },
                     ]
                 );
@@ -126,6 +163,20 @@ patch(OrderPaymentValidation.prototype, {
             // already charged server-side and it came back with the
             // signature; a standalone terminal is charged by hand.
             let txId = result.transaction_id;
+            if (!txId && this.pos.config.l10n_gr_prov_eft_require_signature) {
+                // This till may not take a card without the terminal having
+                // answered for it — a typed transaction id is a promise, not
+                // a proof. Release the signature we just minted.
+                await this._grCancelSignature(order, result.signature);
+                this.pos.dialog.add(AlertDialog, {
+                    title: _t("Το τερματικό δεν απάντησε"),
+                    body: _t(
+                        "Το ταμείο απαιτεί χρέωση μέσω του τερματικού. " +
+                            "Επαναλάβετε ή επιλέξτε άλλον τρόπο πληρωμής."
+                    ),
+                });
+                return false;
+            }
             if (!txId) {
                 txId = await makeAwaitable(this.pos.dialog, TextInputPopup, {
                     title: isRefund

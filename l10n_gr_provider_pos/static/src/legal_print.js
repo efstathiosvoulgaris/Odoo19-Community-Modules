@@ -23,7 +23,8 @@ import { PosStore } from "@point_of_sale/app/services/pos_store";
  */
 patch(PosStore.prototype, {
     _grLegalMoveId(order) {
-        if (!this.config.l10n_gr_prov_enabled) {
+        if (!this.config.l10n_gr_prov_enabled
+            || this.config.l10n_gr_prov_print_mode === "receipt") {
             return false;
         }
         // raw: account_move is a plain id on the client, not a loaded relation.
@@ -35,7 +36,11 @@ patch(PosStore.prototype, {
         if (!moveId || rest.printBillActionTriggered) {
             return super.printReceipt({ order, ...rest });
         }
-        return this._grPrintLegalDocument(moveId);
+        const printed = await this._grPrintLegalDocument(moveId);
+        if (this.config.l10n_gr_prov_print_mode === "both") {
+            await super.printReceipt({ order, ...rest });
+        }
+        return printed;
     },
 
     /**

@@ -33,7 +33,9 @@ patch(ProductScreen.prototype, {
 patch(PosStore.prototype, {
     _grCateringEnabled() {
         return Boolean(
-            this.config.module_pos_restaurant && this.config.l10n_gr_prov_enabled
+            this.config.module_pos_restaurant &&
+                this.config.l10n_gr_prov_enabled &&
+                this.config.l10n_gr_prov_catering_notes
         );
     },
 
@@ -208,6 +210,9 @@ patch(PosStore.prototype, {
             "Το Δελτίο Παραγγελίας δεν στάλθηκε — δείτε τα Δελτία Παραγγελίας Εστίασης."
         );
         if (cancelled) {
+            if (!this.config.l10n_gr_prov_catering_auto_cancel) {
+                return;
+            }
             await this._grCallCatering(
                 "l10n_gr_prov_cancel_order",
                 base,
@@ -226,7 +231,7 @@ patch(PosStore.prototype, {
         }
         // Separate document by law: normal and Rec Type 7 rows never share a
         // note (guide §4).
-        if (negative.length) {
+        if (negative.length && this.config.l10n_gr_prov_catering_auto_negative) {
             await this._grCallCatering(
                 "l10n_gr_prov_issue_note",
                 { ...base, kind: "negative", lines: negative },

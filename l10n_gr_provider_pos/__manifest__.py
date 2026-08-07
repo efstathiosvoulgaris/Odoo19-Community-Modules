@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Greece - E-Invoicing Provider (Point of Sale)',
-    'version': '1.6',
+    'version': '1.7',
     'category': 'Accounting/Localizations',
     'summary': 'POS receipts (ΑΛΠ) and invoices (ΤΙΜ) through the e-invoicing provider',
     'description': (
@@ -25,6 +25,14 @@
         '\n'
         'Changelog\n'
         '---------\n'
+        '1.7 — Per-till options in POS settings, every default reproducing the\n'
+        'previous behaviour: what the till prints (legal document / receipt\n'
+        'with ΜΑΡΚ / both), whether the «Τιμολόγιο» button is offered (a bar\n'
+        'invoicing a company), and what a failed transmission costs (queue and\n'
+        'continue / warn the cashier / refuse the sale). A ΤΙΜ now demands a\n'
+        'partner with ΑΦΜ instead of silently falling back to the walk-in\n'
+        'customer.\n'
+        '\n'
         '1.6 — The till prints the LEGAL DOCUMENT, not an Odoo receipt: the\n'
         'posted account.move rendered on the journal\'s Greek form (ΑΛΠ 80mm,\n'
         'ΤΙΜ A4) with ΜΑΡΚ, provider QR and authentication code. The thermal\n'

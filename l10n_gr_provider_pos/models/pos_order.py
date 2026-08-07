@@ -8,7 +8,8 @@ sale: the document stays in the retry queue and the receipt says so.
 """
 import logging
 
-from odoo import fields, models
+from odoo import fields, models, _
+from odoo.exceptions import UserError
 
 _logger = logging.getLogger(__name__)
 
@@ -66,6 +67,19 @@ class PosOrder(models.Model):
             # the provider needs an account.move for every order
             self.l10n_gr_prov_timologio = self.to_invoice
             self.to_invoice = True
+            if self.l10n_gr_prov_timologio:
+                # A ΤΙΜ names a real buyer: the walk-in fallback below would
+                # silently turn an invoice the customer asked for into one
+                # issued to «Πελάτης Λιανικής».
+                if not self.partner_id:
+                    raise UserError(_(
+                        'Για έκδοση Τιμολογίου (ΤΙΜ) επιλέξτε πελάτη στην '
+                        'παραγγελία.'))
+                if not self.partner_id.vat:
+                    raise UserError(_(
+                        'Ο πελάτης «%(partner)s» δεν έχει ΑΦΜ — δεν μπορεί να '
+                        'εκδοθεί Τιμολόγιο. Συμπληρώστε το ΑΦΜ ή εκδώστε '
+                        'απόδειξη λιανικής.', partner=self.partner_id.name))
             # The customer must sit on the ORDER, not only on the invoice:
             # _create_payment_moves takes the receivable account from
             # payment.partner_id, so an anonymous order (which stock Odoo would
@@ -136,15 +150,31 @@ class PosOrder(models.Model):
         """Transmit the invoice if core's _generate_pos_order_invoice didn't
         already (it sends inside itself when generate_pdf is on). Payment
         methods are set at invoice creation (_prepare_invoice_vals), so there
-        is nothing to fix up here. Any failure is swallowed: the receipt shows
-        the pending notice and the provider cron retries."""
+        is nothing to fix up here.
+
+        What a failure costs is the till's choice
+        (pos.config.l10n_gr_prov_send_failure): by default the document stays
+        in the retry queue and the receipt says so, so service never stops.
+        """
         self.ensure_one()
         move = self.account_move
         if not move.l10n_gr_prov_applicable or move.l10n_gr_prov_mark:
             return
         try:
             move._l10n_gr_prov_try_send()
-        except Exception:
+        except Exception as error:
             _logger.exception(
                 'Provider send failed for POS order %s (%s)',
                 self.name, move.name)
+            if self.config_id.l10n_gr_prov_send_failure == 'block':
+                # ponytail: raising rolls the whole sync back, so the order
+                # returns to the till unsaved and the cashier retries. That is
+                # the point — this till may not hand over an untransmitted
+                # document. A softer «hold the order» would need its own state
+                # machine on pos.order.
+                raise UserError(_(
+                    'Η διαβίβαση στον πάροχο απέτυχε και το ταμείο είναι '
+                    'ρυθμισμένο να μην ολοκληρώνει πωλήσεις χωρίς διαβίβαση.\n\n'
+                    '%(error)s', error=error)) from error
+        # 'warn' is rendered by the front end: the receipt screen already reads
+        # l10n_gr_prov_state, so an un-marked document is visible there.

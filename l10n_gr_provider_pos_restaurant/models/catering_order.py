@@ -22,6 +22,7 @@ blocks every further catering transaction of the entity, so both routes exist:
     without any correlation.
 """
 import logging
+from datetime import timedelta
 
 from odoo import api, fields, models, _
 from odoo.exceptions import UserError
@@ -43,6 +44,9 @@ CANCEL_VAT_CATEGORY = 8
 
 class L10nGrProvCateringOrder(models.Model):
     _name = 'l10n.gr.prov.catering.order'
+    # Both mixins: the 24h alert schedules an activity, and mail.activity
+    # subscribes the assignee on create — which needs mail.thread.
+    _inherit = ['mail.thread', 'mail.activity.mixin']
     _description = 'Δελτίο Παραγγελίας Εστίασης (8.6)'
     _order = 'create_date desc, id desc'
     _rec_name = 'display_name'
@@ -142,8 +146,11 @@ class L10nGrProvCateringOrder(models.Model):
             return {}
         config = self.env['pos.config'].browse(vals['config_id'])
         # The front end asks on every round; the server decides. A till that is
-        # not wired to the provider issues nothing.
-        if not config.l10n_gr_prov_enabled:
+        # not wired to the provider, or has the automation switched off, issues
+        # nothing.
+        if not config.l10n_gr_prov_enabled or not config.l10n_gr_prov_catering_notes:
+            return {}
+        if kind == 'negative' and not config.l10n_gr_prov_catering_auto_negative:
             return {}
         order = self.create({
             'company_id': config.company_id.id,
@@ -246,6 +253,54 @@ class L10nGrProvCateringOrder(models.Model):
         for order in self.filtered(lambda o: o.state in ('draft', 'error')):
             order._l10n_gr_prov_send()
 
+    @api.model
+    def _cron_l10n_gr_prov_alert_open(self):
+        """Warn about notes running out of their 24 hours.
+
+        An unclosed note suspends transmission for the whole entity once the
+        window passes, and the only cure is to close or cancel it — which
+        nobody does if nobody notices. One activity per till per run, on the
+        POS responsible, pointing at the till's open notes.
+        """
+        Note = self.env['l10n.gr.prov.catering.order']
+        for config in self.env['pos.config'].search(
+                [('l10n_gr_prov_catering_alert_hours', '>', 0)]):
+            deadline = fields.Datetime.now() - timedelta(
+                hours=config.l10n_gr_prov_catering_alert_hours)
+            notes = Note.search([
+                ('config_id', '=', config.id),
+                ('state', '=', 'sent'),
+                ('closing_move_id', '=', False),
+                ('create_date', '<=', deadline),
+            ])
+            if not notes:
+                continue
+            # Hourly cron, same notes every run — one open activity per till is
+            # a reminder, twenty-four is noise nobody reads.
+            if self.env['mail.activity'].search_count([
+                    ('res_model', '=', self._name),
+                    ('res_id', 'in', notes.ids)]):
+                continue
+            # The cron runs as OdooBot, who never looks at anything: give it to
+            # whoever last worked that till.
+            session = self.env['pos.session'].search(
+                [('config_id', '=', config.id)], order='id desc', limit=1)
+            user = session.user_id or self.env.user
+            notes[0].activity_schedule(
+                'mail.mail_activity_data_todo',
+                user_id=user.id,
+                summary=_('%(count)s ανοιχτά Δελτία Παραγγελίας Εστίασης',
+                          count=len(notes)),
+                note=_(
+                    'Ταμείο %(config)s: %(count)s δελτία παραμένουν ανοιχτά '
+                    'πάνω από %(hours)s ώρες (συνολικά %(total).2f €). Κλείστε '
+                    'τα με το παραστατικό του τραπεζιού ή ακυρώστε τα — μετά '
+                    'τις 24 ώρες ο πάροχος αναστέλλει τη διαβίβαση για όλη την '
+                    'επιχείρηση.',
+                    config=config.name, count=len(notes),
+                    hours=config.l10n_gr_prov_catering_alert_hours,
+                    total=sum(notes.mapped('amount_total'))))
+
     # ── Cancellation ─────────────────────────────────────────────────────────
 
     @api.model
@@ -255,6 +310,11 @@ class L10nGrProvCateringOrder(models.Model):
         Called from the POS. Never raises: the till already cancelled the
         order, and an unsent cancellation is recoverable from the back office.
         """
+        config = self.env['pos.config'].browse(vals['config_id'])
+        if not config.l10n_gr_prov_catering_auto_cancel:
+            # The notes stay open on purpose; they are cancelled by hand from
+            # Λογιστική → Δελτία Παραγγελίας Εστίασης before the 24h limit.
+            return {}
         notes = self.search([
             ('pos_order_uuid', '=', vals.get('pos_order_uuid')),
             ('state', '=', 'sent'),

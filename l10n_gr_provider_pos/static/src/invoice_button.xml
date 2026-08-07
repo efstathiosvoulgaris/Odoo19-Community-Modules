@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+
+    <!-- «Τιμολόγιο»: a customer (usually a company) asking for a ΤΙΜ instead of
+         the retail ΑΛΠ. Hidden per till by the administrator, never removed —
+         a bar that occasionally invoices a company needs the button back, and
+         a node deleted by another module cannot be brought back by an option. -->
+    <t t-name="l10n_gr_provider_pos.PaymentScreenButtons"
+       t-inherit="point_of_sale.PaymentScreenButtons" t-inherit-mode="extension">
+        <xpath expr="//button[hasclass('js_invoice')]" position="attributes">
+            <attribute name="t-if">!pos.config.l10n_gr_prov_enabled or pos.config.l10n_gr_prov_allow_tim</attribute>
+        </xpath>
+    </t>
+
+</templates>

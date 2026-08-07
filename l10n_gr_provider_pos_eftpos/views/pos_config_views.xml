@@ -12,6 +12,16 @@
                            class="col-lg-4 o_light_label"/>
                     <field name="pos_l10n_gr_prov_eft_terminal_id"/>
                 </div>
+                <div class="row" invisible="not pos_l10n_gr_prov_eft_terminal_id">
+                    <field name="pos_l10n_gr_prov_eft_require_signature" class="col-lg-1"/>
+                    <label string="Υποχρεωτική υπογραφή Α.1155 για πληρωμές με κάρτα"
+                           for="pos_l10n_gr_prov_eft_require_signature" class="col-lg-10 o_light_label"/>
+                </div>
+                <div class="row" invisible="not pos_l10n_gr_prov_eft_terminal_id">
+                    <label string="Μέγιστες δόσεις" for="pos_l10n_gr_prov_eft_max_installments"
+                           class="col-lg-4 o_light_label"/>
+                    <field name="pos_l10n_gr_prov_eft_max_installments"/>
+                </div>
             </field>
         </field>
     </record>

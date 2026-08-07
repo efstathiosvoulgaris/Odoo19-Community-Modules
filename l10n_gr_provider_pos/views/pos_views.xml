@@ -26,6 +26,19 @@
                         <label string="Πελάτης Λιανικής" for="pos_l10n_gr_prov_walkin_partner_id" class="col-lg-4 o_light_label"/>
                         <field name="pos_l10n_gr_prov_walkin_partner_id"/>
                     </div>
+                    <div class="row">
+                        <label string="Εκτύπωση" for="pos_l10n_gr_prov_print_mode" class="col-lg-4 o_light_label"/>
+                        <field name="pos_l10n_gr_prov_print_mode"/>
+                    </div>
+                    <div class="row">
+                        <label string="Αποτυχία Διαβίβασης" for="pos_l10n_gr_prov_send_failure" class="col-lg-4 o_light_label"/>
+                        <field name="pos_l10n_gr_prov_send_failure"/>
+                    </div>
+                    <div class="row">
+                        <field name="pos_l10n_gr_prov_allow_tim" class="col-lg-1"/>
+                        <label string="Έκδοση Τιμολογίου (ΤΙΜ) από το ταμείο"
+                               for="pos_l10n_gr_prov_allow_tim" class="col-lg-10 o_light_label"/>
+                    </div>
                 </setting>
             </block>
         </field>
