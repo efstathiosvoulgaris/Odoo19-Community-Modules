@@ -40,11 +40,14 @@ Which payment methods trigger the flow follows the method's **effective myDATA
 type** — the manual override if set, otherwise derived from the method's kind.
 Only **type 7** qualifies: `bank` or `terminal` methods.
 
-`qr_code` methods map to type 8 (IRIS direct) and are deliberately left alone.
-There the customer pays the merchant's IRIS id from a banking app, no EFT/POS
-is involved, and Α.1155 does not apply — no `terminalId`, nothing to sign.
-IRIS paid *on* the terminal is not this: it arrives as an ordinary card line,
-because it is one.
+Methods carrying a manual type-8 override are excluded from the signature flow,
+on the assumption that type 8 is IRIS *direct* and outside Α.1155.
+
+> ⚠️ **That assumption is contradicted by the myDATA v2.0.1 XSD**, where
+> `ProviderSignatureType` carries `EndToEndReferenceID` «για πληρωμές IRIS» and
+> a signature may hang off any payment type. Open with ILYDA since 2026-08-08 —
+> see the IRIS section of `l10n_gr_provider_eftpos/README.md`. A till taking
+> IRIS on the terminal is transmitting unsigned payments today.
 
 `paymentMethodId` is not sent to the driver. It is optional (the spec's own
 preload example omits it), the cashier cannot know in advance whether the

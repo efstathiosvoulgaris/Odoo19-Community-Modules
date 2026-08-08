@@ -161,16 +161,26 @@ guessing one convention would create false mismatches.
 (where the terminal shows a QR for the customer to pay). It does **not** change
 the fiscal treatment.
 
-> **IRIS at the terminal is myDATA type 7, not type 8.**
+> ⚠️ **UNRESOLVED — the code here does not match the AADE schema.** Asked of
+> ILYDA on 2026-08-08 (question Α7); do not treat the current behaviour as
+> correct.
 >
-> It is a settlement mode *inside* the EFT/POS transaction — same terminal,
-> same provider signature, same `transactionId`. Type 8 («Άμεσες Πληρωμές
-> IRIS») is IRIS *direct*: the customer pays the merchant's IRIS id from their
-> banking app, no terminal is involved, and Α.1155 does not apply — there is
-> no `terminalId` and nothing to sign.
+> This module currently treats type 8 as outside Α.1155 and never signs it,
+> on the reasoning that the ILYDA A1155 guide never mentions IRIS and §7.1
+> mandates the signature fields only for "πληρωμή με POS (type == 7)".
 >
-> The documents agree: the A1155 spec never mentions type 8, §7.6 states
-> "Type 7 is for POS", and every §5.3 rule is written about type 7 alone.
+> **That is an argument from silence, and the myDATA v2.0.1 XSD contradicts
+> it.** `PaymentMethodDetailType` (types 1–8) carries an optional
+> `ProvidersSignature`, and `ProviderSignatureType` contains
+> `EndToEndReferenceID`, documented as «Το μοναδικό αναγνωριστικό αιτήματος
+> πληρωμής (**για πληρωμές IRIS**)». `tid` is optional. So an IRIS payment
+> does carry a provider signature, identified by an end-to-end reference
+> instead of a terminal id — and ILYDA's own API model has the field.
+>
+> What remains genuinely open is whether IRIS executed **on the terminal**
+> transmits as 7 or as 8, where `endToEndReferenceID` comes from, and how to
+> obtain a signature for IRIS when the documented sign request requires
+> `terminalId` + `nspProtocol`. We send `endToEndReferenceID` nowhere.
 
 Preselection is advisory. The driver spec notes that where an NSP does not
 support it the terminal shows every method and the customer chooses on the
@@ -260,13 +270,19 @@ The response side still accepts the misspelled `bankAuthorizatonCode` and
 
 ## Open questions for ILYDA
 
+- **IRIS: type 7 or 8, and does it need an Α.1155 signature?** The XSD says a
+  signature is carried (`EndToEndReferenceID` «για πληρωμές IRIS»); this module
+  signs neither. See [IRIS](#iris) — this is the one open question that affects
+  daily operation, since a business taking IRIS at the terminal is transmitting
+  unsigned payments today.
 - Does the provider's sign endpoint accept `nspProtocol` values `WORLDLINE`
   and `ATTICA`? The driver config supports both NSPs (`wl.mreceipts.com`,
   `gbl.mreceipts.com`), but the A1155 §7.7 enum lists only DEFAULT, NEOSOFT,
-  MELLON, EPAY, NEXI, CARDLINK, VIVA.
-*(A second question — whether type 8 was acceptable on an 8.4/8.5 — turned out
-to be based on a wrong premise. IRIS at a terminal is type 7, so the §5.3
-"exactly one type 7" rule is satisfied. See [IRIS](#iris).)*
+  MELLON, EPAY, NEXI, CARDLINK, VIVA. (`ATTICA` is confirmed working in
+  practice — it returned a signature with `errors: null`.)
+
+Full text of both, with the evidence, in
+`paroxos_documentation/erotiseis_ILYDA_2026-08-08.txt`.
 
 ---
 

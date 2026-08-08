@@ -58,6 +58,28 @@ class PosConfig(models.Model):
              'ΑΚΥΡΩΤΗ: κατάλληλη για κατάστημα που δεν επιτρέπεται να δώσει '
              'αδιαβίβαστο παραστατικό, ακατάλληλη για εστίαση με κίνηση.')
 
+    @api.model
+    def _default_payment_methods(self):
+        """A new till must be able to take cash.
+
+        Core creates the cash journal and its method only when the company has
+        NO payment method at all, and otherwise offers an existing cash method
+        only if no other till has claimed it (`_default_payment_methods`).
+        Seeding the Greek bank methods satisfies the first test, and the first
+        till owns the only cash method — so the second till on a provider
+        database was created with every card and bank method and no cash at
+        all. No cash method also means no cash control: no opening or closing
+        count.
+
+        Same failure as the missing «Κάρτα-POS» fixed in 1.4, one branch over.
+        """
+        methods = super()._default_payment_methods()
+        if not methods.filtered('is_cash_count'):
+            cash = self._create_cash_payment_method()
+            cash.name = _('Μετρητά')
+            methods |= cash
+        return methods
+
     @api.depends('l10n_gr_prov_alp_journal_id',
                  'company_id.l10n_gr_prov_provider')
     def _compute_l10n_gr_prov_enabled(self):
@@ -112,10 +134,18 @@ class ResConfigSettings(models.TransientModel):
         Web Banking, Επιταγή, τραπεζικές μεταφορές), each carrying its AADE
         §8.12 code."""
         res = super().action_l10n_gr_prov_tidy_taxes()
-        created = self.env['pos.payment.method'] \
+        counts = self.env['pos.payment.method'] \
             ._l10n_gr_prov_create_pos_payment_methods(self.company_id)
         res['params']['message'] += _(
             ' %(created)s νέοι τρόποι πληρωμής POS (από %(total)s ελληνικούς '
-            '+ κάρτα) — ενεργοποιήστε όσους θέλετε ανά ταμείο.',
-            created=created, total=len(GR_POS_PAYMENT_METHODS))
+            '+ κάρτα), %(repaired)s διορθώθηκαν — ενεργοποιήστε όσους θέλετε '
+            'ανά ταμείο.',
+            created=counts['created'], repaired=counts['repaired'],
+            total=len(GR_POS_PAYMENT_METHODS))
+        if counts['undeclared']:
+            res['params']['message'] += _(
+                ' ΠΡΟΣΟΧΗ: %(undeclared)s τραπεζικοί τρόποι πληρωμής δεν έχουν '
+                'δηλωμένο τύπο myDATA και διαβιβάζονται ως κάρτα (τύπος 7). '
+                'Ορίστε τον τύπο τους.',
+                undeclared=counts['undeclared'])
         return res

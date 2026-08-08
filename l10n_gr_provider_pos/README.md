@@ -1,6 +1,6 @@
 # l10n_gr_provider_pos — the Point of Sale through the provider
 
-**Version:** 1.7 | **Odoo:** 19 | **License:** LGPL-3
+**Version:** 1.9 | **Odoo:** 19 | **License:** LGPL-3
 **Spec refs:** myDATA v2.0.1 (§8.12 payment types) · Α.1138/2020 · Α.1112/2025
 
 Every validated POS order becomes a posted invoice on the proper Greek journal
@@ -46,14 +46,45 @@ methods Odoo does not ship — IRIS (8), Web Banking (6), Επιταγή (4), τ
 μεταφορές (1/2) — plus «Κάρτα-POS» (7), each stamped with its AADE §8.12 code.
 They are created unattached; tick the ones you want per till.
 
-> Odoo creates its own «Card» method only while the company has **no**
-> bank-journal payment method at all. Seeding the Greek ones first suppressed it
-> permanently, leaving tills with no type-7 method and the Α.1155 signature flow
-> with nothing to act on — hence the explicit card seed (1.4).
+> **Seeding methods makes core think the company is already set up.** Two
+> separate bugs came out of that, both fixed by creating the missing thing
+> ourselves:
+>
+> - Odoo creates its own «Card» method only while the company has **no**
+>   bank-journal payment method at all, so seeding suppressed it permanently and
+>   left tills with no type-7 method — and the Α.1155 signature flow with
+>   nothing to act on (1.4).
+> - Odoo creates the cash journal and method only when the company has **no**
+>   payment method at all, and otherwise offers an existing cash method only if
+>   no other till has claimed it. So the *second* till on a provider database
+>   was created with every card and bank method and **no cash at all**, and with
+>   no cash method there is no cash control either (1.9).
 
-The myDATA type of a method is derived live from its kind (cash → 3, card → 7,
-QR → 8, pay-later → 5). `Τύπος Πληρωμής myDATA` on the method form overrides it;
-leave it blank unless you mean to.
+A till always gets a «Μετρητά» method on creation. Remove it afterwards if the
+till really is cashless — the point is that it is a decision, not an accident.
+
+### Who owns the two fields on a payment method
+
+| Field | Owner | Why |
+|-------|-------|-----|
+| **Τύπος Πληρωμής myDATA** | the module — seeded, repaired by the button, and **required** on bank methods | It is transmitted, and Odoo cannot re-derive it |
+| **Ημερολόγιο** | the accountant | Not transmitted at all; which journal a method posts to is a bookkeeping decision |
+
+Cash → 3, Customer Account → 5 and QR → 8 are read off Odoo's own data. The rest
+cannot be: **codes 1, 2, 4, 6 and 7 all look identical** — a `bank` method on a
+bank journal. Nothing in Odoo separates a cheque from a bank transfer from a
+card, so a blank field used to fall through to **7**: the document told AADE the
+customer paid by card, and the Α.1155 flow tried to charge a terminal for it.
+
+So on a company with an active provider, a bank method must declare its type
+(`@api.constrains`). «Κάρτα-POS» is seeded with an explicit `7` rather than
+relying on that fall-through — same value, but visible on the form.
+
+The settings button **repairs** the type on the methods it created, the way it
+already repairs a journal's code and document type, and reports how many bank
+methods still have none. It never touches their journal, and never renames them
+— «IRIS» → «IRIS (άμεση πληρωμή)» is a legitimate clarification and no myDATA
+field carries the name.
 
 ---
 
@@ -69,6 +100,19 @@ leave it blank unless you mean to.
 A refund is judged by `amount_total < 0`, not by Odoo's Refund action — an order
 typed with negative quantities is just as much a credit document. Credit
 documents never fall back to the sale journal's R-sequence.
+
+**A credit document reverses its own kind**, and that is not the cashier's to
+choose: a refunded ΑΛΠ credits as ΠΛΠ 11.4, a refunded ΤΙΜ as ΠΙΣΤ 5.1. So on a
+refund the ΤΙΜ decision is read off the **original order**
+(`_l10n_gr_prov_wants_timologio`), never off `to_invoice`.
+
+> `to_invoice` cannot carry that meaning here. Core switches it on for any
+> refund whose refunded order was invoiced and disables the button
+> (`payment_screen.js:76`, `payment_screen.xml:123`) — correct in stock Odoo,
+> where only an invoiced sale can be credited by an invoice. But every provider
+> order is invoiced, so before 1.8 the rule fired on **every** refund: the flag
+> arrived True, the order was routed to ΠΙΣΤ 5.1, and the refund was then
+> refused because «Πελάτης Λιανικής» has no ΑΦΜ.
 
 A **ΤΙΜ names a real buyer**: with no partner, or a partner without ΑΦΜ, the
 order is refused with a Greek error instead of silently being issued to
@@ -169,6 +213,28 @@ stubbed to raise.
 ---
 
 ## Changelog
+
+### 1.9 — Every new till can take cash; payment types are declared, not guessed
+- Seeding the Greek payment methods made core skip creating the cash journal
+  and method, so the second till on a provider database had every card and bank
+  method and no cash — and therefore no cash control. `_default_payment_methods`
+  now guarantees one.
+- A bank payment method must declare its myDATA type on a provider company.
+  Blank fell through to 7, which both misstated the payment to AADE and pulled
+  the method into the Α.1155 signature flow. «Κάρτα-POS» now carries an
+  explicit 7.
+- The settings button repairs the type on the methods it owns and reports bank
+  methods that still declare none. Journals are left to the accountant.
+
+### 1.8 — A refund is not a ΤΙΜ request
+- The ΤΙΜ decision on a refund follows the original document instead of
+  `to_invoice`, which core sets for its own reasons on every refund of an
+  invoiced order — and every provider order is invoiced. The symptom was a
+  «Τιμολόγιο» button ticked and locked on every refund; the damage was a retail
+  refund routed to ΠΙΣΤ 5.1 and then refused for having no ΑΦΜ.
+- The button now shows what will actually be issued, and is disabled on any
+  refund on a provider till, because the kind of a credit document is not a
+  choice.
 
 ### 1.7 — Per-till options
 - What the till prints (legal document / receipt with ΜΑΡΚ / both), whether the

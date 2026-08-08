@@ -61,11 +61,30 @@ class PosOrder(models.Model):
             ('l10n_gr_prov_delivery_note', '=', False),
         ], limit=1)
 
+    def _l10n_gr_prov_wants_timologio(self):
+        """Did this order ask for a ΤΙΜ?
+
+        `to_invoice` cannot answer it on a refund. Core turns that flag on for
+        any refund whose original was invoiced (payment_screen.js), and every
+        provider order is invoiced — so a refund of a plain ΑΛΠ arrived here
+        claiming to be a ΤΙΜ, went to the ΠΙΣΤ 5.1 journal, and was then refused
+        for having no ΑΦΜ.
+
+        A credit document reverses its own kind, so the answer for a refund is
+        what the ORIGINAL was. An order typed with negative quantities has no
+        original and keeps the cashier's own choice.
+        """
+        self.ensure_one()
+        refunded = self.refunded_order_id
+        if refunded:
+            return refunded.l10n_gr_prov_timologio
+        return self.to_invoice
+
     def _process_saved_order(self, draft):
         if not draft and self.state != 'cancel' and self._l10n_gr_prov_pos_applicable():
             # remember the cashier's actual choice, then force invoicing —
             # the provider needs an account.move for every order
-            self.l10n_gr_prov_timologio = self.to_invoice
+            self.l10n_gr_prov_timologio = self._l10n_gr_prov_wants_timologio()
             self.to_invoice = True
             if self.l10n_gr_prov_timologio:
                 # A ΤΙΜ names a real buyer: the walk-in fallback below would

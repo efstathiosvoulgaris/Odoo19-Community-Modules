@@ -9,6 +9,11 @@
        t-inherit="point_of_sale.PaymentScreenButtons" t-inherit-mode="extension">
         <xpath expr="//button[hasclass('js_invoice')]" position="attributes">
             <attribute name="t-if">!pos.config.l10n_gr_prov_enabled or pos.config.l10n_gr_prov_allow_tim</attribute>
+            <!-- Core locks the button when the refunded order was invoiced.
+                 Every provider order is, so that locked EVERY refund. The kind
+                 of a credit document is not the cashier's to pick anyway: it
+                 follows the document it reverses (see refund_invoice.js). -->
+            <attribute name="t-att-disabled">pos.config.l10n_gr_prov_enabled ? currentOrder.isRefund : currentOrder.lines[0]?.refunded_orderline_id?.order_id?.isToInvoice()</attribute>
         </xpath>
     </t>
 
