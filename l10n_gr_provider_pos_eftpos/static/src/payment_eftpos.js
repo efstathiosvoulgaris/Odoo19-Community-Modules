@@ -21,11 +21,17 @@ patch(OrderPaymentValidation.prototype, {
         // Card = a bank/terminal method, unless a manual myDATA override says
         // otherwise. Uses core fields (always loaded) so it can't go stale.
         //
-        // Type 8 is deliberately excluded: that is IRIS *direct* (a QR Odoo
-        // shows, paid to the merchant's IRIS id), which never reaches an
-        // EFT/POS and is therefore outside Α.1155 — no terminal, no
-        // terminalId, nothing to sign. IRIS chosen *on* the terminal arrives
-        // here as an ordinary card line, because that is what it is.
+        // Type 8 is excluded — but only until ILYDA answers question Α7.
+        // The Α.1155 guide §7.1 lists signature fields for type 7 alone, which
+        // is what this exclusion rests on; the myDATA 2.0.1 XSD, however, hangs
+        // ProvidersSignature off any type 1-8 and documents its
+        // EndToEndReferenceID as «για πληρωμές IRIS». So a type-8 line may well
+        // need a signature and we are not giving it one.
+        // ponytail: left as-is on purpose — signing blind would mint
+        // signatures nothing spends, and an unused signature is an «Ανοιχτό
+        // Παραστατικό» after 24h. Revisit when the answer lands.
+        // IRIS chosen *on* the terminal arrives here as an ordinary card line,
+        // because that is what it is.
         const pm = line.payment_method_id;
         if (!pm) {
             return false;
