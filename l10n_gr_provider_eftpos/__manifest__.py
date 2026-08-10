@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Greece - E-Invoicing Provider (EFT/POS Α.1155)',
-    'version': '1.9',
+    'version': '1.10',
     'category': 'Accounting/Localizations',
     'summary': 'Card-terminal payment signatures per Α.1155/2023 through the e-invoicing provider',
     'description': (
@@ -28,6 +28,15 @@
         '\n'
         'Changelog\n'
         '---------\n'
+        '1.10 — Η διεύθυνση του MegEftPos Driver ορίζεται πλέον ΑΝΑ ΤΕΡΜΑΤΙΚΟ.\n'
+        'Ο driver είναι υπηρεσία στο PC του ταμείου και η Odoo τον καλεί από\n'
+        'τον server, όχι από τον browser — οπότε μία διεύθυνση ανά εταιρεία\n'
+        'δούλευε μόνο σε εγκατάσταση με ΕΝΑ ταμείο και την Odoo στο ίδιο\n'
+        'μηχάνημα. Με δεύτερο ταμείο, ή με την Odoo σε server, τα ταμεία\n'
+        'μοιράζονταν αναγκαστικά τον ίδιο driver. Το πεδίο της εταιρείας\n'
+        'παραμένει ως προεπιλογή, οπότε οι υπάρχουσες εγκαταστάσεις δεν\n'
+        'αλλάζουν συμπεριφορά.\n'
+        '\n'
         '1.9 — Odoo 19 dropped _sql_constraints, so the CHECK that keeps an EFT\n'
         'payment amount positive was never created in the database. Ported to\n'
         'models.Constraint.\n'

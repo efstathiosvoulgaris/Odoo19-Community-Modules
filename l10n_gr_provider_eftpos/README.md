@@ -1,6 +1,6 @@
 # l10n_gr_provider_eftpos — EFT/POS Interconnection (Α.1155)
 
-**Version:** 1.9 | **Odoo:** 19 | **License:** LGPL-3
+**Version:** 1.10 | **Odoo:** 19 | **License:** LGPL-3
 **Spec refs:** Α.1155/2023 · ILYDA «Οδηγίες υλοποίησης A1155 POS» v1.3 ·
 ILYDA MegEftPos Driver v2.1.10 · «Οδηγός Διασύνδεσης ERP με POS»
 
@@ -39,7 +39,7 @@ its credentials and test/production switch.
 
 | Setting | Description |
 |---------|-------------|
-| **MegEftPos Driver URL** | Address of `MegEftPosRestServices`, e.g. `http://127.0.0.1:8187` (`rest.server.port` in its config). **Leave empty for manual terminals.** |
+| **MegEftPos Driver URL** | *Default* address of `MegEftPosRestServices`, e.g. `http://127.0.0.1:8187` (`rest.server.port` in its config). Used by any terminal that does not set its own. **Leave empty for manual terminals.** |
 | **MegEftPos License Key** | Issued per merchant ΑΦΜ by ILYDA. |
 | **ΑΦΜ Άδειας MegEftPos** | The ΑΦΜ the licence was issued for. On test keys ILYDA often binds one that is *not* the company's own. Empty = use the company ΑΦΜ. |
 | **Driver Username / Password** | Only when the wrapper runs with `rest.authorization.method=BASIC_AUTH`. Empty = no authentication. |
@@ -53,6 +53,7 @@ its credentials and test/production switch.
 | **Terminal ID** | always | As registered with the NSP. |
 | **Πρωτόκολλο NSP** | always | How the *provider* builds the signature (§7.7 NSPProtocol). `DEFAULT` = EDPS construction. |
 | **Πρωτόκολλο Driver** | driver only | How the *driver* reaches the terminal. Empty = manual terminal. |
+| **MegEftPos Driver URL** | multi-till, or Odoo not on the till PC | This terminal's own driver, e.g. `http://192.168.1.50:8187`. Empty = the company default above. See *Where the driver has to be reachable from*. |
 | **IP / Port** | `CARDLINK_DLL`, `EDPS_JSON`, `EDPS_COMMON_TCP_SOCKET`, `NEXI_COMMON_TCP_SOCKET` | The physical terminal on the LAN. |
 | **API Key (WebECR)** | `MELLON_`, `EPAY_`, `NEXI_`, `NEXI_SOFT_POS_`, `ATTICA_`, `WORLDLINE_`, `EDPS_WEB_ECR` | Not typed in — enter the terminal's **OTP** and press *Λήψη API Key*. Redeemed once; the key is permanent. |
 | **Client ID / Secret** | `VIVA_CLOUD` | From *POS APIs Credentials* in the Viva portal. |
@@ -65,6 +66,25 @@ for the per-NSP keys and their test/production values.
 > to *construct* the signature; `pos_protocol` tells the driver how to *reach*
 > the terminal. They overlap in name but are different enums and are not
 > derivable from one another.
+
+### Where the driver has to be reachable from
+
+**Odoo calls the driver from the server, not from the browser.** The request is
+`requests.post` inside an Odoo worker (`eft_driver.py`). The till's browser is
+never involved. Three consequences that decide your deployment:
+
+| | |
+|---|---|
+| **`localhost` only means the till PC when Odoo runs on it** | On a hosted Odoo, `http://localhost:8187` is the *server* calling itself, and nothing answers. |
+| **The driver listens on loopback by default** | Its shipped config has `rest.server.host = localhost`, so nothing off that machine reaches it whatever the URL says. Change it to the LAN IP (or `0.0.0.0`) to expose it. |
+| **A URL/host mismatch does not look like a network error** | Ask for `127.0.0.1` while the driver bound `localhost` and the Windows HTTP stack answers "Invalid Hostname" instead of the driver. The module surfaces that body rather than a generic failure. |
+
+So:
+
+- **Odoo on the till PC, one till** — company URL `http://127.0.0.1:8187`, nothing per terminal. This is the original single-box setup and still works untouched.
+- **Odoo on the LAN, several tills** — each terminal gets its own **MegEftPos Driver URL** (`http://<till-ip>:8187`), and each driver binds its LAN IP. Firewall 8187 to the Odoo host only.
+- **Odoo hosted / online** — the server must be able to reach each till: a VPN or tunnel per shop, then the per-terminal URL as above. **Do not publish 8187 to the internet** — the driver has no TLS and its Basic Auth is optional and off by default.
+- **No reachability at all** — leave the URLs empty. The terminal is charged by hand and the cashier types the transaction id; the Α.1155 signature is still issued and transmitted. Legally complete, just not automatic.
 
 ---
 
@@ -199,6 +219,7 @@ requested value is kept — as the driver spec instructs.
 | `code` | Char | terminalId as registered with the NSP |
 | `nsp_protocol` | Selection | Provider signature strategy (§7.7) |
 | `pos_protocol` | Selection | Driver transport protocol; empty = manual |
+| `driver_url` | Char | This terminal's driver; empty = the company default |
 | `host` / `port` | Char / Integer | LAN address for socket protocols |
 | `api_key` | Char | WebECR key (system group); produced by OTP redemption |
 | `client_id` / `client_secret` | Char | Viva Cloud credentials |
@@ -237,7 +258,7 @@ requested value is kept — as the driver spec instructs.
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `l10n_gr_prov_eft_driver_url` | Char | REST wrapper base URL; empty = manual mode |
+| `l10n_gr_prov_eft_driver_url` | Char | *Default* REST wrapper base URL; empty = manual mode |
 | `l10n_gr_prov_eft_license_key` | Char | Driver licence (system group) |
 | `l10n_gr_prov_eft_vat` | Char | ΑΦΜ the licence is bound to |
 | `l10n_gr_prov_eft_driver_user` / `_password` | Char | Optional Basic Auth |

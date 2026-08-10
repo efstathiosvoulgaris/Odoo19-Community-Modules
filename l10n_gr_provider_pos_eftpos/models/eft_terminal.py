@@ -136,7 +136,7 @@ class L10nGrProvEftTerminal(models.Model):
             'signature_ts': int(float(signed_at) / 1000) if signed_at else 0,
         })
         try:
-            data = MegEftPosDriver(self.company_id).sale(
+            data = MegEftPosDriver(self.company_id, self).sale(
                 self._l10n_gr_prov_pos_device(), request)
         except Exception as e:
             return {'error': str(e)}
@@ -218,7 +218,7 @@ class L10nGrProvEftTerminal(models.Model):
             'receiptNumber': vals.get('receipt_number') or '',
         })
         try:
-            data = MegEftPosDriver(terminal.company_id).void(
+            data = MegEftPosDriver(terminal.company_id, terminal).void(
                 terminal._l10n_gr_prov_pos_device(), request)
         except Exception as e:
             return {'error': str(e)}

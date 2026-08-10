@@ -38,6 +38,8 @@
                         </group>
                         <group string="MegEftPos Driver">
                             <field name="pos_protocol"/>
+                            <field name="driver_url" invisible="not pos_protocol"
+                                   placeholder="κενό = η διεύθυνση της εταιρείας"/>
                             <field name="host" invisible="not needs_host"
                                    required="needs_host"/>
                             <field name="port" invisible="not needs_host"

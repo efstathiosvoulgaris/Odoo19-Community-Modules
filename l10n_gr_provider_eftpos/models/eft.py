@@ -98,6 +98,12 @@ class EftTerminal(models.Model):
     # nsp_protocol above is ILYDA's signature hint; pos_protocol is the driver's
     # own enum for reaching the terminal. They are related but not the same
     # list, so both are kept.
+    driver_url = fields.Char(
+        string='MegEftPos Driver URL',
+        help='Διεύθυνση του MegEftPosRestServices ΓΙΑ ΑΥΤΟ το τερματικό, π.χ. '
+             'http://192.168.1.50:8187. Κενό = χρησιμοποιείται η γενική '
+             'διεύθυνση της εταιρείας. Ορίστε το όταν κάθε ταμείο έχει τον '
+             'δικό του driver, ή όταν η Odoo δεν τρέχει στο PC του ταμείου.')
     pos_protocol = fields.Selection(
         POS_PROTOCOLS, string='Πρωτόκολλο Driver',
         help='Πρωτόκολλο επικοινωνίας του MegEftPos Driver με το τερματικό. '
@@ -135,10 +141,23 @@ class EftTerminal(models.Model):
             terminal.needs_api_key = protocol in PROTOCOLS_NEED_API_KEY
             terminal.needs_client = protocol in PROTOCOLS_NEED_CLIENT
 
+    def _l10n_gr_prov_driver_url(self):
+        """Where this terminal's driver lives.
+
+        The driver runs on the till PC and Odoo calls it server-side, so the
+        address is only ever «localhost» when Odoo runs on that same PC. One
+        address per company therefore only works for a single-till, all-on-one-
+        box install; anything else — a second till, or Odoo on a server —
+        needs the address per terminal. The company field stays as the default
+        so existing single-till setups keep working untouched.
+        """
+        self.ensure_one()
+        return self.driver_url or self.company_id.l10n_gr_prov_eft_driver_url
+
     def _l10n_gr_prov_driver_enabled(self):
         """True when this terminal can be charged by the driver."""
         self.ensure_one()
-        return bool(self.pos_protocol and self.company_id.l10n_gr_prov_eft_driver_url)
+        return bool(self.pos_protocol and self._l10n_gr_prov_driver_url())
 
     def _l10n_gr_prov_pos_device(self):
         """The PosDevice structure the driver expects."""
@@ -176,7 +195,7 @@ class EftTerminal(models.Model):
         self.ensure_one()
         if not self.otp:
             raise UserError(_('Καταχωρίστε το OTP που εμφανίζει το τερματικό.'))
-        data = MegEftPosDriver(self.company_id).redeem_otp(
+        data = MegEftPosDriver(self.company_id, self).redeem_otp(
             self._l10n_gr_prov_pos_device_for_otp(), self.otp)
         api_key = (data or {}).get('apiKey')
         if not api_key:
@@ -639,7 +658,7 @@ class EftPayment(models.Model):
         request['cashier'] = self.env.user.name
         if is_refund:
             request.update(self._original_transaction_block())
-        driver = MegEftPosDriver(self.move_id.company_id)
+        driver = MegEftPosDriver(self.move_id.company_id, self.terminal_id)
         device = self.terminal_id._l10n_gr_prov_pos_device()
         data = (driver.refund if is_refund else driver.sale)(device, request)
         code = self._store_driver_result(data)
@@ -683,7 +702,7 @@ class EftPayment(models.Model):
         issue_date = move.invoice_date or fields.Date.context_today(self)
         request['receiptTimestamp'] = int(datetime.combine(
             issue_date, datetime.min.time(), tzinfo=timezone.utc).timestamp())
-        data = MegEftPosDriver(move.company_id).preload(
+        data = MegEftPosDriver(move.company_id, self.terminal_id).preload(
             self.terminal_id._l10n_gr_prov_pos_device(), request)
         code = (data or {}).get('responseCode')
         if code != 'APPROVED':
@@ -721,7 +740,7 @@ class EftPayment(models.Model):
             'receiptNumber': self.receipt_number or '',
         })
         request['cashier'] = self.env.user.name
-        data = MegEftPosDriver(self.move_id.company_id).void(
+        data = MegEftPosDriver(self.move_id.company_id, self.terminal_id).void(
             self.terminal_id._l10n_gr_prov_pos_device(), request)
         code = (data or {}).get('responseCode')
         if code != 'APPROVED':
@@ -742,7 +761,7 @@ class EftPayment(models.Model):
         state; the driver keeps it pending and can still report the outcome.
         """
         self.ensure_one()
-        driver = MegEftPosDriver(self.move_id.company_id)
+        driver = MegEftPosDriver(self.move_id.company_id, self.terminal_id)
         device = self.terminal_id._l10n_gr_prov_pos_device()
         if self.ecr_reference:
             found = driver.pending_by_ecr(device, self.ecr_reference)

@@ -78,12 +78,18 @@ RESPONSE_CODES = [
 class MegEftPosDriver:
     """Thin HTTP client for MegEftPosRestServices."""
 
-    def __init__(self, company):
-        base = (company.l10n_gr_prov_eft_driver_url or '').rstrip('/')
+    def __init__(self, company, terminal=None):
+        # Per terminal when set, company-wide otherwise. The driver is a
+        # process on the till PC, so one address only fits an install where
+        # Odoo runs on that same PC and there is exactly one till.
+        url = (terminal._l10n_gr_prov_driver_url() if terminal
+               else company.l10n_gr_prov_eft_driver_url)
+        base = (url or '').rstrip('/')
         if not base:
             raise UserError(_(
-                'Δεν έχει οριστεί η διεύθυνση του MegEftPos Driver '
-                '(Ρυθμίσεις → Ελληνικός Πάροχος → Driver EFT/POS).'))
+                'Δεν έχει οριστεί η διεύθυνση του MegEftPos Driver — ορίστε '
+                'την στο τερματικό («MegEftPos Driver URL») ή γενικά στην '
+                'εταιρεία (Ρυθμίσεις → Ελληνικός Πάροχος → Driver EFT/POS).'))
         if not company.l10n_gr_prov_eft_license_key:
             raise UserError(_(
                 'Δεν έχει οριστεί το License Key του MegEftPos Driver.'))
