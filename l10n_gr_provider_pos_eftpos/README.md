@@ -233,8 +233,12 @@ on the terminal, or the backend EFT payment screen.
 
 ### 1.3 — IRIS is type 7
 - Corrected 1.1: IRIS at an EFT/POS transmits as myDATA type 7 like any card.
-  `qr_code` methods (IRIS direct, type 8) are outside Α.1155 and no longer
-  pulled into the signature flow.
+  `qr_code` methods (IRIS direct, type 8) are no longer pulled into the
+  signature flow.
+  **Retracted 2026-08-10:** the "type 8 is outside Α.1155" half of that
+  reasoning rested on the Α.1155 guide's silence, and the myDATA 2.0.1 XSD
+  contradicts it. Behaviour unchanged pending ILYDA question Α7 — see the
+  callout at the top of this README.
 - `paymentMethodId` is no longer sent, so the terminal offers the customer
   both card and IRIS.
 
