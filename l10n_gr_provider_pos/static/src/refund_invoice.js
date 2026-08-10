@@ -14,15 +14,26 @@ import { PaymentScreen } from "@point_of_sale/app/screens/payment_screen/payment
  * What actually decides is whether the original was a ΤΙΜ. The server is the
  * authority (_l10n_gr_prov_wants_timologio); this only stops the button from
  * showing the opposite of what will be issued.
+ *
+ * This has to hook onMounted, not setup: core applies its own rule in
+ * onMounted (registered from setup, so it always runs after ours would), and
+ * would flip the flag straight back on for every provider refund.
  */
 patch(PaymentScreen.prototype, {
-    setup() {
-        super.setup(...arguments);
+    onMounted() {
+        super.onMounted(...arguments);
         const order = this.currentOrder;
         if (!this.pos.config.l10n_gr_prov_enabled || !order?.isRefund) {
             return;
         }
-        const origin = order.lines[0]?.refunded_orderline_id?.order_id;
-        order.setToInvoice(Boolean(origin?.l10n_gr_prov_timologio));
+        // Any refunded line identifies the original — lines[0] does not: a
+        // product, tip or rounding line added to the refund can sort first,
+        // and the server derives its answer from refunded_order_id the same
+        // way. Nothing found = nothing to correct; leave core's decision.
+        const origin = order.lines.find((l) => l.refunded_orderline_id)
+            ?.refunded_orderline_id?.order_id;
+        if (origin) {
+            order.setToInvoice(Boolean(origin.l10n_gr_prov_timologio));
+        }
     },
 });

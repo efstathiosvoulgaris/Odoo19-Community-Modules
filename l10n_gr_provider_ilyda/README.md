@@ -241,6 +241,17 @@ Before submission the driver checks:
 
 ---
 
+## Tests
+
+`tests/test_ilyda_response.py` — how the driver reads what ILYDA sends back,
+which is where a misread means either a duplicate at AADE or a lost MARK:
+error-code classification and the lookup contract, the submit-response matrix
+(marked, I0008 re-mark, MQ00x queue beating the fatal flag, rejections), the
+VAT/VAT-number helpers, and the A.1035-B2 UID over Greek series. The API
+client is never constructed.
+
+---
+
 ## Changelog
 
 ### 2.4 — ΠΟΣΕ refunds

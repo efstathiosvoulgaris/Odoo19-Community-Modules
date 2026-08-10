@@ -163,6 +163,17 @@ myDATA QR code when `l10n_gr_prov_mark` is set. It shows:
 
 ---
 
+## Tests
+
+`tests/test_mydata_tables.py` — the pure myDATA layer: partner class → allowed
+invoice types, classification defaults, `all_above` expansion, the rate tables,
+and the module's own `_demo()` integrity assertions. `tests/test_try_send.py` —
+the transmission state machine (sent / queued / duplicate guard / offline
+fallback / error) with the driver dispatch replaced. Neither contacts a
+provider or needs a configured company.
+
+---
+
 ## Changelog
 
 ### 2.9 — Constraints that never existed

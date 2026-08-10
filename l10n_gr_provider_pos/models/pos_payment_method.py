@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
-from odoo import api, fields, models, _
-from odoo.exceptions import ValidationError
+from odoo import api, fields, models
 
 from odoo.addons.l10n_gr_provider_base.models.payment import PAYMENT_TYPE_SELECTION
 
@@ -59,21 +58,32 @@ class PosPaymentMethod(models.Model):
                 and self.type == 'bank'
                 and self.payment_method_type != 'qr_code')
 
-    @api.constrains('l10n_gr_prov_payment_type', 'journal_id',
-                    'payment_method_type', 'company_id')
-    def _check_l10n_gr_prov_payment_type(self):
+    @api.model_create_multi
+    def create(self, vals_list):
+        methods = super().create(vals_list)
+        methods._l10n_gr_prov_declare_default_type()
+        return methods
+
+    def _l10n_gr_prov_declare_default_type(self):
+        """Write down what an undeclared bank method already transmits (7).
+
+        Refusing to save it instead would be the obvious guard, and it is the
+        wrong one: Odoo creates such a method itself — `pos.config.
+        _create_journal_and_payment_methods()` makes a «Card» with no myDATA
+        type — so a constraint here makes the first till of a provider company
+        impossible to create, and blocks every third-party terminal (Stripe,
+        Adyen, Viva) at the moment it is installed.
+
+        Stamping 7 changes nothing about what AADE receives (blank falls
+        through to 7 at send time anyway) — it only moves the value out of the
+        derivation and onto the form, where the accountant can see it is wrong
+        and pick the real one. Legacy blanks are left alone and reported by
+        the settings button instead (see _l10n_gr_prov_type_is_guessed).
+        """
         for method in self:
-            if (method._l10n_gr_prov_type_is_guessed()
-                    and method.company_id._l10n_gr_prov_active()):
-                raise ValidationError(_(
-                    'Ορίστε τον «Τύπο Πληρωμής myDATA» για τον τρόπο πληρωμής '
-                    '«%(name)s».\n\n'
-                    'Η Odoo βλέπει όλους τους τραπεζικούς τρόπους πληρωμής '
-                    '(κάρτα, IRIS, Web Banking, επιταγή, έμβασμα) ως ίδιους, '
-                    'οπότε χωρίς ρητή δήλωση το παραστατικό θα διαβίβαζε στην '
-                    'ΑΑΔΕ ότι η πληρωμή έγινε με κάρτα (τύπος 7) — και θα '
-                    'ζητούσε υπογραφή Α.1155 από το τερματικό.',
-                    name=method.name))
+            company = method.company_id or self.env.company
+            if method._l10n_gr_prov_type_is_guessed() and company._l10n_gr_prov_active():
+                method.l10n_gr_prov_payment_type = '7'
 
     def _l10n_gr_prov_ensure_card_method(self, company, journal):
         """Make sure a card (type 7) method exists before seeding ours.

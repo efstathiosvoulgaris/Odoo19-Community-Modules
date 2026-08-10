@@ -208,11 +208,25 @@ after sync.
 ## Tests
 
 `tests/test_send_failure.py` covers the three failure modes with the provider
-stubbed to raise.
+stubbed to raise. `tests/test_payment_method_type.py` covers the myDATA type
+stamped on an undeclared bank method — including that creating a `pos.config`
+still works, which a constraint here once made impossible.
 
 ---
 
 ## Changelog
+
+### 1.9.1 — Two 1.9 fixes
+- The «Τιμολόγιο» correction on a refund ran in `setup()`, where core's own
+  rule — applied in `onMounted` — immediately undid it. Every provider refund
+  still came up ticked and locked, the exact 1.8 symptom. It now hooks
+  `onMounted`, and identifies the original from any refunded line rather than
+  `lines[0]`, which need not be one.
+- Requiring a declared myDATA type made a provider company unable to create
+  its first till: core's own «Card» method carries none, as does every
+  third-party terminal. An undeclared bank method is now stamped with 7 — the
+  value it already transmitted — instead of being refused. Legacy blanks are
+  untouched and still reported by the settings button.
 
 ### 1.9 — Every new till can take cash; payment types are declared, not guessed
 - Seeding the Greek payment methods made core skip creating the cash journal
