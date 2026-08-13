@@ -6,6 +6,7 @@ from .gr_mydata import (
     valid_cls_categories, valid_cls_types, preferred_e3, INV_TYPE_ZERO_TAX,
     gr_tax,
 )
+from .uom_uom import REC20_BY_AADE_UNIT
 
 
 class AccountMoveLine(models.Model):
@@ -188,6 +189,15 @@ class AccountMoveLine(models.Model):
         if code:
             return int(code), None
         return 7, (uom.name or '')[:50]
+
+    def _l10n_gr_prov_quantity_units(self):
+        """UN/ECE Rec 20 code for this line's unit — EN16931 BT-130.
+
+        Kept in step with the AADE code: a line billed in κιλά used to be
+        transmitted as measurementUnit 2 to AADE and «EA» to the buyer."""
+        self.ensure_one()
+        code, _title = self._l10n_gr_prov_measurement_unit()
+        return REC20_BY_AADE_UNIT.get(str(code), 'EA')
 
     def _l10n_gr_prov_net_unit_price(self):
         """price_unit with any tax-included percentage taxes stripped out."""

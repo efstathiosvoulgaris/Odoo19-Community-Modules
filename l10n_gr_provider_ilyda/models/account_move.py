@@ -603,8 +603,18 @@ class AccountMove(models.Model):
         no_cls = (inv_type in TYPES_NO_CLASSIFICATION or inv_type in TYPES_DISPATCH
                   or not valid_cls_categories(inv_type))
         no_vat = inv_type in TYPES_NO_VAT
+        # Rows that carry a quantity: the XSD types it minExclusive 0, so a zero
+        # or negative one has AADE reject the whole document with an error that
+        # never names the line. Caught here instead.
+        sends_quantity = self._l10n_gr_prov_sends_quantity(inv_type)
         for line in lines:
             line_label = line.name or line.product_id.display_name
+            if sends_quantity and (line.quantity or 0) <= 0:
+                errors.append(_(
+                    'Γραμμή «%s»: η ποσότητα πρέπει να είναι μεγαλύτερη του '
+                    'μηδενός σε παραστατικό που διαβιβάζει ποσότητες '
+                    '(διακίνηση, δελτίο αποστολής, δελτίο παραγγελίας). '
+                    'Διορθώστε την ή διαγράψτε τη γραμμή.', line_label))
             # E3 is required only when the category takes one — the *_95 and
             # category3 groups are E3-less by spec (e.g. category1_95 on 8.2).
             cls_cat = line.l10n_gr_prov_cls_category
@@ -658,8 +668,36 @@ class AccountMove(models.Model):
                         line.name or line.product_id.display_name))
         if not company_partner.zip or not company_partner.city:
             errors.append(_('Company address (city/ZIP) is incomplete.'))
+        # Dispatch documents carry loading/delivery addresses, and every part of
+        # them is mandatory (MDP-0026) — as is the seller's street number
+        # (BT-36, MDP-0024). The number is the one that actually goes missing:
+        # Odoo has no field for it, so «Γεωργαντά 22» lands whole in `street`.
+        if ((inv_type in TYPES_DISPATCH or self.journal_id.l10n_gr_prov_delivery_note)
+                and inv_type not in TYPES_RECEIPT):
+            ship = self.partner_shipping_id or self.commercial_partner_id
+            for who, party in (
+                    (_('της εταιρείας (διεύθυνση φόρτωσης)'), company_partner),
+                    (_('του παραλήπτη (διεύθυνση παράδοσης)'), ship)):
+                street, number = party._l10n_gr_prov_street_number()
+                missing = [label for label, value in (
+                    (_('οδός'), street), (_('αριθμός'), number),
+                    (_('πόλη'), party.city), (_('Τ.Κ.'), party.zip)) if not value]
+                if missing:
+                    errors.append(_(
+                        'Δελτίο διακίνησης: λείπει %(fields)s από τη διεύθυνση '
+                        '%(who)s «%(name)s». Συμπληρώστε τα στην καρτέλα της '
+                        'επαφής — ο αριθμός στο πεδίο «Αριθμός».',
+                        fields=', '.join(missing), who=who, name=party.display_name))
         if errors:
             raise UserError('\n'.join(errors))
+
+    def _l10n_gr_prov_sends_quantity(self, inv_type):
+        """True when the row payload will carry `quantity` — kept in step with
+        the condition in the payload builder, and extended by the restaurant
+        module for documents matched against catering notes."""
+        self.ensure_one()
+        return bool(inv_type in TYPES_DISPATCH or inv_type == '8.6'
+                    or self.journal_id.l10n_gr_prov_delivery_note)
 
     def _l10n_gr_prov_ilyda_lines(self):
         return self.invoice_line_ids.filtered(lambda l: l.display_type == 'product')
@@ -752,7 +790,7 @@ class AccountMove(models.Model):
                 'lineNumber': number,
                 'note': '',
                 'invoicedQuantity': line.quantity,
-                'invoicedQuantityUnits': 'EA',
+                'invoicedQuantityUnits': line._l10n_gr_prov_quantity_units(),
                 'netAmount': net,
                 'discountAmount': discount_amount,
                 'discountTotalAmount': discount_amount,
@@ -802,7 +840,13 @@ class AccountMove(models.Model):
                 row_type['measurementUnit'] = unit_code
                 if unit_code == 7:
                     # §8.13 note 9: code 7 must carry the real unit name and
-                    # the count it corresponds to.
+                    # the count it corresponds to — the pair reads «500_g»,
+                    # the same shape as the guide's «3_Παλέτες».
+                    # ponytail: the guide means the *packaging* count, with
+                    # quantity staying the item count. We send the same number
+                    # for both because Odoo has no packaging unit here. Nothing
+                    # validates it; give the uom its §8.13 code (Μονάδες
+                    # Μέτρησης → Είδος Ποσότητας) and code 7 never fires.
                     row_type['otherMeasurementUnitTitle'] = unit_title
                     row_type['otherMeasurementUnitQuantity'] = max(
                         int(line.quantity or 0), 1)
@@ -1002,6 +1046,7 @@ class AccountMove(models.Model):
 
         # ── Seller ────────────────────────────────────────────────────────────
         company_partner = company.partner_id
+        seller_street, seller_number = company_partner._l10n_gr_prov_street_number()
         seller = {
             'sellerVatIdentifier': self._ilyda_vat(company.vat),
             'sellerName': company.name,
@@ -1012,10 +1057,8 @@ class AccountMove(models.Model):
             },
             'sellerPostalAddress': {
                 'sellerCountryCode': company_partner.country_id.code or 'GR',
-                'sellerAddressLine1': company_partner.street or '',
-                'sellerAddressLine2': (
-                    getattr(company_partner, 'arithmos_odou', None)
-                    or company_partner.street2 or ''),
+                'sellerAddressLine1': seller_street,
+                'sellerAddressLine2': seller_number,   # BT-36, MDP-0024
                 'sellerCity': company_partner.city or '',
                 'sellerPostCode': company_partner.zip or '',
                 'sellerCountrySubdivision': company_partner.state_id.name or '',
@@ -1104,15 +1147,17 @@ class AccountMove(models.Model):
             if self.l10n_gr_prov_vehicle_id:
                 aade_data['aadeVehicleNumber'] = self.l10n_gr_prov_vehicle_id.name
             ship = self.partner_shipping_id or partner
+            ship_street, ship_number = ship._l10n_gr_prov_street_number()
+            # MDP-0026: street/number/city/postalCode are all mandatory here
             load_addr = {
-                'street': company_partner.street or '',
-                'number': getattr(company_partner, 'arithmos_odou', None) or company_partner.street2 or '',
+                'street': seller_street,
+                'number': seller_number,
                 'postalCode': company_partner.zip or '',
                 'city': company_partner.city or '',
             }
             deliver_addr = {
-                'street': ship.street or '',
-                'number': getattr(ship, 'arithmos_odou', None) or ship.street2 or '',
+                'street': ship_street,
+                'number': ship_number,
                 'postalCode': ship.zip or '',
                 'city': ship.city or '',
             }

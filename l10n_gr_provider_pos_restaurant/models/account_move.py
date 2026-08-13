@@ -11,6 +11,12 @@ class AccountMove(models.Model):
         'l10n.gr.prov.catering.order', 'closing_move_id',
         string='Δελτία Παραγγελίας Εστίασης', copy=False)
 
+    def _l10n_gr_prov_sends_quantity(self, inv_type):
+        # A closing document gets quantities added below (DP-0007), so it is
+        # subject to the same «quantity > 0» rule as a dispatch note.
+        return (super()._l10n_gr_prov_sends_quantity(inv_type)
+                or bool(self.l10n_gr_prov_catering_order_ids))
+
     def _l10n_gr_prov_ilyda_build_payload(self):
         """A document that closes order notes must carry their MARKs and the
         «Συναλλαγές Εστίασης» flag, otherwise the notes stay open — and a note

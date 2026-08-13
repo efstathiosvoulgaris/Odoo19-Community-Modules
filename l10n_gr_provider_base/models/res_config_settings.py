@@ -79,8 +79,9 @@ class ResConfigSettings(models.TransientModel):
             if account:
                 company.account_default_pos_receivable_account_id = account
                 pos_receivable = 1
-        # AADE §8.13 codes on the standard Odoo units (dispatch documents)
-        units = self.env['uom.uom']._l10n_gr_prov_map_units()
+        # AADE §8.13 codes on the standard Odoo units (dispatch documents),
+        # unarchiving the ones Odoo ships disabled (m³)
+        unit_counts = self.env['uom.uom']._l10n_gr_prov_map_units()
         return {
             'type': 'ir.actions.client',
             'tag': 'display_notification',
@@ -94,7 +95,10 @@ class ResConfigSettings(models.TransientModel):
                     'χωρίς πλέον ακολουθία πιστωτικών (R), %(accounts)s '
                     'προεπιλεγμένοι λογαριασμοί ημερολογίων, %(print_forms)s '
                     'ημερολόγια λιανικής σε φόρμα 80mm, %(units)s μονάδες '
-                    'μέτρησης με κωδικό ΑΑΔΕ, %(repaired)s ημερολόγια '
+                    'μέτρησης με κωδικό ΑΑΔΕ (%(units_activated)s '
+                    'ενεργοποιήθηκαν, %(units_archived)s αχρησιμοποίητες '
+                    'αρχειοθετήθηκαν, %(units_unmapped)s χωρίς κωδικό — '
+                    'διαβιβάζονται ως 7/Λοιπές Περιπτώσεις), %(repaired)s ημερολόγια '
                     'επιδιορθώθηκαν (κωδικός/τύπος myDATA), %(recoded)s '
                     'ημερολόγια του Odoo άλλαξαν κωδικό για να ελευθερωθεί ο '
                     'κωδικός myDATA, %(ordered)s ταξινομήθηκαν, %(skipped)s δεν '
@@ -102,7 +106,7 @@ class ResConfigSettings(models.TransientModel):
                     '(δείτε το log), %(pos_receivable)s λογαριασμός απαιτήσεων '
                     'POS.',
                     renamed=renamed, activated=activated, archived=archived,
-                    fp_fixed=fp_fixed, units=units, pos_receivable=pos_receivable,
-                    **journal_counts),
+                    fp_fixed=fp_fixed, pos_receivable=pos_receivable,
+                    **unit_counts, **journal_counts),
             },
         }

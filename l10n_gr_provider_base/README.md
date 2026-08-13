@@ -1,6 +1,6 @@
 # l10n_gr_provider_base — Greece E-Invoicing Provider Base
 
-**Version:** 2.9 | **Odoo:** 19 | **License:** LGPL-3
+**Version:** 2.10 | **Odoo:** 19 | **License:** LGPL-3
 
 Provider-agnostic base for issuing sales documents through a licensed Greek
 e-invoicing provider (Υ.ΠΑ.Η.Ε.Σ.), as required by the 2026 B2B e-invoicing
@@ -88,7 +88,7 @@ not roll back the rest of the batch.
 | `l10n_gr_prov_provider_url` | Char | Provider verification portal URL |
 | `l10n_gr_prov_previously_submitted` | Boolean | Set when the provider recovered a marking from a prior submission (AADE error 228) |
 | `l10n_gr_prov_pdf_uploaded` | Boolean | Whether the legal PDF has been uploaded to the provider |
-| `l10n_gr_prov_applicable` | Boolean (computed) | True when a provider is active and the document is a Greek sale |
+| `l10n_gr_prov_applicable` | Boolean (computed) | True when a provider is active, the document is a Greek sale, **and its journal carries a myDATA type**. A journal without one is an accounting-only book (the chart's ΠΩΛ, for recording old invoices) and is never transmitted. |
 | `l10n_gr_prov_b2g` | Boolean | Route through Peppol (public sector) |
 | `l10n_gr_prov_contract_ref` | Char | Contract reference ΑΔΑΜ (BT-12) |
 | `l10n_gr_prov_budget_type` | Selection | Budget type 1/2/3 (BT-11) |
@@ -175,6 +175,53 @@ provider or needs a configured company.
 ---
 
 ## Changelog
+
+### 2.10 — One unit, told the same way twice
+- **Street numbers reach AADE separately.** BT-36 (`sellerAddressLine2`) and
+  every `number` in `otherDeliveryNoteHeader` are mandatory on dispatch
+  documents (MDP-0024 / MDP-0026), but Odoo has no house-number field, so
+  «Γεωργαντά 22» sat whole in `street` and the number went out empty.
+  `res.partner._l10n_gr_prov_street_number()` returns the pair: «Αριθμός»
+  (`arithmos_odou`) or `street2` when filled, otherwise the trailing number is
+  split off `street`. A dispatch note whose loading or delivery address is
+  still missing street/number/city/ZIP is now refused before transmission,
+  naming the partner and the missing parts.
+- The setup button now **unarchives** the AADE units as well as stamping them.
+  Odoo ships m³ archived, so «Κυβικά Μέτρα» was stamped with code 6 and still
+  impossible to pick on a line. It also reports how many active units carry no
+  §8.13 code — those transmit as 7 (Λοιπές Περιπτώσεις) with their name.
+  Ones with no code that nothing refers to are archived, so the picker stops
+  offering units that can only go out as 7. Use is decided by scanning every
+  stored relational field pointing at `uom.uom`, which is what keeps g, ml and
+  mm — the base units of kg, L and m — out of it. Reversible from the
+  «Archived» filter.
+- **A journal without a myDATA type is now accounting-only.** Posting a sale on
+  one no longer queues it, the send button is gone, and the auto-send cron
+  leaves it alone. Before this, an invoice on the chart's «Πωλήσεις» (ΠΩΛ) —
+  the book for recording old invoices a customer still owes — was queued on
+  post and transmitted to AADE as 1.1, the type core `l10n_gr_edi` fills in on
+  its own. Every provider control on the form already keyed off
+  `l10n_gr_prov_applicable`, so such a document now looks like a plain Odoo
+  invoice.
+- The «Invoice Type» selector is gone from the invoice form. The myDATA type
+  comes from the journal, and so do numbering, print form, allowed taxes and
+  EFT/POS routing — the selector only ever appeared on a journal without a type
+  (the chart's own «Πωλήσεις»/ΠΩΛ), where changing it moved nothing but itself.
+  The now-unused helper field `journal_id_inv_type_default` was dropped with it.
+- `invoicedQuantityUnits` (BT-130) was hardcoded `EA`, so a line billed in κιλά
+  went to AADE as measurement unit 2 and to the buyer as «each». The UN/ECE
+  Rec 20 code is now derived from the same §8.13 code (`REC20_BY_AADE_UNIT`),
+  which is why they cannot drift apart. Only κιλά/λίτρα/μέτρα/m²/m³ change
+  value; τεμάχια stay `EA`.
+- A row that carries a quantity (διακίνηση, δελτίο αποστολής, 8.6, and a
+  document closing catering notes) is refused before transmission when the
+  quantity is not > 0. The XSD types it `minExclusive 0`, and AADE's rejection
+  does not name the offending line.
+- An unmapped unit still transmits as §8.13 code 7 with the unit name and the
+  quantity as `otherMeasurementUnitTitle`/`otherMeasurementUnitQuantity`, e.g.
+  «500_g». Note 9 means that pair as a *packaging* count, which Odoo does not
+  model here; nothing validates it. Set «Είδος Ποσότητας» on the unit of
+  measure to avoid code 7 altogether.
 
 ### 2.9 — Constraints that never existed
 - Odoo 19 stopped reading `_sql_constraints`, so the uniqueness rules on

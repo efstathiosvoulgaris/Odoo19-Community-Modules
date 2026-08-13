@@ -417,14 +417,6 @@ class AccountMove(models.Model):
             elif partner:
                 move.l10n_gr_prov_buyer_ref = partner.name or False
 
-    journal_id_inv_type_default = fields.Boolean(
-        compute='_compute_journal_id_inv_type_default')
-
-    @api.depends('journal_id.l10n_gr_edi_inv_type_default')
-    def _compute_journal_id_inv_type_default(self):
-        for move in self:
-            move.journal_id_inv_type_default = bool(move.journal_id.l10n_gr_edi_inv_type_default)
-
     # ── Partner-driven journal net ────────────────────────────────────────────
     # Narrow core's suitable_journal_ids (which drives the journal_id domain) to
     # the myDATA types valid for the selected partner's class. Journals with no
@@ -499,6 +491,12 @@ class AccountMove(models.Model):
                 (move.is_sale_document(include_receipts=True) or self_billed)
                 and move.country_code == 'GR'
                 and move.company_id._l10n_gr_prov_active()
+                # A journal with no myDATA type is an accounting-only book —
+                # e.g. the chart's «Πωλήσεις» (ΠΩΛ), used to record old invoices
+                # a customer still owes. Those must never reach AADE: without
+                # this, posting queued them and the auto-send cron transmitted
+                # them as 1.1, the type core l10n_gr_edi fills in by itself.
+                and bool(move.journal_id.l10n_gr_edi_inv_type_default)
             )
 
     @api.model

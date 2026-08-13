@@ -1,19 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <!-- Hide the myDATA inv-type selector when the journal already governs the type -->
+    <!-- Hide the myDATA inv-type selector: here the type always comes from the
+         journal (Προεπιλογή Τύπου myDATA), which is also what decides numbering,
+         print form and allowed taxes. On a journal that has one the selector was
+         already hidden; on one that has not — the chart's own «Πωλήσεις» (ΠΩΛ) —
+         it was an orphan control asking the user to classify a document the rest
+         of the flow classifies by journal. -->
     <record id="view_move_form_l10n_gr_prov_hide_inv_type" model="ir.ui.view">
         <field name="name">account.move.form.l10n.gr.prov.hide.inv.type</field>
         <field name="model">account.move</field>
         <field name="inherit_id" ref="l10n_gr_edi.account_move_form_inherit_l10n_gr_edi"/>
         <field name="arch" type="xml">
             <xpath expr="//field[@name='l10n_gr_edi_inv_type'][@widget='dynamic_selection']" position="attributes">
-                <attribute name="invisible">not l10n_gr_edi_enable_view_mydata or journal_id_inv_type_default</attribute>
+                <attribute name="invisible">1</attribute>
                 <attribute name="required">0</attribute>
-            </xpath>
-            <!-- expose the journal's default as an invisible field for the domain above -->
-            <xpath expr="//field[@name='l10n_gr_edi_available_inv_type']" position="after">
-                <field name="journal_id_inv_type_default" invisible="1"/>
             </xpath>
             <!-- payment methods now live on the Πληρωμές tab -->
             <xpath expr="//field[@name='l10n_gr_edi_payment_method']" position="attributes">
