@@ -44,7 +44,14 @@ _logger = logging.getLogger(__name__)
 
 ILYDA_PROD_BASE = 'https://vs.gr'
 ILYDA_TEST_BASE = 'https://test.vs.gr'
-TIMEOUT = 30
+# 90s, not 30s: ILYDA's transmission-failure-2 simulation deliberately stalls the
+# response, and a client-side timeout would send us down the TF-1 offline path
+# instead. Real AADE round-trips are slow enough to want the headroom anyway.
+TIMEOUT = 90
+
+# BT-15 value that switches test.vs.gr into the transmission-failure-2 simulation
+# («Οδηγίες διαχείρισης offline παραστατικών μετά από transmission failure 2» §6).
+TF2_SENTINEL = '1cadb85a-88e7-4853-b5d0-75143b38b76e'
 
 # UBL document type codes
 UBL_INVOICE = '380'
@@ -395,6 +402,21 @@ class AccountMove(models.Model):
                 'δεν μπορεί να μεταφορτωθεί αυτόματα στον πάροχο. Αν απαιτείται, '
                 'ανεβάστε το χειροκίνητα από το portal της ILYDA.'))
 
+    def _ilyda_now_athens(self):
+        """Now, as an ISO timestamp with the Athens offset (DST-correct)."""
+        now_athens = fields.Datetime.context_timestamp(
+            self.with_context(tz='Europe/Athens'), fields.Datetime.now())
+        stamp = now_athens.strftime('%Y-%m-%dT%H:%M:%S%z')
+        return f'{stamp[:-2]}:{stamp[-2:]}'  # +0300 -> +03:00
+
+    def _ilyda_issue_date(self):
+        """BT-2. Date-only, as in every ILYDA example — except when BT-15 carries
+        the transmission-failure-2 sentinel, where the simulation demands a
+        timestamp within 10' of now, tz and DST included."""
+        if (self.l10n_gr_prov_receiving_advice_ref or '').strip() == TF2_SENTINEL:
+            return self._ilyda_now_athens()
+        return f'{self.invoice_date}T00:00:00'
+
     def _l10n_gr_prov_issue_offline_ilyda(self):
         """TF-1: sign an offline QR locally (provider unreachable at issue).
 
@@ -405,10 +427,7 @@ class AccountMove(models.Model):
         if not key:
             return False
         series, serial = self._l10n_gr_prov_ilyda_series_serial()
-        now_athens = fields.Datetime.context_timestamp(
-            self.with_context(tz='Europe/Athens'), fields.Datetime.now())
-        issue_dt = now_athens.strftime('%Y-%m-%dT%H:%M:%S%z')
-        issue_dt = f'{issue_dt[:-2]}:{issue_dt[-2:]}'  # +0300 -> +03:00
+        issue_dt = self._ilyda_now_athens()
         payload = {
             'sellerVat': self._ilyda_vat(self.company_id.vat, prefixed=False),
             'sellerBranch': int(self.company_id.partner_id.l10n_gr_edi_branch_number or 0),
@@ -897,15 +916,36 @@ class AccountMove(models.Model):
         fees = _r2(self.l10n_gr_prov_fees_amount or 0.0)
         other_taxes = _r2(self.l10n_gr_prov_other_taxes_amount or 0.0)
         extra_charges = _r2(stamp_duty + fees + other_taxes)
-        total_without_vat = _r2(total_net + extra_charges - withholding)  # BT-109
-        total_with_vat = _r2(total_without_vat + total_vat)               # BT-112
-        amount_due = total_with_vat                                       # BT-115
-        aade_gross = _r2(total_net + total_vat + extra_charges - withholding)  # ET-25
+        # B2G: Παρακρατήσεις Φόρου Εισοδήματος and Κρατήσεις Υπέρ Τρίτων Φορέων
+        # του Ελλην. Δημοσίου must NOT fill the numeric BG-20/BG-21 fields — they
+        # go as plain text in BG-24 and leave every total untouched (Εθνικός
+        # Μορφότυπος PEPPOL BIS v8.0, BG-20 note + §BT-122/123; cf.
+        # examples_bundle/test_b2g_advanced_allowances_and_charges_aadeData.json,
+        # where docLevelAllowances is null next to an additionalSupportDocs entry).
+        b2g = bool(self.l10n_gr_prov_b2g)
+        wh_allowance = 0.0 if b2g else withholding
+        # Κρατήσεις Υπέρ Τρίτων = myDATA Κρατήσεις (taxType 5): they reduce the
+        # AADE gross and nothing on the EN16931 side. ILYDA checks exactly that
+        # gap — BT-112 minus every BG-24 παρακράτηση must equal
+        # aadeTotalGrossValue (BG-22-MISMATCH).
+        deductions = _r2(self.l10n_gr_prov_yper3_amount or 0.0) if b2g else 0.0
+        total_without_vat = _r2(total_net + extra_charges - wh_allowance)  # BT-109
+        total_with_vat = _r2(total_without_vat + total_vat)                # BT-112
+        amount_due = total_with_vat                                        # BT-115
+        aade_gross = _r2(                                                  # ET-25
+            total_net + total_vat + extra_charges - withholding - deductions)
 
         # Withholding allowance: EN16931 mirror of taxTotals taxType=1, plus a
         # Z/0% VAT breakdown with negative taxable (as in ILYDA's example).
         doc_level_allowances = []
-        if withholding:
+        additional_support_docs = []
+        if withholding and b2g:
+            additional_support_docs.append({
+                'reference': withholding,
+                'description': '##PARAKRAT|FOR|EISOD|%s##' % (
+                    self.l10n_gr_prov_withholding_category or ''),
+            })
+        elif withholding:
             wh_label = dict(WITHHOLDING_CATEGORY_SELECTION).get(
                 self.l10n_gr_prov_withholding_category, 'Παρακρατούμενος Φόρος')
             doc_level_allowances.append({
@@ -921,6 +961,13 @@ class AccountMove(models.Model):
                 'categoryTaxAmount': 0,
                 'exemptionReasonCode': None,
                 'exemptionReasonText': None,
+            })
+        # Υπέρ Τρίτων: one single entry carrying the algebraic sum, never an
+        # EN16931 total.
+        if deductions:
+            additional_support_docs.append({
+                'reference': deductions,
+                'description': '##PARAKRAT|YPER3##',
             })
 
         exchange_rate = 0.0
@@ -950,6 +997,10 @@ class AccountMove(models.Model):
                 if category:
                     entry['taxCategory'] = int(category)
                 tax_totals.append(entry)
+        # taxType 5 = Κρατήσεις; no category, no underlying value (ILYDA's
+        # test_b2g_advanced_allowances_and_charges example).
+        if deductions:
+            tax_totals.append({'taxType': 5, 'taxAmount': deductions})
 
         # ── docLevelCharges — non-VAT taxes as document-level charges ────────
         doc_level_charges = []
@@ -982,7 +1033,7 @@ class AccountMove(models.Model):
             'amountDueForPayment': amount_due,
             'paidAmount': 0.0,
             'roundingAmount': 0.0,
-            'documentLevelAllowancesSum': withholding,
+            'documentLevelAllowancesSum': wh_allowance,
             'documentLevelChargesSum': doc_charges_sum,
             'exchangeRate': exchange_rate,
             'aadeDocTotals': {
@@ -993,7 +1044,7 @@ class AccountMove(models.Model):
                 'aadeTotalFeesAmount': fees,
                 'aadeTotalStampDutyAmount': stamp_duty,
                 'aadeTotalOtherTaxesAmount': other_taxes,
-                'aadeTotalDeductionsAmount': 0.0,
+                'aadeTotalDeductionsAmount': deductions,
             },
         }
 
@@ -1196,8 +1247,11 @@ class AccountMove(models.Model):
             'invoiceTypeCode': UBL_CREDIT_NOTE if self.move_type == 'out_refund' else UBL_INVOICE,
             'seriesNumber': series,
             'serialNumber': serial,
-            'invoiceIssueDate': f'{self.invoice_date}T00:00:00',
+            'invoiceIssueDate': self._ilyda_issue_date(),
             'invoiceCurrencyCode': self.currency_id.name or 'EUR',
+            # BT-15 is a plain EN16931 term, not a B2G one: ILYDA's transmission
+            # failure 2 simulation is triggered by putting TF2_SENTINEL here.
+            'receivingAdviceReference': self.l10n_gr_prov_receiving_advice_ref or None,
             'seller': seller,
             'buyer': buyer,
             'invoiceLines': invoice_lines,
@@ -1205,6 +1259,7 @@ class AccountMove(models.Model):
             'docTotal': doc_total,
             'docLevelAllowances': doc_level_allowances or None,
             'docLevelCharges': doc_level_charges or None,
+            'additionalSupportDocs': additional_support_docs or None,
             'aadeData': aade_data,
         }
 
@@ -1269,7 +1324,6 @@ class AccountMove(models.Model):
                 'projectReference': project_ref,
                 'buyerReference': self.l10n_gr_prov_buyer_ref or None,
                 'purchaseOrderReference': self.l10n_gr_prov_purchase_order_ref or None,
-                'receivingAdviceReference': self.l10n_gr_prov_receiving_advice_ref or None,
             })
             payload['sellerIdentifiers'] = [{'sellerIdentifier': self._ilyda_vat(company.vat)}]
             if buyer:

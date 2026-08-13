@@ -176,6 +176,13 @@ provider or needs a configured company.
 
 ## Changelog
 
+### 2.11 — Κρατήσεις υπέρ Τρίτων (BG-24)
+- New move field **`l10n_gr_prov_yper3_amount`** («Κρατήσεις υπέρ Τρίτων Φορέων
+  (BG-24)»), on the myDATA Φόροι tab, visible only for B2G. It is text-only
+  information for the Ελλην. Δημόσιο (ΕΑΑΔΗΣΥ, ΑΕΠΠ, υπέρ Ψυχικής Υγείας…) and
+  by design changes **no** total — see the ILYDA changelog for the transmission
+  side.
+
 ### 2.10 — One unit, told the same way twice
 - **Street numbers reach AADE separately.** BT-36 (`sellerAddressLine2`) and
   every `number` in `otherDeliveryNoteHeader` are mandatory on dispatch

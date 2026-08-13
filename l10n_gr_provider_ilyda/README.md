@@ -254,6 +254,33 @@ client is never constructed.
 
 ## Changelog
 
+### 2.7 — B2G κρατήσεις in BG-24, TF-2 simulation
+- **Withholding no longer distorts a B2G total.** The Εθνικός Μορφότυπος is
+  explicit that Παρακρατήσεις Φόρου Εισοδήματος and Κρατήσεις Υπέρ Τρίτων
+  Φορέων του Ελλην. Δημοσίου must not fill the numeric BG-20/BG-21 fields —
+  they travel as text in **BG-24**. On a B2G document the withholding now goes
+  out as `additionalSupportDocs: [{reference: <ποσό>,
+  description: "##PARAKRAT|FOR|EISOD|<κατηγορία>##"}]`, `docLevelAllowances`
+  stays empty and BT-107/109/112 are no longer reduced. `taxTotals` taxType 1
+  and `aadeTotalWitheldAmount` are unchanged — the rule is about the EN16931
+  side only. Non-B2G documents keep the doc-level allowance exactly as before.
+- `l10n_gr_prov_yper3_amount` is myDATA **Κρατήσεις** and shows up in four
+  places, per ILYDA's `test_b2g_advanced_allowances_and_charges` example: a
+  single `##PARAKRAT|YPER3##` BG-24 entry with the algebraic sum, a `taxTotals`
+  row of `taxType` **5** (no category, no underlying value),
+  `aadeTotalDeductionsAmount`, and a matching reduction of
+  `aadeTotalGrossValue`. It touches no EN16931 total — ILYDA's BG-22-MISMATCH
+  check is precisely that BT-112 minus every BG-24 παρακράτηση equals
+  `aadeTotalGrossValue`.
+- **BT-15 `receivingAdviceReference` is sent on every document**, not only B2G.
+  Setting it to `1cadb85a-88e7-4853-b5d0-75143b38b76e` switches test.vs.gr into
+  the **transmission failure 2** simulation; the sentinel also makes BT-2 go out
+  as an Athens timestamp instead of a bare date, which the simulation requires
+  (±10′ of now, DST included). The response side already routed MQ001/MQ002 to
+  «Σε ουρά».
+- `TIMEOUT` 30 → 90 s, so a stalled TF-2 response is not misread as an
+  unreachable provider and diverted to the TF-1 offline path.
+
 ### 2.4 — ΠΟΣΕ refunds
 - A refund on the ΠΟΣΕ journal transmits as **8.5**, instead of being turned
   into a 5.x credit note.

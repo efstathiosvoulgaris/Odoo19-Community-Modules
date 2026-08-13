@@ -256,6 +256,15 @@ class AccountMove(models.Model):
         store=True, readonly=False, copy=False,
         help='Auto-calculated for percentage categories; manual for fixed-€/unit ones.',
     )
+    l10n_gr_prov_yper3_amount = fields.Monetary(
+        string='Κρατήσεις υπέρ Τρίτων Φορέων (BG-24)',
+        currency_field='currency_id',
+        copy=False,
+        help='B2G only. Αλγεβρικό άθροισμα των κρατήσεων υπέρ Τρίτων Φορέων του Ελλην. '
+             'Δημοσίου (ΕΑΑΔΗΣΥ, ΑΕΠΠ, υπέρ Ψυχικής Υγείας, ΟΓΑ χαρτόσημο κ.λπ.). '
+             'Διαβιβάζεται ΜΟΝΟ ως κείμενο στο BG-24 (##PARAKRAT|YPER3##) και δεν '
+             'επηρεάζει κανένα σύνολο του παραστατικού.',
+    )
 
     def _l10n_gr_prov_apply_rate(self, cat_field, amount_field, rate_map):
         """Amount = net × category rate; 0 when no category; untouched (manual)
