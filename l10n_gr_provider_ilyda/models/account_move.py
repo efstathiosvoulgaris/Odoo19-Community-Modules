@@ -56,6 +56,10 @@ TF2_SENTINEL = '1cadb85a-88e7-4853-b5d0-75143b38b76e'
 # UBL document type codes
 UBL_INVOICE = '380'
 UBL_CREDIT_NOTE = '381'
+# AADE types ILYDA requires to carry 381 (BT-3-MISMATCH). move_type is not
+# enough: a μη-συσχετιζόμενο 5.2 is entered on the ΠΙΜΣ journal as a plain
+# customer invoice, so it reaches us as out_invoice.
+AADE_CREDIT_TYPES = ('5.1', '5.2', '11.4')
 
 
 class IlydaClient:
@@ -99,6 +103,14 @@ class IlydaClient:
         resp = requests.get(
             f'{self.base}/api/invoice/status/{invoice_id}',
             headers=self._headers(json_content=False), auth=self._auth, timeout=TIMEOUT)
+        if resp.status_code == 404:
+            # The branded HTML 404 means the route did not match at all — the
+            # ERP-Bridge status endpoint is not exposed on this environment.
+            # A document ILYDA simply does not know answers with a JSON A000x.
+            raise UserError(_(
+                'ILYDA has no B2G status endpoint on %s (HTTP 404 for '
+                'invoice id %s). Ask them whether /api/invoice/status is '
+                'enabled for this account.', self.base, invoice_id))
         return self._parse(resp)
 
     # Search / reconciliation lookups. The API docs list X-Auth-Key as the
@@ -1244,7 +1256,8 @@ class AccountMove(models.Model):
             'b2g': bool(self.l10n_gr_prov_b2g),
             'selfPricing': False,
             'vatPaidByBuyer': False,
-            'invoiceTypeCode': UBL_CREDIT_NOTE if self.move_type == 'out_refund' else UBL_INVOICE,
+            'invoiceTypeCode': (
+                UBL_CREDIT_NOTE if inv_type in AADE_CREDIT_TYPES else UBL_INVOICE),
             'seriesNumber': series,
             'serialNumber': serial,
             'invoiceIssueDate': self._ilyda_issue_date(),
@@ -1316,9 +1329,21 @@ class AccountMove(models.Model):
 
         # B2G references and routing
         if self.l10n_gr_prov_b2g:
-            project_ref = None
-            if self.l10n_gr_prov_budget_ref:
-                project_ref = f'{self.l10n_gr_prov_budget_type or "1"}|{self.l10n_gr_prov_budget_ref}'
+            budget_type = self.l10n_gr_prov_budget_type or '1'
+            if inv_type == '5.2':
+                # Uncorrelated credit notes carry routing only, not the funding
+                # reference: '1' / '3' bare, '2|<Ενάριθμος>' for ΠΔΕ. Sending
+                # '1|<ΑΔΑ>' here is rejected as BT-11-INVALID-FOR-CREDIT-NOTE.
+                # (The national guide puts this string in BG-24/BT-122 instead;
+                # ILYDA validates it on BT-11 — asked them to confirm.)
+                project_ref = (
+                    f'2|{self.l10n_gr_prov_budget_ref}'
+                    if budget_type == '2' and self.l10n_gr_prov_budget_ref
+                    else budget_type)
+            elif self.l10n_gr_prov_budget_ref:
+                project_ref = f'{budget_type}|{self.l10n_gr_prov_budget_ref}'
+            else:
+                project_ref = None
             payload.update({
                 'contractReference': self.l10n_gr_prov_contract_ref or None,
                 'projectReference': project_ref,
