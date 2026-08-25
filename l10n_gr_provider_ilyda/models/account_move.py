@@ -422,10 +422,19 @@ class AccountMove(models.Model):
         return f'{stamp[:-2]}:{stamp[-2:]}'  # +0300 -> +03:00
 
     def _ilyda_issue_date(self):
-        """BT-2. Midnight on the invoice date, with the Athens offset — ILYDA
-        rejects a naive timestamp at ΓΓΠΣ. BT-15 carrying the transmission-
-        failure-2 sentinel wants now() instead, within 10' and DST-correct."""
+        """BT-2, with the Athens offset — ILYDA rejects a naive timestamp at
+        ΓΓΠΣ. BT-15 carrying the transmission-failure-2 sentinel wants now()
+        instead, within 10' and DST-correct."""
         if (self.l10n_gr_prov_receiving_advice_ref or '').strip() == TF2_SENTINEL:
+            return self._ilyda_now_athens()
+        # invoice_date is a Date, so there is no stored issue time. When the
+        # document is issued the same day, now() is that time; a back- or
+        # forward-dated one only has the day, so it stays at midnight (never a
+        # future instant, which ΓΓΠΣ rejects).
+        # ponytail: re-sending a TF-1 offline document picks a new now(); if
+        # ILYDA ever enforces TQR-0030 on the timestamp, store it at issue time.
+        if self.invoice_date == fields.Date.context_today(
+                self.with_context(tz='Europe/Athens')):
             return self._ilyda_now_athens()
         return self._ilyda_midnight_athens(self.invoice_date)
 
