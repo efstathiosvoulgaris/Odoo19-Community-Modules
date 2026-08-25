@@ -422,12 +422,16 @@ class AccountMove(models.Model):
         return f'{stamp[:-2]}:{stamp[-2:]}'  # +0300 -> +03:00
 
     def _ilyda_issue_date(self):
-        """BT-2. Date-only, as in every ILYDA example — except when BT-15 carries
-        the transmission-failure-2 sentinel, where the simulation demands a
-        timestamp within 10' of now, tz and DST included."""
+        """BT-2. Midnight on the invoice date, with the Athens offset — ILYDA
+        rejects a naive timestamp at ΓΓΠΣ. BT-15 carrying the transmission-
+        failure-2 sentinel wants now() instead, within 10' and DST-correct."""
         if (self.l10n_gr_prov_receiving_advice_ref or '').strip() == TF2_SENTINEL:
             return self._ilyda_now_athens()
-        return f'{self.invoice_date}T00:00:00'
+        # Noon avoids the DST-switch hour; the offset only depends on the date.
+        noon = fields.Datetime.to_datetime(f'{self.invoice_date} 12:00:00')
+        offset = fields.Datetime.context_timestamp(
+            self.with_context(tz='Europe/Athens'), noon).strftime('%z')
+        return f'{self.invoice_date}T00:00:00{offset[:-2]}:{offset[-2:]}'
 
     def _l10n_gr_prov_issue_offline_ilyda(self):
         """TF-1: sign an offline QR locally (provider unreachable at issue).
@@ -1026,7 +1030,9 @@ class AccountMove(models.Model):
                 charge = {
                     'chargeAmount': amount,
                     'chargeReason': reason,
-                    'vatCategoryCode': 'O',
+                    # 'Z' (zero-rated), not 'O': B2G validation rejects 'O'
+                    # on charges. Matches ILYDA's own b2g examples.
+                    'vatCategoryCode': 'Z',
                     'vatRate': 0,
                     'aadeTaxData': {'aadeTaxType': tax_type},
                 }
@@ -1035,6 +1041,24 @@ class AccountMove(models.Model):
                 doc_level_charges.append(charge)
 
         doc_charges_sum = _r2(sum(c['chargeAmount'] for c in doc_level_charges))
+        # BR-CO-18: every category used by a charge needs its BG-23 row. Fold
+        # into the existing Z bucket (the withholding allowance makes one too)
+        # rather than emitting a second Z/0 pair.
+        if doc_charges_sum:
+            z_row = next((b for b in vat_breakdowns
+                          if b['categoryCode'] == 'Z' and not b['categoryRate']), None)
+            if z_row:
+                z_row['categoryTaxableAmount'] = _r2(
+                    z_row['categoryTaxableAmount'] + doc_charges_sum)
+            else:
+                vat_breakdowns.append({
+                    'categoryCode': 'Z',
+                    'categoryRate': 0,
+                    'categoryTaxableAmount': doc_charges_sum,
+                    'categoryTaxAmount': 0,
+                    'exemptionReasonCode': None,
+                    'exemptionReasonText': None,
+                })
 
         doc_total = {
             'invoiceLinesNetAmountSum': total_net,
@@ -1330,6 +1354,12 @@ class AccountMove(models.Model):
         # B2G references and routing
         if self.l10n_gr_prov_b2g:
             budget_type = self.l10n_gr_prov_budget_type or '1'
+            # Users paste the finished value ('3|1234567') into the identifier
+            # field; re-prefixing gives '1|3|1234567', which ΓΓΠΣ rejects.
+            budget_ref = (self.l10n_gr_prov_budget_ref or '').strip()
+            head, sep, tail = budget_ref.partition('|')
+            if sep and head in ('1', '2', '3'):
+                budget_type, budget_ref = head, tail.strip()
             if inv_type == '5.2':
                 # Uncorrelated credit notes carry routing only, not the funding
                 # reference: '1' / '3' bare, '2|<Ενάριθμος>' for ΠΔΕ. Sending
@@ -1337,11 +1367,11 @@ class AccountMove(models.Model):
                 # (The national guide puts this string in BG-24/BT-122 instead;
                 # ILYDA validates it on BT-11 — asked them to confirm.)
                 project_ref = (
-                    f'2|{self.l10n_gr_prov_budget_ref}'
-                    if budget_type == '2' and self.l10n_gr_prov_budget_ref
+                    f'2|{budget_ref}'
+                    if budget_type == '2' and budget_ref
                     else budget_type)
-            elif self.l10n_gr_prov_budget_ref:
-                project_ref = f'{budget_type}|{self.l10n_gr_prov_budget_ref}'
+            elif budget_ref:
+                project_ref = f'{budget_type}|{budget_ref}'
             else:
                 project_ref = None
             payload.update({
