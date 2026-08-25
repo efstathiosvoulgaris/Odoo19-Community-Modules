@@ -427,11 +427,15 @@ class AccountMove(models.Model):
         failure-2 sentinel wants now() instead, within 10' and DST-correct."""
         if (self.l10n_gr_prov_receiving_advice_ref or '').strip() == TF2_SENTINEL:
             return self._ilyda_now_athens()
-        # Noon avoids the DST-switch hour; the offset only depends on the date.
-        noon = fields.Datetime.to_datetime(f'{self.invoice_date} 12:00:00')
+        return self._ilyda_midnight_athens(self.invoice_date)
+
+    def _ilyda_midnight_athens(self, date):
+        """'YYYY-MM-DDT00:00:00+03:00' — the offset is the one in force on that
+        date. Noon avoids the DST-switch hour; the offset only depends on the day."""
+        noon = fields.Datetime.to_datetime(f'{date} 12:00:00')
         offset = fields.Datetime.context_timestamp(
             self.with_context(tz='Europe/Athens'), noon).strftime('%z')
-        return f'{self.invoice_date}T00:00:00{offset[:-2]}:{offset[-2:]}'
+        return f'{date}T00:00:00{offset[:-2]}:{offset[-2:]}'
 
     def _l10n_gr_prov_issue_offline_ilyda(self):
         """TF-1: sign an offline QR locally (provider unreachable at issue).
@@ -836,6 +840,7 @@ class AccountMove(models.Model):
                 'priceDetails': {
                     'itemNetPrice': _r2(net / line.quantity) if line.quantity else _r2(net),
                     'itemPriceBaseQuantity': 1,
+                    'itemPriceBaseQuantityUnitsCode': line._l10n_gr_prov_quantity_units(),
                 },
                 'lineVatInfo': {
                     'vatAmount': vat_amount,
@@ -852,6 +857,8 @@ class AccountMove(models.Model):
                 line_vals['itemClassificationIdentifiers'] = [{
                     'classificationIdentifier': cpv,
                     'classificationIdentifierScheme': 'STI',
+                    # CPV nomenclature version; ΓΓΠΣ expects it alongside STI.
+                    'classificationIdentifierSchemeVersion': '2008',
                 }]
             invoice_lines.append(line_vals)
 
@@ -1286,6 +1293,9 @@ class AccountMove(models.Model):
             'serialNumber': serial,
             'invoiceIssueDate': self._ilyda_issue_date(),
             'invoiceCurrencyCode': self.currency_id.name or 'EUR',
+            # BT-9. Without it, an invoice carrying no payment method has neither
+            # due date nor payment terms and trips BR-CO-25.
+            'paymentDueDate': str(self.invoice_date_due) if self.invoice_date_due else None,
             # BT-15 is a plain EN16931 term, not a B2G one: ILYDA's transmission
             # failure 2 simulation is triggered by putting TF2_SENTINEL here.
             'receivingAdviceReference': self.l10n_gr_prov_receiving_advice_ref or None,
@@ -1342,13 +1352,14 @@ class AccountMove(models.Model):
                 seller_bare_vat,
                 origin.invoice_date.strftime('%d/%m/%Y') if origin.invoice_date else '',
                 str(company_partner.l10n_gr_edi_branch_number or 0),
-                origin.l10n_gr_edi_inv_type or '',
+                origin._l10n_gr_prov_ilyda_inv_type() or '',
                 origin_series,
                 origin_serial,
             ])
             payload['precedingInvoices'] = [{
                 'precedingInvoiceReference': reference,
-                'precedingInvoiceIssueDate': f'{origin.invoice_date}T00:00:00',
+                'precedingInvoiceIssueDate': self._ilyda_midnight_athens(
+                    origin.invoice_date),
             }]
 
         # B2G references and routing
