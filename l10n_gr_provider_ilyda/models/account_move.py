@@ -4,7 +4,7 @@
 Implements the operations dispatched by l10n_gr_provider_base:
   _l10n_gr_prov_send_ilyda            POST /api/invoice
   _l10n_gr_prov_upload_pdf_ilyda      POST /api/invoice/upload/{invoiceId}
-  _l10n_gr_prov_poll_b2g_status_ilyda GET  /api/invoice/status/{invoiceId}
+  _l10n_gr_prov_poll_b2g_status_ilyda GET  /api/invoice/application_response/{mark}
   _l10n_gr_prov_recover_ilyda         GET  /api/invoice/by-uid/{uid}
                                       GET  /api/invoice/pending/by-uid/{uid}
 
@@ -61,6 +61,17 @@ UBL_CREDIT_NOTE = '381'
 # customer invoice, so it reaches us as out_invoice.
 AADE_CREDIT_TYPES = ('5.1', '5.2', '11.4')
 
+# PEPPOL Invoice Response codes (UNCL4343 subset), as returned in latestStatus.
+PEPPOL_STATUS = {
+    'AB': 'Παραλήφθηκε',
+    'IP': 'Σε επεξεργασία',
+    'UQ': 'Σε διερεύνηση',
+    'CA': 'Αποδεκτό υπό όρους',
+    'RE': 'Απορρίφθηκε',
+    'AP': 'Αποδεκτό',
+    'PD': 'Εξοφλήθηκε',
+}
+
 
 class IlydaClient:
     """Thin HTTP client for the ILYDA eInvoicing API."""
@@ -99,18 +110,12 @@ class IlydaClient:
             headers=self._headers(json_content=False), auth=self._auth, timeout=TIMEOUT)
         return self._parse(resp)
 
-    def get_status(self, invoice_id):
+    def get_application_response(self, mark):
+        """PEPPOL Invoice Responses of a B2G document, keyed by its MARK
+        (ILYDA mail, 2026-09-17 — not in the ERP-Bridge guide)."""
         resp = requests.get(
-            f'{self.base}/api/invoice/status/{invoice_id}',
+            f'{self.base}/api/invoice/application_response/{mark}',
             headers=self._headers(json_content=False), auth=self._auth, timeout=TIMEOUT)
-        if resp.status_code == 404:
-            # The branded HTML 404 means the route did not match at all — the
-            # ERP-Bridge status endpoint is not exposed on this environment.
-            # A document ILYDA simply does not know answers with a JSON A000x.
-            raise UserError(_(
-                'ILYDA has no B2G status endpoint on %s (HTTP 404 for '
-                'invoice id %s). Ask them whether /api/invoice/status is '
-                'enabled for this account.', self.base, invoice_id))
         return self._parse(resp)
 
     # Search / reconciliation lookups. The API docs list X-Auth-Key as the
@@ -229,12 +234,26 @@ class AccountMove(models.Model):
 
     def _l10n_gr_prov_poll_b2g_status_ilyda(self):
         self.ensure_one()
-        client = IlydaClient(self.company_id)
-        data = client.get_status(self.l10n_gr_prov_invoice_id)
-        status = data.get('status') or data.get('state') or str(data)[:200]
-        if status and status != self.l10n_gr_prov_b2g_status:
-            self.l10n_gr_prov_b2g_status = status
-            self.message_post(body=_('B2G status update: %s', status))
+        data = IlydaClient(self.company_id).get_application_response(
+            self.l10n_gr_prov_mark)
+        if data.get('errors'):
+            raise UserError(_('ILYDA B2G status error: %s', '; '.join(
+                f"{e.get('code')}: {e.get('defaultMessage') or e.get('message')}"
+                for e in data['errors'])))
+        status = data.get('latestStatus')
+        if not status or status == self.l10n_gr_prov_b2g_status:
+            return
+        self.l10n_gr_prov_b2g_status = status
+        latest = max(data.get('responses') or [{}],
+                     key=lambda r: r.get('transactionDate') or 0)
+        reasons = '; '.join(
+            f"{r.get('code')}: {r.get('message')}"
+            for r in latest.get('statusReason') or [])
+        note = latest.get('responseNote')
+        self.message_post(body=_(
+            'Κατάσταση PEPPOL: %(code)s — %(label)s%(extra)s',
+            code=status, label=PEPPOL_STATUS.get(status, status),
+            extra=''.join(f' · {x}' for x in (reasons, note) if x)))
 
     # A0002/3/4/6: not-found codes of by-mark/by-id/by-uid/by-authentication-code;
     # the pending queue returns its own A000x for unknown uids.

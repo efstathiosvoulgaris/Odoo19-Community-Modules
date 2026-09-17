@@ -635,7 +635,7 @@ class AccountMove(models.Model):
 
     def action_l10n_gr_prov_refresh_b2g_status(self):
         for move in self:
-            if move.l10n_gr_prov_b2g and move.l10n_gr_prov_invoice_id:
+            if move.l10n_gr_prov_b2g and move.l10n_gr_prov_mark:
                 move._l10n_gr_prov_dispatch('poll_b2g_status')
 
     def action_l10n_gr_prov_recover(self):
@@ -859,7 +859,12 @@ class AccountMove(models.Model):
         for move in self.search([
             ('l10n_gr_prov_b2g', '=', True),
             ('l10n_gr_prov_state', '=', 'sent'),
-            ('l10n_gr_prov_invoice_id', '!=', False),
+            ('l10n_gr_prov_mark', '!=', False),
+            # Final PEPPOL answers never change again (RE/AP/PD); without this
+            # the oldest 50 would hog every run and newer documents never poll.
+            # ponytail: >50 documents still open at once starve the rest; rotate
+            # by a last-polled timestamp if a customer ever gets there.
+            ('l10n_gr_prov_b2g_status', 'not in', ['RE', 'AP', 'PD']),
         ], limit=50):
             try:
                 move._l10n_gr_prov_dispatch('poll_b2g_status')
