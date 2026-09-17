@@ -49,6 +49,7 @@
         'terminal transaction, so it transmits as myDATA type 7 like any card.\n'
         'Type 8 is treated as IRIS direct and left unsigned. The payment method\n'
         'survives as a terminal preselection.\n'
+        '\n'
         '  [ΑΝΑΚΛΗΣΗ 10/08/2026] Το σκέλος «ο τύπος 8 είναι εκτός Α.1155»\n'
         '  στηριζόταν σε σιωπή του οδηγού Α.1155, ενώ το XSD του myDATA 2.0.1\n'
         '  προβλέπει ProvidersSignature σε κάθε τύπο πληρωμής 1-8 και ορίζει το\n'
