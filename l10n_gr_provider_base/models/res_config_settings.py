@@ -17,6 +17,10 @@ class ResConfigSettings(models.TransientModel):
         related='company_id.l10n_gr_prov_guard_tax', readonly=False)
     l10n_gr_prov_guard_island = fields.Boolean(
         related='company_id.l10n_gr_prov_guard_island', readonly=False)
+    l10n_gr_prov_business_type = fields.Selection(
+        related='company_id.l10n_gr_prov_business_type', readonly=False)
+    l10n_gr_prov_stay_fee_category = fields.Selection(
+        related='company_id.l10n_gr_prov_stay_fee_category', readonly=False)
 
     def action_l10n_gr_prov_tidy_taxes(self):
         """Give the GR chart taxes self-explanatory Greek names and archive the

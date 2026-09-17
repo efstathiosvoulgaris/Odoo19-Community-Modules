@@ -163,6 +163,8 @@ class AccountMove(models.Model):
              'e.g. "Νοσοκ ΕΥΑΓΓΕΛΙΣΜΟΣ|XYZ123ABC". Defaults from the customer '
              'name and its ΑΑΗΤ code; adjust if the contracting authority differs.')
     l10n_gr_prov_b2g_status = fields.Char(string='B2G Status', copy=False)
+    l10n_gr_prov_business_type = fields.Selection(
+        related='company_id.l10n_gr_prov_business_type')
 
     # ── Dispatch note (9.3) ───────────────────────────────────────────────────
     # v2.0.1 §8.14 — codes 6/15/16/17 exist in the schema but are marked
@@ -355,8 +357,9 @@ class AccountMove(models.Model):
             journal = move.journal_id
             if (journal.l10n_gr_edi_inv_type_default == '8.2'
                     and not move.l10n_gr_prov_other_taxes_category):
-                move.l10n_gr_prov_other_taxes_category = \
+                move.l10n_gr_prov_other_taxes_category = (
                     journal.l10n_gr_prov_other_taxes_default
+                    or move.company_id.l10n_gr_prov_stay_fee_category)
 
     def action_l10n_gr_prov_create_fee_doc(self):
         """ΑΛΠ/ΤΠΥ → ΤΔΙ (8.2 Ειδικό Στοιχείο), built server-side in one shot:
@@ -374,15 +377,15 @@ class AccountMove(models.Model):
         ], limit=1)
         if not journal:
             raise UserError(_(
-                'Δεν βρέθηκε ημερολόγιο πωλήσεων με Προεπιλογή Τύπου myDATA '
-                '8.2 (Ειδικό Στοιχείο).'))
-        category = journal.l10n_gr_prov_other_taxes_default
+                'Δεν βρέθηκε ημερολόγιο Ειδικού Στοιχείου (ΤΔΙ, 8.2). Πατήστε '
+                '«Αυτόματη Ρύθμιση Λογιστικής» στις Ρυθμίσεις.'))
+        category = (journal.l10n_gr_prov_other_taxes_default
+                    or self.company_id.l10n_gr_prov_stay_fee_category)
         fixed = OTHER_TAXES_CATEGORY_FIXED.get(category)
         if not fixed:
             raise UserError(_(
-                'Ορίστε την «Προεπιλογή Λοιπών Φόρων (8.2)» στο ημερολόγιο '
-                '%s — την κατηγορία πάγιου τέλους του καταλύματος '
-                '(π.χ. Ξενοδοχεία 3 αστέρων).', journal.name))
+                'Ορίστε την «Κατηγορία Τέλους Διαμονής» στις Ρυθμίσεις '
+                '(π.χ. Ξενοδοχεία 3 αστέρων).'))
         nights = sum(self.invoice_line_ids.filtered(
             lambda l: l.display_type == 'product' and l.quantity > 0
         ).mapped('quantity')) or 1
@@ -430,7 +433,7 @@ class AccountMove(models.Model):
     # Narrow core's suitable_journal_ids (which drives the journal_id domain) to
     # the myDATA types valid for the selected partner's class. Journals with no
     # myDATA type default are left untouched (non-GR / generic journals).
-    @api.depends('move_type', 'company_id',
+    @api.depends('move_type', 'company_id', 'company_id.l10n_gr_prov_business_type',
                  'partner_id.is_company', 'partner_id.country_id', 'partner_id.vat')
     def _compute_suitable_journal_ids(self):
         super()._compute_suitable_journal_ids()
@@ -447,6 +450,8 @@ class AccountMove(models.Model):
                 eu_codes, bool(partner.vat),
             )
             valid = journal_types_for_class(cls)
+            if move.company_id.l10n_gr_prov_business_type != 'accommodation':
+                valid = valid - {'8.2'}
             move.suitable_journal_ids = move.suitable_journal_ids.filtered(
                 lambda j: not j.l10n_gr_edi_inv_type_default
                 or j.l10n_gr_edi_inv_type_default in valid

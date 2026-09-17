@@ -28,6 +28,15 @@
                              help="Μπλοκάρει 17/9/4% χωρίς καθεστώς Νησιών Αιγαίου και 24/13/6% όταν το καθεστώς ισχύει.">
                         <field name="l10n_gr_prov_guard_island"/>
                     </setting>
+                    <setting string="Κατηγορία Επιχείρησης" name="l10n_gr_prov_business_type_setting"
+                             help="Εμφανίζει τα παραστατικά του κλάδου. Κατάλυμα: Ειδικό Στοιχείο Τέλους Διαμονής (ΤΔΙ, 8.2) και το κουμπί του.">
+                        <field name="l10n_gr_prov_business_type"/>
+                        <div class="mt8" invisible="l10n_gr_prov_business_type != 'accommodation'">
+                            <label for="l10n_gr_prov_stay_fee_category" class="o_light_label"/>
+                            <field name="l10n_gr_prov_stay_fee_category"
+                                   required="l10n_gr_prov_business_type == 'accommodation'"/>
+                        </div>
+                    </setting>
                     <setting string="Αυτόματη Ρύθμιση Λογιστικής" name="l10n_gr_prov_tidy_taxes_setting"
                              help="Φέρνει τη λογιστική στη σωστή ελληνική κατάσταση με ένα πάτημα: σαφή ελληνικά ονόματα και ενεργοποίηση των απαραίτητων φόρων, αρχειοθέτηση αχρησιμοποίητων, διόρθωση των νησιωτικών ΦΠΑ στα ηπειρωτικά καθεστώτα, δημιουργία των ελληνικών ημερολογίων myDATA με προεπιλεγμένους λογαριασμούς και απενεργοποίηση των ακολουθιών πιστωτικών (R). Ασφαλές να ξαναπατηθεί — δεν πειράζει ημερολόγια ή φόρους που δεν δημιούργησε το ίδιο.">
                         <button name="action_l10n_gr_prov_tidy_taxes" type="object"

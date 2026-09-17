@@ -75,7 +75,8 @@
                 <!-- ΑΛΠ/ΤΠΥ → ΤΔΙ (8.2): fee document for the stay -->
                 <button name="action_l10n_gr_prov_create_fee_doc" type="object"
                         string="Ειδικό Στοιχείο (ΤΔΙ)"
-                        invisible="not l10n_gr_prov_mark or move_type != 'out_invoice' or l10n_gr_prov_is_dispatch"/>
+                        invisible="not l10n_gr_prov_mark or move_type != 'out_invoice' or l10n_gr_prov_is_dispatch or l10n_gr_prov_business_type != 'accommodation'"/>
+                <field name="l10n_gr_prov_business_type" invisible="1"/>
                 <!-- ΔΑ follow-ups: only on pure marked dispatch notes -->
                 <button name="action_l10n_gr_prov_create_invoice" type="object"
                         string="Δημιουργία Τιμολογίου"

@@ -1,6 +1,11 @@
 # -*- coding: utf-8 -*-
 from odoo import fields, models
 
+from .gr_mydata import OTHER_TAXES_CATEGORY_FIXED, OTHER_TAXES_CATEGORY_SELECTION
+
+STAY_FEE_CATEGORY_SELECTION = [
+    s for s in OTHER_TAXES_CATEGORY_SELECTION if s[0] in OTHER_TAXES_CATEGORY_FIXED]
+
 
 class ResCompany(models.Model):
     _inherit = 'res.company'
@@ -40,6 +45,27 @@ class ResCompany(models.Model):
         help='Μπλοκάρει μειωμένους νησιωτικούς συντελεστές (17/9/4%) σε πελάτες '
              'χωρίς καθεστώς Νησιών Αιγαίου, και πλήρεις συντελεστές (24/13/6%) '
              'σε πελάτες με το καθεστώς.',
+    )
+
+    # ponytail: one special category so far; add values (and what they unlock)
+    # here when the next sector-specific document shows up.
+    l10n_gr_prov_business_type = fields.Selection(
+        selection=[
+            ('general', 'Γενική επιχείρηση'),
+            ('accommodation', 'Κατάλυμα (Τέλος Διαμονής)'),
+        ],
+        string='Κατηγορία Επιχείρησης',
+        default='general', required=True,
+        help='Ενεργοποιεί τα παραστατικά που αφορούν μόνο τον κλάδο. Κατάλυμα: '
+             'το Ειδικό Στοιχείο Τέλους Διαμονής (8.2, ΤΔΙ) και το κουμπί '
+             'έκδοσής του στις αποδείξεις/τιμολόγια.',
+    )
+    l10n_gr_prov_stay_fee_category = fields.Selection(
+        selection=STAY_FEE_CATEGORY_SELECTION,
+        string='Κατηγορία Τέλους Διαμονής',
+        help='Η κατηγορία του καταλύματος (π.χ. Ξενοδοχείο 3 αστέρων). Ορίζει '
+             'το πάγιο ποσό ανά διανυκτέρευση στο Ειδικό Στοιχείο (8.2). Αν το '
+             'ημερολόγιο ΤΔΙ έχει δική του προεπιλογή, υπερισχύει εκείνη.',
     )
 
     def _l10n_gr_prov_active(self):
