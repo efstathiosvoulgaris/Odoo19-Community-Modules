@@ -4,6 +4,7 @@ import logging
 from datetime import datetime, timezone
 
 import requests
+from markupsafe import Markup
 from odoo import api, fields, models
 from odoo.exceptions import UserError
 
@@ -103,6 +104,9 @@ class SkroutzOrder(models.Model):
     _order = 'created_at desc, id desc'
 
     code = fields.Char(string='Skroutz Code', required=True, index=True, copy=False)
+    # Two webhooks for the same order at once would otherwise both create it;
+    # the loser gets a 500 and Skroutz's retry finds the winner's record.
+    _code_uniq = models.Constraint('UNIQUE(code)', 'A Skroutz order with this code already exists.')
     state = fields.Selection(ORDER_STATES, string='State', default='open', index=True, tracking=True)
     odoo_order_id = fields.Many2one('sale.order', string='Sale Order', copy=False, ondelete='set null')
 
@@ -153,6 +157,15 @@ class SkroutzOrder(models.Model):
     skroutz_data = fields.Text(string='Raw API Data')
 
     line_ids = fields.One2many('skroutz.order.line', 'order_id', string='Order Lines')
+    unmatched_line_count = fields.Integer(
+        string='Unmatched Lines', compute='_compute_unmatched_line_count', store=True,
+        help='Lines with no Odoo product. No sale order is created until each one '
+             'is matched by hand.')
+
+    @api.depends('line_ids.product_id')
+    def _compute_unmatched_line_count(self):
+        for rec in self:
+            rec.unmatched_line_count = len(rec.line_ids.filtered(lambda l: not l.product_id))
 
     @staticmethod
     def _join_parts(*parts):
@@ -264,26 +277,43 @@ class SkroutzOrder(models.Model):
     def _create_sale_order(self):
         if self.odoo_order_id:
             return self.odoo_order_id
+        # A line without a product used to be dropped, leaving a sale order
+        # quietly short of what the customer bought.
+        unmatched = self.line_ids.filtered(lambda l: not l.product_id)
+        if unmatched:
+            raise UserError(
+                'These lines have no Odoo product yet. Set the product on each '
+                'line, then create the sale order again:\n'
+                + '\n'.join(f'• {l.product_name or "?"} (shop uid {l.shop_uid or "—"})'
+                             for l in unmatched))
         partner = self._find_or_create_partner()
-        lines = []
-        for line in self.line_ids:
-            if not line.product_id:
-                _logger.warning("Skroutz order %s: no product matched for MPN '%s', skipping line.", self.code, line.shop_uid)
-                continue
-            lines.append((0, 0, {
-                'product_id': line.product_id.id,
-                'product_uom_qty': line.quantity,
-                'price_unit': line.unit_price,
-                'name': line.product_name or line.product_id.name,
-            }))
         sale_order = self.env['sale.order'].create({
             'partner_id': partner.id,
             'origin': f'Skroutz {self.code}',
             'note': self.comments or '',
-            'order_line': lines,
         })
+        SaleLine = self.env['sale.order.line']
+        for line in self.line_ids:
+            so_line = SaleLine.create({
+                'order_id': sale_order.id,
+                'product_id': line.product_id.id,
+                'product_uom_qty': line.quantity,
+                'price_unit': line.unit_price,
+                'name': line.product_name or line.product_id.name,
+            })
+            so_line.price_unit = self._net_of_added_vat(line.unit_price, so_line.tax_ids)
         self.odoo_order_id = sale_order
         return sale_order
+
+    @staticmethod
+    def _net_of_added_vat(gross, taxes):
+        """Skroutz prices are final, VAT included. A tax that is not
+        price-included is added on top of price_unit, so take it out first,
+        or the sale order charges VAT twice."""
+        added = taxes.filtered(lambda t: not t.price_include)
+        if not added or any(t.amount_type != 'percent' for t in added):
+            return gross
+        return gross / (1 + sum(added.mapped('amount')) / 100)
 
     def _find_or_create_partner(self):
         """Find an existing partner for this order's customer, or create one.
@@ -421,29 +451,44 @@ class SkroutzOrder(models.Model):
         if lines_changed:
             self.line_ids.unlink()
         for item in (order_data.get('line_items') or []) if lines_changed else []:
-            shop_uid = item.get('shop_uid') or ''
+            shop_uid = str(item.get('shop_uid') or '')
             mpn = item.get('mpn') or ''
             size = item.get('size') or {}
             size_mpn = size.get('mpn') or ''
-            product = False
-            for ref in filter(None, [shop_uid, mpn, size_mpn]):
-                tmpl = self.env['product.template'].sudo().search(
-                    [('default_code', '=', ref)], limit=1
-                )
-                if tmpl and tmpl.product_variant_ids:
-                    product = tmpl.product_variant_ids[:1]
-                    break
+            ean = item.get('ean') or size.get('ean') or ''
+            product = self._match_product(shop_uid, [size_mpn, mpn], ean)
             self.env['skroutz.order.line'].create({
                 'order_id': self.id,
                 'skroutz_line_id': item.get('id'),
-                'product_id': product.id if product else False,
+                'product_id': product.id,
                 'product_name': item.get('product_name', ''),
                 'shop_uid': shop_uid,
-                'ean': item.get('ean') or size.get('ean') or '',
+                'ean': ean,
                 'quantity': item.get('quantity', 1),
                 'unit_price': item.get('unit_price', 0.0),
                 'total_price': item.get('total_price', 0.0),
             })
+
+    def _match_product(self, shop_uid, mpns, ean):
+        """The Odoo product behind a Skroutz line item.
+
+        shop_uid is the feed's <id>, i.e. product.template.id (the key the
+        migration kept stable), so it goes first. Then the feed's <mpn>
+        (skroutz_mpn), the Internal Reference for listings made before 1.4,
+        and the barcode (the feed's <ean>).
+        """
+        Template = self.env['product.template'].sudo()
+        tmpl = Template
+        if shop_uid.isdigit():
+            tmpl = Template.search([('id', '=', int(shop_uid))], limit=1)
+        for field, values in (('skroutz_mpn', mpns),
+                              ('default_code', [shop_uid] + mpns),
+                              ('barcode', [ean])):
+            for value in filter(None, values):
+                if tmpl:
+                    break
+                tmpl = Template.search([(field, '=', value)], limit=1)
+        return tmpl.product_variant_ids[:1]
 
     @api.model
     def _create_or_update_from_webhook(self, order_code, order_data=None):
@@ -464,18 +509,28 @@ class SkroutzOrder(models.Model):
             data = client.get_order(order_code)
             record._apply_skroutz_data(data.get('order', {}))
         if is_new:
-            record._notify_new_order()
+            # A notification that fails must not take the order down with it:
+            # the webhook would answer 500 and every Skroutz retry fail the same.
+            try:
+                with self.env.cr.savepoint():
+                    record._notify_new_order()
+            except Exception:
+                _logger.exception("Skroutz order %s: new-order notification failed.", order_code)
         return record
 
     def _notify_new_order(self):
         sales_group = self.env.ref('sales_team.group_sale_salesman', raise_if_not_found=False)
         if not sales_group:
             return
-        partners = sales_group.users.mapped('partner_id')
+        partners = sales_group.user_ids.mapped('partner_id')
         if not partners:
             return
+        body = Markup('New Skroutz order <b>%s</b> received.') % self.code
+        if self.unmatched_line_count:
+            body += Markup(' <b>%s line(s) matched no product</b>: set them before '
+                           'creating the sale order.') % self.unmatched_line_count
         self.message_post(
-            body=f'New Skroutz order <b>{self.code}</b> received.',
+            body=body,
             message_type='notification',
             subtype_xmlid='mail.mt_comment',
             partner_ids=partners.ids,

@@ -50,11 +50,11 @@
                         </setting>
 
                         <setting string="Webhook Secret" name="skroutz_webhook_secret_setting"
-                                 help="Optional secret token embedded in the webhook URL. Register the full URL (including the secret) in your Skroutz merchant panel. Skroutz does not sign webhook requests, so the URL token is the only authentication.">
+                                 help="Required secret token embedded in the webhook URL. Register the full URL (including the secret) in your Skroutz merchant panel. Skroutz does not sign webhook requests, so the URL token is the only authentication.">
                             <field name="skroutz_webhook_secret" password="True"
-                                   placeholder="Leave empty for the plain webhook URL"/>
+                                   placeholder="Required — webhook calls are refused while empty"/>
                             <div class="mt8">
-                                <small>Webhook URL: <code>/skroutz/webhook/&lt;secret&gt;</code> (or <code>/skroutz/webhook</code> when no secret is set)</small>
+                                <small>Webhook URL: <code>/skroutz/webhook/&lt;secret&gt;</code></small>
                             </div>
                         </setting>
 

@@ -1,6 +1,6 @@
 # Skroutz Connector for Odoo 19
 
-**Version:** 1.7 | **Odoo:** 19 | **License:** LGPL-3
+**Version:** 1.8 | **Odoo:** 19 | **License:** LGPL-3
 
 Connects Odoo 19 to the [Skroutz Marketplace](https://www.skroutz.gr) via:
 - XML product feed (for Skroutz to crawl)
@@ -17,7 +17,7 @@ Connects Odoo 19 to the [Skroutz Marketplace](https://www.skroutz.gr) via:
 - Supports optional Skroutz fields per product: size, color, season, size fit, outlet flag, per-product shipping cost
 
 ### Order Webhook
-- Receives order events at `/skroutz/webhook` or `/skroutz/webhook/<secret>`
+- Receives order events at `/skroutz/webhook/<secret>`; refused while no secret is set
 - Skroutz does not sign webhook requests — authentication is via URL token
 - Returns HTTP 500 on processing error so Skroutz retries (up to 4 times in 20 minutes)
 - Creates or updates `skroutz.order` records from webhook payloads
@@ -39,12 +39,11 @@ Go to **Settings → Skroutz**:
 | Default Availability | Availability label for 0-stock products |
 | Include 0-stock products | Keep out-of-stock products in the feed |
 | API Token | Bearer token from Skroutz merchant panel |
-| Webhook Secret | Optional token embedded in the webhook URL path |
+| Webhook Secret | **Required** token embedded in the webhook URL path; without it every call is refused |
 | Auto-create Sale Order | Create a Sale Order automatically when an order is accepted |
 
 ### Webhook URL
 Register the full URL in your Skroutz merchant panel:
-- Without secret: `https://yourdomain.com/skroutz/webhook`
 - With secret: `https://yourdomain.com/skroutz/webhook/YOUR_SECRET`
 
 ### Public Feed (Docker / multi-DB)
@@ -66,6 +65,24 @@ The product is included in the feed when it is **published on the website** and 
 If the [`l10n_gr_partner`](https://github.com/) addon is installed, the street number from the shipping address is written to the partner's `arithmos_odou` field instead of being concatenated into the street name.
 
 ## Changelog
+
+### 1.8
+- **Webhook requires a secret.** Without one every call is refused (403): the
+  body is applied with sudo, so an open URL let anyone create or alter orders.
+- **New orders from the webhook were lost.** The salesperson notification read
+  `res.groups.users` (renamed `user_ids` in Odoo 19); the error rolled the new
+  order back and each Skroutz retry failed the same way. Fixed, and a failing
+  notification can no longer take the order with it.
+- **Line items match by product id.** `shop_uid` is the feed's `<id>`, i.e.
+  `product.template.id`, but was looked up as Internal Reference, so lines
+  matched nothing or the wrong product. Order now: id → `skroutz_mpn` →
+  Internal Reference → barcode.
+- **Unmatched lines block the sale order** instead of being dropped from it.
+  The product can be set on the line by hand; list and form show the count.
+- **No double VAT.** Skroutz prices include VAT; when the product's tax is not
+  price-included, the sale order line gets the net price.
+- Order code is unique, so two simultaneous webhooks cannot create two orders.
+- The feed is cached per worker for 15 minutes.
 
 ### 1.7
 - Dispatch with no tracking codes at all no longer raises (`list(None)`).

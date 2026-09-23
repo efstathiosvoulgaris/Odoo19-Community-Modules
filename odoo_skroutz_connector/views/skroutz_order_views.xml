@@ -25,6 +25,8 @@
                 <field name="created_at"/>
                 <field name="dispatch_until" optional="show"/>
                 <field name="odoo_order_id" optional="show"/>
+                <field name="unmatched_line_count" optional="show"
+                       decoration-danger="unmatched_line_count > 0"/>
             </list>
         </field>
     </record>
@@ -54,6 +56,12 @@
                            statusbar_visible="open,accepted,dispatched,delivered"/>
                 </header>
                 <sheet>
+                    <div class="alert alert-warning" role="alert"
+                         invisible="not unmatched_line_count or odoo_order_id">
+                        <field name="unmatched_line_count" readonly="1" nolabel="1"/>
+                        line(s) matched no Odoo product. Set the product on each
+                        line below, then create the sale order.
+                    </div>
                     <div class="oe_button_box" name="button_box">
                         <button name="action_view_sale_order" type="object"
                                 class="oe_stat_button" icon="fa-shopping-cart"
@@ -110,15 +118,18 @@
 
                     <notebook>
                         <page string="Order Lines" name="order_lines">
-                            <field name="line_ids" readonly="1">
-                                <list>
-                                    <field name="product_name"/>
-                                    <field name="shop_uid"/>
-                                    <field name="ean"/>
-                                    <field name="product_id"/>
-                                    <field name="quantity"/>
-                                    <field name="unit_price"/>
-                                    <field name="total_price" sum="Total"/>
+                            <!-- Only the product is editable: it is how an
+                                 unmatched line gets fixed by hand. -->
+                            <field name="line_ids" readonly="odoo_order_id">
+                                <list editable="bottom" create="0" delete="0">
+                                    <field name="product_name" readonly="1"/>
+                                    <field name="shop_uid" readonly="1"/>
+                                    <field name="ean" readonly="1"/>
+                                    <field name="product_id"
+                                           decoration-danger="not product_id"/>
+                                    <field name="quantity" readonly="1"/>
+                                    <field name="unit_price" readonly="1"/>
+                                    <field name="total_price" sum="Total" readonly="1"/>
                                 </list>
                             </field>
                         </page>

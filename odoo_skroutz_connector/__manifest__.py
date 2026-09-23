@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Skroutz Connector',
-    'version': '1.7',
+    'version': '1.8',
     'category': 'eCommerce',
     'summary': 'Skroutz XML feed, order webhook and order management API',
     'description': (

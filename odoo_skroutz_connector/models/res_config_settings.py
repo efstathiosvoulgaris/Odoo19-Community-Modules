@@ -45,10 +45,10 @@ class ResConfigSettings(models.TransientModel):
     skroutz_webhook_secret = fields.Char(
         string='Webhook Secret',
         config_parameter='skroutz.webhook_secret',
-        help='Optional secret token embedded in the webhook URL: /skroutz/webhook/<secret>. '
+        help='Required. Secret token embedded in the webhook URL: /skroutz/webhook/<secret>. '
              'Register the full URL (including the secret) in your Skroutz merchant panel. '
              'Skroutz does not sign webhook requests, so the URL token is the authentication. '
-             'Leave empty to accept calls on the plain /skroutz/webhook URL.',
+             'While it is empty, every webhook call is refused.',
     )
 
 

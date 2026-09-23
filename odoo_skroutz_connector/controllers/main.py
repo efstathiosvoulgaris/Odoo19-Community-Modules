@@ -2,12 +2,19 @@
 import hmac
 import json
 import logging
+import time
 from datetime import datetime
 from xml.etree.ElementTree import Element, SubElement, tostring
 
 from odoo.http import request, route, Response, Controller
 
 _logger = logging.getLogger(__name__)
+
+# Built feeds, per worker: {(db, include_zero, availability): (built_at, xml)}.
+# ~4600 products take seconds to render, and the URL is public — without this
+# a handful of requests at once ties up every worker.
+_FEED_CACHE = {}
+FEED_CACHE_SECONDS = 15 * 60
 
 
 def _build_product_element(product, default_avail):
@@ -97,8 +104,12 @@ class SkroutzFeedController(Controller):
             domain.append(('qty_available', '>', 0))
 
         default_avail = config.get_param('skroutz.default_availability', 'Delivery 1 to 3 days')
-        products = request.env['product.template'].sudo().search(domain, order='id')
-        xml_content = _generate_xml(products, default_avail)
+        key = (request.env.cr.dbname, include_zero, default_avail)
+        built_at, xml_content = _FEED_CACHE.get(key, (0, None))
+        if xml_content is None or time.monotonic() - built_at > FEED_CACHE_SECONDS:
+            products = request.env['product.template'].sudo().search(domain, order='id')
+            xml_content = _generate_xml(products, default_avail)
+            _FEED_CACHE[key] = (time.monotonic(), xml_content)
 
         headers = {
             'Content-Type': 'application/xml; charset=utf-8',
@@ -118,13 +129,18 @@ class SkroutzFeedController(Controller):
         Content-Type and User-Agent), so authentication is done via a secret
         token embedded in the URL path: /skroutz/webhook/<secret>.
         Register the full URL (including the secret) in the Skroutz merchant
-        panel. If no secret is configured, the plain URL is accepted.
+        panel. Without a configured secret every call is refused: the body is
+        trusted and applied with sudo, so an open URL would let anyone create
+        or alter orders.
         """
         raw_body = request.httprequest.get_data()
 
         config = request.env['ir.config_parameter'].sudo()
         webhook_secret = config.get_param('skroutz.webhook_secret', '')
-        if webhook_secret and not hmac.compare_digest(token or '', webhook_secret):
+        if not webhook_secret:
+            _logger.warning("Skroutz webhook: refused — no webhook secret is configured.")
+            return Response('Forbidden', status=403, content_type='text/plain')
+        if not hmac.compare_digest(token or '', webhook_secret):
             _logger.warning("Skroutz webhook: invalid or missing URL token.")
             return Response('Forbidden', status=403, content_type='text/plain')
 
