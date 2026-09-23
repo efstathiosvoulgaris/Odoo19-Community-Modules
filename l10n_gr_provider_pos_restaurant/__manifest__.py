@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Greece - E-Invoicing Provider (Restaurant Order Notes 8.6)',
-    'version': '1.3',
+    'version': '1.4',
     'category': 'Accounting/Localizations',
     'summary': 'Δελτίο Παραγγελίας Εστίασης (8.6) from the restaurant Point of Sale',
     'description': (
@@ -25,6 +25,17 @@
         '\n'
         'Changelog\n'
         '---------\n'
+        '1.4 — Negative notes by reconciliation: on every send to the\n'
+        'kitchen and before the payment screen the till reports every line\n'
+        'as it stands, and the server credits (recType 7) whatever is below\n'
+        'what AADE holds — removed items, cut quantities, discounts, treats\n'
+        '(guide §4.3). A deleted line followed straight by Pay is no longer\n'
+        'missed. Merging or transferring tables moves the notes to the\n'
+        'destination order, so they are closed by the table that pays. A\n'
+        'failed note keeps its issue date, is looked up by UID before any\n'
+        'resend, is retried hourly while its table is open, and is flagged\n'
+        'in the till alert.\n'
+        '\n'
         '1.2 — Per-till options in POS settings (all on by default): issue\n'
         'notes per round, auto «Καθολική Ακύρωση» on cancel, auto negative\n'
         'note on item removal, and an hourly alert for notes approaching the\n'

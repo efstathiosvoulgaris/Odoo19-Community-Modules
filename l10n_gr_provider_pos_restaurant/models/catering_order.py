@@ -21,6 +21,7 @@ blocks every further catering transaction of the entity, so both routes exist:
     `multipleConnectedMarks` («Καθολική Ακύρωση 8.6»), which closes them
     without any correlation.
 """
+import hashlib
 import logging
 from datetime import timedelta
 
@@ -99,6 +100,9 @@ class L10nGrProvCateringOrder(models.Model):
     error_message = fields.Text(string='Σφάλμα', copy=False)
     series = fields.Char(string='Σειρά', default='ΔΠΕ')
     serial = fields.Char(string='Αριθμός', copy=False)
+    # Fixed at the first attempt: the date is part of the document's UID, so
+    # a retry after midnight must not turn it into a different document.
+    issue_date = fields.Date(string='Ημερομηνία Έκδοσης', copy=False)
 
     @api.depends('line_ids.net_value', 'line_ids.vat_amount')
     def _compute_amounts(self):
@@ -123,25 +127,16 @@ class L10nGrProvCateringOrder(models.Model):
         """Create and transmit one order note. Called from the POS when a round
         is sent to the kitchen.
 
-        `vals`: config_id, table_aa, pos_order_uuid, kind, lines
-        [{name, quantity, net, vat_amount, vat_rate}]. Returns a dict the POS
-        can show on the ticket; never raises, so a provider failure cannot
-        block service.
+        `vals`: config_id, table_aa, pos_order_uuid, lines
+        [{name, prep_key, quantity, net, vat_amount, vat_rate}]. Returns a dict
+        the POS can show on the ticket; never raises, so a provider failure
+        cannot block service.
 
-        A `kind='negative'` note cancels items of an earlier round. Its amounts
-        travel POSITIVE exactly like a normal note — the opposite sign is
-        expressed by `recType: 7` on each row (guide §5.2), so the caller may
-        pass either sign and we store the magnitude.
+        Only additions: whatever went down — an item removed, a quantity cut,
+        a discount or a treat — is found by l10n_gr_prov_reconcile.
         """
-        kind = vals.get('kind') or 'order'
-        lines = [line for line in (vals.get('lines') or []) if line.get('quantity')]
-        if kind == 'negative':
-            lines = [self._l10n_gr_prov_negative_line(
-                        vals.get('pos_order_uuid'), line)
-                     for line in lines]
-            lines = [line for line in lines if line]
-        else:
-            lines = [line for line in lines if (line.get('net') or 0) >= 0]
+        lines = [line for line in (vals.get('lines') or [])
+                 if (line.get('quantity') or 0) > 0 and (line.get('net') or 0) >= 0]
         if not lines:
             return {}
         config = self.env['pos.config'].browse(vals['config_id'])
@@ -150,8 +145,9 @@ class L10nGrProvCateringOrder(models.Model):
         # nothing.
         if not config.l10n_gr_prov_enabled or not config.l10n_gr_prov_catering_notes:
             return {}
-        if kind == 'negative' and not config.l10n_gr_prov_catering_auto_negative:
-            return {}
+        return self._l10n_gr_prov_issue(config, vals, 'order', lines)
+
+    def _l10n_gr_prov_issue(self, config, vals, kind, lines):
         order = self.create({
             'company_id': config.company_id.id,
             'config_id': config.id,
@@ -174,33 +170,111 @@ class L10nGrProvCateringOrder(models.Model):
         return order._l10n_gr_prov_ticket_values()
 
     @api.model
-    def _l10n_gr_prov_negative_line(self, pos_order_uuid, line):
-        """One row of an «αρνητικό» note, priced off what was transmitted.
+    def l10n_gr_prov_relink(self, vals):
+        """Tables merged or an order moved to another table.
 
-        The waiter may have deleted the POS line outright, so the client cannot
-        always supply amounts — and even when it can, the credit must match the
-        original note cent for cent. So the unit price comes from the earlier
-        note row with the same preparationKey; a row we never transmitted is
-        dropped (nothing to cancel).
+        Odoo moves the lines into the destination order under new uuids and
+        deletes the source order. Its notes would then belong to no order —
+        nothing would ever close them — and a later cancellation could not
+        find the row that transmitted the item. So the notes follow the order,
+        and each row takes its line's new preparation key.
+
+        `vals`: source_uuid, dest_uuid, keys {old preparationKey: new}.
         """
-        quantity = abs(line.get('quantity') or 0)
-        origin = self.env['l10n.gr.prov.catering.order.line'].search([
-            ('order_id.pos_order_uuid', '=', pos_order_uuid),
-            ('order_id.kind', '=', 'order'),
-            ('order_id.state', 'in', ('sent', 'closed')),
-            ('prep_key', '=', line.get('prep_key')),
-        ], order='id desc', limit=1)
-        if not quantity or not origin or not origin.quantity:
-            return None
-        share = quantity / origin.quantity
-        return {
-            'name': line.get('name') or origin.name,
-            'prep_key': origin.prep_key,
-            'quantity': quantity,
-            'net': _r2(origin.net_value * share),
-            'vat_amount': _r2(origin.vat_amount * share),
-            'vat_rate': origin.vat_rate,
-        }
+        source, dest = vals.get('source_uuid'), vals.get('dest_uuid')
+        if not source or not dest or source == dest:
+            return {}
+        notes = self.search([
+            ('pos_order_uuid', '=', source),
+            ('state', 'in', ('draft', 'error', 'sent')),
+        ])
+        if not notes:
+            return {}
+        keys = vals.get('keys') or {}
+        notes.write({'pos_order_uuid': dest})
+        for row in notes.line_ids:
+            if row.prep_key in keys:
+                row.prep_key = keys[row.prep_key]
+        for note in notes:
+            note.message_post(body=_(
+                'Μεταφέρθηκε στην παραγγελία του τραπεζιού %(table)s '
+                '(συγχώνευση ή μεταφορά τραπεζιού).',
+                table=vals.get('table_aa') or '—'))
+        return {'relinked': len(notes)}
+
+    @api.model
+    def l10n_gr_prov_reconcile(self, vals):
+        """Issue the «αρνητικό» note for whatever went down since transmission.
+
+        Guide §4.3: an item removed, a quantity cut, and a discount or treat on
+        an earlier round each need a note with the opposite sign (recType 7).
+        The till sends every line as it stands now (`lines`: prep_key, name,
+        quantity, net, vat_amount); per line, what AADE already holds is the
+        sum of its transmitted rows, negatives subtracted. Anything above what
+        the line is worth now is credited. Called on every send to the kitchen
+        and before the payment screen — a deleted line alone is no «change»
+        to Odoo, so Pay would otherwise skip it.
+
+        Amounts are positive; recType 7 carries the sign. Quantity is what was
+        taken off, or — for a price cut on an unchanged quantity — the line's
+        quantity, with only the difference as value.
+        """
+        config = self.env['pos.config'].browse(vals['config_id'])
+        if (not config.l10n_gr_prov_enabled or not config.l10n_gr_prov_catering_notes
+                or not config.l10n_gr_prov_catering_auto_negative):
+            return {}
+        uuid = vals.get('pos_order_uuid')
+        if not uuid:
+            return {}
+        # Credit only what AADE holds (positives that were sent), but subtract
+        # every negative already issued — one stuck in error is retried later,
+        # and issuing another now would credit the same item twice.
+        rows = self.env['l10n.gr.prov.catering.order.line'].search([
+            ('order_id.pos_order_uuid', '=', uuid),
+            ('prep_key', '!=', False),
+            '|',
+            '&', ('order_id.kind', '=', 'order'), ('order_id.state', '=', 'sent'),
+            '&', ('order_id.kind', '=', 'negative'),
+                 ('order_id.state', 'in', ('draft', 'error', 'sent')),
+        ])
+        if not rows:
+            return {}
+        sent = {}
+        for row in rows:
+            sign = -1 if row.order_id.kind == 'negative' else 1
+            acc = sent.setdefault(row.prep_key, {
+                'quantity': 0.0, 'net': 0.0, 'vat': 0.0,
+                'name': row.name, 'rate': row.vat_rate})
+            acc['quantity'] += sign * row.quantity
+            acc['net'] += sign * row.net_value
+            acc['vat'] += sign * row.vat_amount
+            if sign > 0:
+                acc['name'], acc['rate'] = row.name, row.vat_rate
+        now = {line.get('prep_key'): line for line in (vals.get('lines') or [])
+               if line.get('prep_key')}
+        credit = []
+        for key, acc in sent.items():
+            if acc['quantity'] <= 0 or acc['net'] <= 0.005:
+                continue
+            line = now.get(key) or {}
+            quantity = max(line.get('quantity') or 0.0, 0.0)
+            net = max(line.get('net') or 0.0, 0.0)
+            vat = max(line.get('vat_amount') or 0.0, 0.0)
+            less_qty = max(acc['quantity'] - quantity, 0.0)
+            less_net = _r2(acc['net'] - net)
+            if less_qty <= 0 and less_net < 0.01:
+                continue
+            credit.append({
+                'name': acc['name'],
+                'prep_key': key,
+                'quantity': less_qty or acc['quantity'],
+                'net': max(less_net, 0.0),
+                'vat_amount': max(_r2(acc['vat'] - vat), 0.0),
+                'vat_rate': acc['rate'],
+            })
+        if not credit:
+            return {}
+        return self._l10n_gr_prov_issue(config, vals, 'negative', credit)
 
     def _l10n_gr_prov_ticket_values(self):
         self.ensure_one()
@@ -218,6 +292,8 @@ class L10nGrProvCateringOrder(models.Model):
         """Transmit to the provider. Failures are recorded, never raised: the
         kitchen round must go out even when the provider is unreachable."""
         self.ensure_one()
+        if not self.issue_date:
+            self.issue_date = fields.Date.context_today(self)
         try:
             client = IlydaClient(self.company_id)
             payload = self._l10n_gr_prov_build_payload()
@@ -251,7 +327,120 @@ class L10nGrProvCateringOrder(models.Model):
 
     def action_retry(self):
         for order in self.filtered(lambda o: o.state in ('draft', 'error')):
-            order._l10n_gr_prov_send()
+            if order._l10n_gr_prov_table_closed():
+                raise UserError(_(
+                    '%(note)s: το τραπέζι έχει ήδη κλείσει. Αν το δελτίο σταλεί '
+                    'τώρα, δεν θα το κλείσει κανένα παραστατικό και μετά από 24 '
+                    'ώρες ο πάροχος θα αναστείλει τη διαβίβαση.',
+                    note=order.display_name))
+            order._l10n_gr_prov_retry()
+
+    def _l10n_gr_prov_retry(self):
+        """Resend a note that failed — but only after asking the provider.
+
+        The request may have reached ILYDA even though the answer was lost; a
+        blind resend would then transmit the same round twice. A failed lookup
+        is recorded and nothing is sent.
+        """
+        self.ensure_one()
+        try:
+            if self._l10n_gr_prov_recover():
+                return
+        except Exception as e:
+            _logger.exception('8.6 lookup failed (%s)', self.display_name)
+            self.error_message = _(
+                'Η αναζήτηση στον πάροχο απέτυχε — δεν έγινε επανάληψη: %s', e)
+            return
+        self._l10n_gr_prov_send()
+
+    def _l10n_gr_prov_table_closed(self):
+        """The table this note belongs to is already paid or cancelled.
+
+        A positive or negative note sent after that is left open at AADE: the
+        document that would have carried its MARK has already gone out. A
+        Καθολική Ακύρωση is the exception — it closes notes, it opens none.
+        """
+        self.ensure_one()
+        if self.kind == 'cancel' or not self.pos_order_uuid:
+            return False
+        return bool(self.env['pos.order'].sudo().search_count([
+            ('uuid', '=', self.pos_order_uuid),
+            ('state', '!=', 'draft'),
+        ]))
+
+    def _l10n_gr_prov_uid(self):
+        """The note's UID as the provider computes it (A.1035 Appendix B2),
+        the same formula the invoices use: SHA-1 of
+        vat-date-branch-type-series-serial in ISO-8859-7."""
+        self.ensure_one()
+        company = self.company_id
+        text = '-'.join([
+            self.env['account.move']._ilyda_vat(company.vat, prefixed=False),
+            str(self.issue_date or ''),
+            str(company.partner_id.l10n_gr_edi_branch_number or 0),
+            '8.6',
+            self.series or 'ΔΠΕ',
+            self.serial or '1',
+        ])
+        return hashlib.sha1(text.encode('iso-8859-7', 'replace')).hexdigest()
+
+    def _l10n_gr_prov_recover(self):
+        """Look the note up at ILYDA by UID and adopt what it has.
+
+        True: the provider has it (marked, or still in its queue) — do not
+        resend. False: unknown there, or rejected — safe to send. Raises when
+        the lookup itself fails, which must never read as «unknown».
+        """
+        self.ensure_one()
+        if not self.issue_date or not self.serial:
+            return False  # never attempted: nothing to find
+        client = IlydaClient(self.company_id)
+        Move = self.env['account.move']
+        doc_uid = self._l10n_gr_prov_uid()
+        data = Move._l10n_gr_prov_ilyda_lookup(client.find_by_uid, doc_uid)
+        if data and data.get('mark'):
+            self._l10n_gr_prov_adopt(
+                data['mark'], data.get('invoiceVerificationHash'),
+                data.get('myDataQrCode'), data.get('invoiceId'))
+            return True
+        entry = Move._l10n_gr_prov_ilyda_lookup(client.pending_by_uid, doc_uid)
+        if not entry or not entry.get('uid'):
+            return False
+        if entry.get('mark'):
+            self._l10n_gr_prov_adopt(
+                entry['mark'], entry.get('verificationHash'), None, entry.get('invoiceId'))
+            return True
+        if entry.get('invoiceState') in ('RESUBMIT_PENDING', 'SUBMITTED'):
+            self.error_message = _(
+                'Σε ουρά διαβίβασης στον πάροχο (αναμονή myDATA) — δεν ξαναστέλνεται.')
+            return True
+        return False
+
+    def _l10n_gr_prov_adopt(self, mark, verification_hash, qr_url, invoice_id):
+        self.write({
+            'state': 'sent',
+            'mark': str(mark),
+            'verification_hash': verification_hash or self.verification_hash,
+            'qr_url': qr_url or self.qr_url,
+            'invoice_id_provider': invoice_id or self.invoice_id_provider,
+            'error_message': False,
+        })
+        self.message_post(body=_(
+            'Το MARK ανακτήθηκε από τον πάροχο χωρίς επανυποβολή: %s', self.mark))
+
+    @api.model
+    def _cron_l10n_gr_prov_retry_failed(self):
+        """Resend failed notes whose table is still open — after a lookup.
+
+        One commit per note: a provider outage halfway through must not roll
+        back the MARKs already obtained.
+        """
+        failed = self.search([('state', 'in', ('draft', 'error'))], order='id')
+        for note in failed:
+            if note._l10n_gr_prov_table_closed():
+                continue
+            note._l10n_gr_prov_retry()
+            self.env['ir.cron']._commit_progress(1)
 
     @api.model
     def _cron_l10n_gr_prov_alert_open(self):
@@ -263,6 +452,7 @@ class L10nGrProvCateringOrder(models.Model):
         POS responsible, pointing at the till's open notes.
         """
         Note = self.env['l10n.gr.prov.catering.order']
+        self._cron_l10n_gr_prov_retry_failed()
         for config in self.env['pos.config'].search(
                 [('l10n_gr_prov_catering_alert_hours', '>', 0)]):
             deadline = fields.Datetime.now() - timedelta(
@@ -276,6 +466,15 @@ class L10nGrProvCateringOrder(models.Model):
                      ('closing_move_id.l10n_gr_prov_mark', '=', False),
                 ('create_date', '<=', deadline),
             ])
+            # Never transmitted, even after the retry above: the waiter's
+            # round is not at AADE at all. Shown at once, not after N hours.
+            # A table already closed is past help (sending now would leave the
+            # note open), so it is not flagged again every hour.
+            failed = Note.search([
+                ('config_id', '=', config.id),
+                ('state', 'in', ('draft', 'error')),
+            ]).filtered(lambda n: not n._l10n_gr_prov_table_closed())
+            notes |= failed
             if not notes:
                 continue
             # Hourly cron, same notes every run — one open activity per till is
@@ -292,15 +491,17 @@ class L10nGrProvCateringOrder(models.Model):
             notes[0].activity_schedule(
                 'mail.mail_activity_data_todo',
                 user_id=user.id,
-                summary=_('%(count)s ανοιχτά Δελτία Παραγγελίας Εστίασης',
+                summary=_('%(count)s Δελτία Παραγγελίας Εστίασης θέλουν ενέργεια',
                           count=len(notes)),
                 note=_(
-                    'Ταμείο %(config)s: %(count)s δελτία παραμένουν ανοιχτά '
-                    'πάνω από %(hours)s ώρες (συνολικά %(total).2f €). Κλείστε '
-                    'τα με το παραστατικό του τραπεζιού ή ακυρώστε τα — μετά '
-                    'τις 24 ώρες ο πάροχος αναστέλλει τη διαβίβαση για όλη την '
-                    'επιχείρηση.',
-                    config=config.name, count=len(notes),
+                    'Ταμείο %(config)s: %(open)s δελτία παραμένουν ανοιχτά '
+                    'πάνω από %(hours)s ώρες και %(failed)s δεν διαβιβάστηκαν '
+                    '(συνολικά %(total).2f €). Κλείστε τα ανοιχτά με το '
+                    'παραστατικό του τραπεζιού ή ακυρώστε τα — μετά τις 24 ώρες '
+                    'ο πάροχος αναστέλλει τη διαβίβαση για όλη την επιχείρηση. '
+                    'Για όσα δεν διαβιβάστηκαν, δείτε το σφάλμα στο δελτίο.',
+                    config=config.name, open=len(notes - failed),
+                    failed=len(failed),
                     hours=config.l10n_gr_prov_catering_alert_hours,
                     total=sum(notes.mapped('amount_total'))))
 
@@ -459,7 +660,7 @@ class L10nGrProvCateringOrder(models.Model):
             'invoiceTypeCode': '380',
             'seriesNumber': self.series or 'ΔΠΕ',
             'serialNumber': self.serial or '1',
-            'invoiceIssueDate': f'{fields.Date.context_today(self)}T00:00:00',
+            'invoiceIssueDate': f'{self.issue_date or fields.Date.context_today(self)}T00:00:00',
             'invoiceCurrencyCode': company.currency_id.name or 'EUR',
             'seller': {
                 'sellerVatIdentifier': Move._ilyda_vat(company.vat),

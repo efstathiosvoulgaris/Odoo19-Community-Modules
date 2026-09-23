@@ -102,19 +102,13 @@ patch(PosStore.prototype, {
 
     /**
      * Money for the round: prorate each line's own net/VAT by the sent qty.
-     * Cancelled items (negative quantity) carry no amounts — the server prices
-     * them off the note that transmitted them, so the credit matches to the
-     * cent even when the orderline no longer exists.
+     * Only additions — anything that went down is found by the server's
+     * reconciliation against what was transmitted (_grReconcile).
      */
     _grCateringLines(order, changes) {
         const lines = [];
         for (const change of changes) {
-            if (change.quantity < 0) {
-                lines.push({
-                    name: change.name,
-                    prep_key: change.prep_key,
-                    quantity: change.quantity,
-                });
+            if (change.quantity <= 0) {
                 continue;
             }
             const line = order.lines.find((l) => l.uuid === change.uuid);
@@ -142,6 +136,57 @@ patch(PosStore.prototype, {
             });
         }
         return lines;
+    },
+
+    /**
+     * Every line as it stands now. The server compares it with what AADE
+     * already holds per line and issues the «αρνητικό» note for the
+     * difference: removed items, cut quantities, discounts and treats alike.
+     */
+    _grSnapshot(order) {
+        return order.getOrderlines().map((line) => ({
+            prep_key: line.preparationKey,
+            name: line.getFullProductName(),
+            quantity: line.getQuantity(),
+            net: line.priceExcl,
+            vat_amount: line.priceIncl - line.priceExcl,
+        }));
+    },
+
+    async _grReconcile(order) {
+        if (!this._grCateringEnabled() || !this.config.l10n_gr_prov_catering_auto_negative) {
+            return;
+        }
+        let lines;
+        try {
+            lines = this._grSnapshot(order);
+        } catch (e) {
+            console.warn("[GR 8.6] could not read the order lines", e);
+            return;
+        }
+        await this._grCallCatering(
+            "l10n_gr_prov_reconcile",
+            {
+                config_id: this.config.id,
+                table_aa: this._grTableName(order),
+                pos_order_uuid: order.uuid,
+                lines,
+            },
+            _t("Το αρνητικό Δελτίο Παραγγελίας δεν στάλθηκε — δείτε τα Δελτία Παραγγελίας Εστίασης.")
+        );
+    },
+
+    /**
+     * Before the payment screen: a line deleted after it was sent, or a
+     * discount given at the table, is not a «change» to Odoo, so no kitchen
+     * send happens and the negative note would never be issued.
+     */
+    async pay() {
+        const order = this.getOrder();
+        if (order && !order.isRefund) {
+            await this._grReconcile(order);
+        }
+        return await super.pay(...arguments);
     },
 
     /** getName() honours a renamed table (pos_community_addons). */
@@ -180,6 +225,50 @@ patch(PosStore.prototype, {
         }
     },
 
+    /**
+     * Tables merged, or an order transferred to another table. Odoo moves
+     * each line into the destination order under a new uuid and deletes the
+     * source order, so the notes already transmitted for the source would be
+     * closed by nothing. Record which line went where, then let the server
+     * move the notes along with the order.
+     */
+    async _mergeLines(orphanLine, destinationLine, destOrder, sourceOrder, mergedCourses) {
+        const oldKey = orphanLine.preparationKey;
+        const uuid = await super._mergeLines(...arguments);
+        const moved = destOrder.lines.find((l) => l.uuid === uuid);
+        if (this._grMergeKeys && oldKey && moved) {
+            this._grMergeKeys[oldKey] = moved.preparationKey;
+        }
+        return uuid;
+    },
+
+    async mergeOrders(sourceOrder, destOrder) {
+        const sourceUuid = sourceOrder.uuid;
+        this._grMergeKeys = {};
+        let result;
+        try {
+            result = await super.mergeOrders(...arguments);
+        } finally {
+            const keys = this._grMergeKeys;
+            this._grMergeKeys = null;
+            if (this._grCateringEnabled() && destOrder?.uuid && sourceUuid !== destOrder.uuid) {
+                await this._grCallCatering(
+                    "l10n_gr_prov_relink",
+                    {
+                        source_uuid: sourceUuid,
+                        dest_uuid: destOrder.uuid,
+                        table_aa: this._grTableName(destOrder),
+                        keys,
+                    },
+                    _t(
+                        "Τα Δελτία Παραγγελίας δεν μεταφέρθηκαν στο νέο τραπέζι — δείτε τα Δελτία Παραγγελίας Εστίασης."
+                    )
+                );
+            }
+        }
+        return result;
+    },
+
     async sendOrderInPreparation(order, opts = {}) {
         const cancelled = Boolean(opts.cancelled);
         let changes = [];
@@ -194,7 +283,6 @@ patch(PosStore.prototype, {
         // table is closed by a «Καθολική Ακύρωση 8.6», so nothing new is issued
         // for the round that is being thrown away.
         const positive = changes.filter((l) => l.quantity > 0);
-        const negative = changes.filter((l) => l.quantity < 0);
 
         await super.sendOrderInPreparation(order, opts);
 
@@ -230,13 +318,7 @@ patch(PosStore.prototype, {
             );
         }
         // Separate document by law: normal and Rec Type 7 rows never share a
-        // note (guide §4).
-        if (negative.length && this.config.l10n_gr_prov_catering_auto_negative) {
-            await this._grCallCatering(
-                "l10n_gr_prov_issue_note",
-                { ...base, kind: "negative", lines: negative },
-                failure
-            );
-        }
+        // note (guide §4), so the reductions go out as their own note.
+        await this._grReconcile(order);
     },
 });
