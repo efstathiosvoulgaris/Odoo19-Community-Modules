@@ -12,7 +12,8 @@ from datetime import datetime, timezone
 import requests
 
 from odoo import api, fields, models, _
-from odoo.exceptions import UserError
+from odoo.exceptions import AccessError, UserError
+from odoo.modules import module as odoo_module
 
 from odoo.addons.l10n_gr_provider_ilyda.models.account_move import (
     IlydaClient, TIMEOUT, _r2,
@@ -20,9 +21,15 @@ from odoo.addons.l10n_gr_provider_ilyda.models.account_move import (
 from .eft_driver import (
     MegEftPosDriver, POS_PROTOCOLS, RESPONSE_CODES, PAYMENT_METHODS,
     PROTOCOLS_NEED_HOST, PROTOCOLS_NEED_API_KEY, PROTOCOLS_NEED_CLIENT,
+    DriverNoAnswer, DriverRejected, check_driver_url, check_driver_url_rights,
 )
 
 _logger = logging.getLogger(__name__)
+
+# Answers that mean the card was NOT charged — safe to charge again. Anything
+# else short of APPROVED (UNKNOWN, COMMUNICATION_ERROR, ACTION_REQUIRED, no
+# code at all) leaves the outcome open until the driver's pending list says.
+NOT_CHARGED_CODES = ('DECLINED', 'CANCELLED', 'FAILED', 'BUSY', 'MAX_TRANSACTIONS')
 
 # NSPProtocol enum (Α.1155 doc §7.7) — decides how the provider constructs
 # the signature for the specific terminal vendor.
@@ -132,6 +139,23 @@ class EftTerminal(models.Model):
     needs_host = fields.Boolean(compute='_compute_protocol_needs')
     needs_api_key = fields.Boolean(compute='_compute_protocol_needs')
     needs_client = fields.Boolean(compute='_compute_protocol_needs')
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        if any(vals.get('driver_url') for vals in vals_list):
+            check_driver_url_rights(self.env)
+        return super().create(vals_list)
+
+    def write(self, vals):
+        if 'driver_url' in vals and any(
+                (t.driver_url or False) != (vals['driver_url'] or False) for t in self):
+            check_driver_url_rights(self.env)
+        return super().write(vals)
+
+    @api.constrains('driver_url')
+    def _check_driver_url(self):
+        for terminal in self:
+            check_driver_url(terminal.driver_url)
 
     @api.depends('pos_protocol')
     def _compute_protocol_needs(self):
@@ -244,13 +268,33 @@ class EftPayment(models.Model):
              'Προσοχή: η προεπιλογή δεν υποστηρίζεται από όλους τους NSP — αν '
              'δεν υποστηρίζεται, το τερματικό εμφανίζει όλες τις επιλογές και '
              'ο πελάτης επιλέγει επιτόπου.')
+    # charging: the request left for the terminal and no definite answer came
+    # back. The card may or may not have been charged; the record stays here
+    # until «Ανάκτηση Εκκρεμούς» settles it, and nothing may charge it again.
     state = fields.Selection([
         ('draft', 'Πρόχειρη'),
         ('signed', 'Με Υπογραφή'),
+        ('charging', 'Χρέωση σε εξέλιξη'),
         ('paid', 'Πληρωμένη'),
         ('submitted', 'Διαβιβασμένη'),
         ('cancelled', 'Ακυρωμένη'),
     ], default='draft', string='Κατάσταση', required=True, copy=False)
+    retrograde = fields.Boolean(
+        string='Ετεροχρονισμένη', readonly=True, copy=False,
+        help='Η υπογραφή ζητήθηκε με το ΜΑΡΚ ενός ήδη διαβιβασμένου '
+             'παραστατικού (Α.1155 §4): η πληρωμή διαβιβάζεται χωριστά.')
+    submit_error = fields.Text(
+        string='Σφάλμα Διαβίβασης', readonly=True, copy=False,
+        help='Η κάρτα χρεώθηκε, αλλά η διαβίβαση της πληρωμής απέτυχε. '
+             'Η χρέωση παραμένει καταχωρισμένη — «Επανάληψη Διαβίβασης».')
+    overcharged = fields.Boolean(
+        string='Υπέρβαση Ποσού', readonly=True, copy=False,
+        help='Το τερματικό χρέωσε περισσότερα από όσα καλύπτει η υπογραφή. '
+             'Η πληρωμή δεν διαβιβάζεται· ακυρώστε τη (Void) και χρεώστε ξανά.')
+    voided_at = fields.Datetime(
+        string='Ακυρώθηκε στο Τερματικό', readonly=True, copy=False,
+        help='Η χρέωση αντιστράφηκε στο τερματικό (Void). Αν η ακύρωση της '
+             'υπογραφής απέτυχε μετά, δεν ξαναγίνεται Void στην επόμενη προσπάθεια.')
 
     # Signature (InvoiceSignature) as returned by the provider
     signature = fields.Text(string='Υπογραφή Παρόχου', readonly=True, copy=False)
@@ -383,6 +427,19 @@ class EftPayment(models.Model):
     def _client(self):
         return EftIlydaClient(self.move_id.company_id)
 
+    def _commit(self):
+        """Make everything so far durable NOW.
+
+        Called around the calls that move money or mint signatures. Whatever
+        fails afterwards — the provider rejecting the document, a timeout, the
+        worker being killed — must never roll back the record of a charge the
+        terminal already made, or of a signature the provider already issued:
+        losing it means the next click charges the card again. (Skipped under
+        the test runner, which forbids commits.)
+        """
+        if not odoo_module.current_test:
+            self.env.cr.commit()
+
     def action_request_signature(self):
         """Ask the provider for the payment signature (Α.1155 §6.1).
 
@@ -448,6 +505,7 @@ class EftPayment(models.Model):
             'signature_net': sig.get('netAmount') or 0.0,
             'signature_vat': sig.get('vatAmount') or 0.0,
             'signature_gross': sig.get('grossAmount') or 0.0,
+            'retrograde': bool(move.l10n_gr_prov_mark),
             'state': 'signed',
         })
         move.message_post(body=_(
@@ -455,6 +513,9 @@ class EftPayment(models.Model):
             '%(terminal)s (λήξη %(expiry)s).',
             amount=f'{self.amount:.2f}', terminal=terminal.display_name,
             expiry=self.signature_expiry or '—'))
+        # The provider holds this signature now; an unused one turns into an
+        # «Ανοιχτό Παραστατικό» at AADE after 24h, so we must not lose it.
+        self._commit()
         # With a driver, charge the card straight away — the signature exists
         # for exactly this and expires. Otherwise keep the dialog open so the
         # cashier can charge the terminal by hand and type the id.
@@ -601,13 +662,18 @@ class EftPayment(models.Model):
         if paid in (requested, _r2(requested + tip)):
             return
         if paid > requested:
-            # Over the signature's ceiling — the provider will reject the
-            # document, so surface it now while a Void is still the answer.
-            raise UserError(_(
-                'Το τερματικό χρέωσε %(paid)s ενώ ζητήθηκαν %(asked)s. Το '
-                'επιπλέον ποσό δεν καλύπτεται από την υπογραφή — ακυρώστε τη '
-                'χρέωση στο τερματικό.',
+            # Over the signature's ceiling — the provider would reject the
+            # document. Never raise here: the charge is real and recorded, and
+            # a raise would roll that record back. Flag it; the payment is not
+            # submitted, and «Ακύρωση Υπογραφής» voids it on the terminal.
+            self.overcharged = True
+            self.move_id.message_post(body=_(
+                'Α.1155: το τερματικό χρέωσε %(paid)s ενώ ζητήθηκαν %(asked)s. '
+                'Το επιπλέον ποσό δεν καλύπτεται από την υπογραφή — η πληρωμή '
+                'ΔΕΝ διαβιβάζεται. Ακυρώστε την (επιστρέφονται τα χρήματα στην '
+                'κάρτα) και χρεώστε ξανά το σωστό ποσό.',
                 paid=f'{paid:.2f}', asked=f'{requested:.2f}'))
+            return
         self.amount = paid
         self.move_id.message_post(body=_(
             'Α.1155: το τερματικό χρέωσε %(paid)s αντί για %(asked)s — η '
@@ -660,23 +726,61 @@ class EftPayment(models.Model):
             request.update(self._original_transaction_block())
         driver = MegEftPosDriver(self.move_id.company_id, self.terminal_id)
         device = self.terminal_id._l10n_gr_prov_pos_device()
-        data = (driver.refund if is_refund else driver.sale)(device, request)
+        # From here the card may be charged. Say so durably BEFORE the call, so
+        # a worker killed mid-call leaves «charging», not «signed» — which
+        # would offer a second charge.
+        self.write({'state': 'charging', 'driver_response_code': False,
+                    'driver_message': False})
+        self._commit()
+        try:
+            data = (driver.refund if is_refund else driver.sale)(device, request)
+        except DriverRejected as e:
+            self.write({'state': 'signed', 'driver_message': str(e)})
+            self._commit()
+            raise
+        except DriverNoAnswer as e:
+            return self._charge_outcome_unknown(str(e))
+        return self._apply_charge_result(data)
+
+    def _apply_charge_result(self, data):
+        """Record what the terminal answered and move on. Shared by a charge
+        and by a recovery; the result is committed before anything that can
+        fail runs."""
         code = self._store_driver_result(data)
+        if code == 'APPROVED':
+            self.state = 'paid'
+        elif code in NOT_CHARGED_CODES:
+            self.state = 'signed'
+        else:
+            self._commit()
+            return self._charge_outcome_unknown(self.driver_message or code or '')
+        self._commit()
         if code != 'APPROVED':
-            # No raise: rolling back would throw away ecrReferenceNumber, which
-            # is the only handle for recovering an interrupted transaction.
             self.move_id.message_post(body=_(
                 'Α.1155: η συναλλαγή κάρτας δεν εγκρίθηκε (%(code)s) %(msg)s',
-                code=code or '—', msg=self.driver_message or ''))
+                code=code, msg=self.driver_message or ''))
             return self._reopen()
         self._reconcile_paid_amount()
         self.move_id.message_post(body=_(
             'Α.1155: %(kind)s %(amount)s εγκρίθηκε — έγκριση τράπεζας '
             '%(auth)s, NSP ref %(nsp)s.',
-            kind=_('επιστροφή') if is_refund else _('χρέωση κάρτας'),
+            kind=(_('επιστροφή') if self.move_id.move_type == 'out_refund'
+                  else _('χρέωση κάρτας')),
             amount=f'{self.amount:.2f}', auth=self.bank_auth_code or '—',
             nsp=self.nsp_reference or '—'))
-        return self.action_complete()
+        self._commit()
+        return self._submit()
+
+    def _charge_outcome_unknown(self, reason):
+        """No definite answer: the card may have been charged. Stay in
+        «charging» — no second charge until recovery settles it."""
+        self.write({'state': 'charging', 'driver_message': reason or False})
+        self.move_id.message_post(body=_(
+            'Α.1155: άγνωστη έκβαση της χρέωσης %(amount)s (%(reason)s). Η '
+            'κάρτα ίσως χρεώθηκε — ΜΗΝ χρεώσετε ξανά· πατήστε «Ανάκτηση '
+            'Εκκρεμούς».', amount=f'{self.amount:.2f}', reason=reason or '—'))
+        self._commit()
+        return self._reopen()
 
     def action_preload_terminal(self):
         """Push the signature to the terminal for the customer to pay later.
@@ -718,6 +822,7 @@ class EftPayment(models.Model):
             'preloaded_at': fields.Datetime.now(),
             'ecr_reference': data.get('ecrReferenceNumber') or self.ecr_reference,
         })
+        self._commit()  # the only handle on a charge the customer makes later
         move.message_post(body=_(
             'Α.1155: προφορτώθηκε στο τερματικό %(terminal)s πληρωμή '
             '%(amount)s. Μετά την πληρωμή από τον πελάτη, χρησιμοποιήστε την '
@@ -761,30 +866,75 @@ class EftPayment(models.Model):
         state; the driver keeps it pending and can still report the outcome.
         """
         self.ensure_one()
+        if self.state not in ('signed', 'charging'):
+            raise UserError(_('Δεν υπάρχει εκκρεμής χρέωση για ανάκτηση.'))
+        found = self._find_pending()
+        if not found:
+            if self.state == 'charging':
+                # The driver keeps every transaction it started; nothing there
+                # means nothing was charged, and charging again is safe.
+                self.write({'state': 'signed', 'driver_response_code': False})
+                self.move_id.message_post(body=_(
+                    'Α.1155: ο driver δεν βρήκε τη συναλλαγή %(amount)s — η '
+                    'κάρτα δεν χρεώθηκε. Μπορείτε να χρεώσετε ξανά.',
+                    amount=f'{self.amount:.2f}'))
+                self._commit()
+                return self._reopen()
+            raise UserError(_(
+                'Ο driver δεν βρήκε εκκρεμή συναλλαγή — ο πελάτης δεν έχει '
+                'πληρώσει ακόμη στο τερματικό.'))
+        return self._apply_charge_result(found[0])
+
+    def _find_pending(self):
+        """This payment's transaction in the driver's pending list, or [].
+
+        By reference when we have one. Without one (the answer carrying it was
+        lost) the terminal's whole list is searched, and an entry is adopted
+        only when its amount is this payment's — never «the only one there»,
+        which may be another till's sale or an unrelated preload.
+        """
         driver = MegEftPosDriver(self.move_id.company_id, self.terminal_id)
         device = self.terminal_id._l10n_gr_prov_pos_device()
         if self.ecr_reference:
-            found = driver.pending_by_ecr(device, self.ecr_reference)
-        elif self.nsp_reference:
-            found = driver.pending_by_nsp(device, self.nsp_reference)
-        else:
-            found = driver.pending_all(device)
-            if len(found) > 1:
-                raise UserError(_(
-                    'Το τερματικό έχει %s εκκρεμείς συναλλαγές — δεν μπορεί να '
-                    'ταυτοποιηθεί η σωστή. Ελέγξτε το τερματικό.', len(found)))
-        if not found:
+            return driver.pending_by_ecr(device, self.ecr_reference)
+        if self.nsp_reference:
+            return driver.pending_by_nsp(device, self.nsp_reference)
+        wanted = {_r2(self.amount), _r2(self.amount + self.tip_amount)}
+        found = [
+            t for t in driver.pending_all(device)
+            if _r2(t.get('originalAmount') or t.get('amount')
+                   or t.get('paidAmount') or 0) in wanted
+        ]
+        if len(found) > 1:
             raise UserError(_(
-                'Ο driver δεν βρήκε εκκρεμή συναλλαγή — η χρέωση δεν '
-                'ολοκληρώθηκε στο τερματικό.'))
-        code = self._store_driver_result(found[0])
-        if code != 'APPROVED':
-            return self._reopen()
-        self._reconcile_paid_amount()
+                'Το τερματικό έχει %s εκκρεμείς συναλλαγές με το ίδιο ποσό — δεν '
+                'μπορεί να ταυτοποιηθεί η σωστή. Ελέγξτε το τερματικό.', len(found)))
+        return found
+
+    def action_mark_not_charged(self):
+        """Manager override for «charging» when recovery cannot run (driver
+        gone, terminal replaced): someone checked the terminal's own journal
+        and vouches that the card was not charged. Logged by name."""
+        self.ensure_one()
+        if not self.env.user.has_group('account.group_account_manager'):
+            raise AccessError(_('Μόνο υπεύθυνος λογιστηρίου.'))
+        if self.state != 'charging':
+            raise UserError(_('Η πληρωμή δεν είναι σε εκκρεμή χρέωση.'))
+        self.write({'state': 'signed', 'driver_response_code': False})
         self.move_id.message_post(body=_(
-            'Α.1155: ανακτήθηκε εγκεκριμένη χρέωση %(amount)s — NSP ref '
-            '%(nsp)s.', amount=f'{self.amount:.2f}', nsp=self.nsp_reference or '—'))
-        return self.action_complete()
+            'Α.1155: ο/η %(user)s επιβεβαίωσε χειροκίνητα ότι η κάρτα ΔΕΝ '
+            'χρεώθηκε για την πληρωμή %(amount)s.',
+            user=self.env.user.name, amount=f'{self.amount:.2f}'))
+        return self._reopen()
+
+    def _check_preload_cleared(self):
+        """A preload the customer can still pay must not outlive its
+        signature: cancelling here does nothing on the terminal."""
+        if self._find_pending():
+            raise UserError(_(
+                'Η προφόρτωση εκκρεμεί ακόμη στο τερματικό — ο πελάτης μπορεί να '
+                'την πληρώσει. Ακυρώστε τη στο τερματικό ή πατήστε «Ανάκτηση '
+                'Εκκρεμούς» αν πληρώθηκε, και δοκιμάστε ξανά.'))
 
     def _reopen(self):
         return {
@@ -808,15 +958,58 @@ class EftPayment(models.Model):
         self.ensure_one()
         if self.state != 'signed':
             raise UserError(_('Χρειάζεται πρώτα υπογραφή παρόχου.'))
+        # Manual terminal: the cashier charged it by hand and types the id.
+        # The checks still run here, because they are what a hand-typed id
+        # has in place of the driver's own refusal to use a bad signature.
         self._check_signature_usable()
         if not self.transaction_id:
             raise UserError(_(
                 'Συμπληρώστε την Ταυτότητα Συναλλαγής από το τερματικό.'))
         self.state = 'paid'
-        if self.move_id.l10n_gr_prov_mark:
-            self._submit_retrograde()
-        else:
-            self._submit_realtime()
+        self._commit()
+        return self._submit()
+
+    def action_retry_submit(self):
+        """«Επανάληψη Διαβίβασης»: the charge is recorded, the submission
+        failed — try it again. Never touches the terminal."""
+        self.ensure_one()
+        if self.state != 'paid':
+            raise UserError(_('Διαβιβάζονται μόνο πληρωμένες χρεώσεις.'))
+        return self._submit()
+
+    def _submit(self):
+        """Tie a recorded charge to the document at the provider.
+
+        Never raises: by the time this runs the money has moved and is
+        committed. A failure is stored on the payment (and in the chatter) and
+        the payment stays «paid», retryable. No signature checks either — the
+        signature was spent on the terminal the moment the card was charged,
+        and refusing now would only strand a real charge.
+        """
+        self.ensure_one()
+        if self.overcharged:
+            return self._reopen()
+        try:
+            with self.env.cr.savepoint():
+                if self.retrograde or self.move_id.l10n_gr_prov_mark:
+                    self._submit_retrograde()
+                else:
+                    self._submit_realtime()
+        except Exception as e:
+            _logger.exception('Α.1155 submission failed for %s', self.display_name)
+            self.submit_error = str(e)
+            self.move_id.message_post(body=_(
+                'Α.1155: η χρέωση %(amount)s καταχωρίστηκε, αλλά η διαβίβαση '
+                'απέτυχε: %(error)s — «Επανάληψη Διαβίβασης» από την πληρωμή.',
+                amount=f'{self.amount:.2f}', error=e))
+            return self._reopen()
+        if self.state == 'submitted':
+            self.submit_error = False
+            return False
+        # Real-time send that did not reach the provider: the move carries the
+        # reason (and the retry cron will pick the document up).
+        self.submit_error = self.move_id.l10n_gr_prov_error or False
+        return self._reopen()
 
     def _payment_method_dict(self):
         return {
@@ -866,9 +1059,8 @@ class EftPayment(models.Model):
         move = self.move_id
         self._sync_move_payment_line()
         move.action_l10n_gr_prov_send()
-        # sent or queued (TF-2) both mean the provider holds the payment data
-        if move.l10n_gr_prov_state in ('sent', 'queued'):
-            self.state = 'submitted'
+        # sent or queued (TF-2) both mean the provider holds the payment data;
+        # account.move.write marks every paid payment on the move submitted.
 
     def _sync_move_payment_line(self):
         """Mirror this payment onto the move's myDATA type-7 payment line, so
@@ -887,15 +1079,22 @@ class EftPayment(models.Model):
         if line:
             line[0].write(vals)
             return
-        # adopt a hand-made POS line without an EFT link (same amount) —
-        # e.g. the default seeded line the user switched to type 7
+        # Adopt a card line without an EFT link — e.g. the default seeded line
+        # the user switched to type 7 — whatever its amount. Matching on the
+        # amount failed exactly when the terminal charged less than asked, and
+        # appended a second line: the document then declared the unsigned
+        # original PLUS the charge. What the terminal did not cover stays on
+        # its own unsigned card line, for another charge or another method.
         orphan = move.l10n_gr_prov_payment_ids.filtered(
-            lambda p: p.payment_type == '7' and not p.eft_payment_id
-            and _r2(p.amount) == _r2(self.amount))
-        if orphan:
-            orphan[0].write(vals)
-        else:
+            lambda p: p.payment_type == '7' and not p.eft_payment_id)[:1]
+        if not orphan:
             move.l10n_gr_prov_payment_ids = [(0, 0, vals)]
+            return
+        rest = _r2(orphan.amount - self.amount)
+        orphan.write(vals)
+        if rest > 0:
+            move.l10n_gr_prov_payment_ids = [(0, 0, {
+                'payment_type': '7', 'amount': rest})]
 
     def action_cancel(self):
         """Cancel the provider signature (customer paid cash, terminal failed,
@@ -904,15 +1103,39 @@ class EftPayment(models.Model):
         if self.state == 'submitted':
             raise UserError(_(
                 'Η πληρωμή έχει διαβιβαστεί — η υπογραφή δεν ακυρώνεται.'))
-        if self.driver_response_code == 'APPROVED' and self.nsp_reference:
-            # The card was actually charged — give the money back first.
-            self._void_terminal()
-        if self.state in ('signed', 'paid') and self.signature:
+        if self.state == 'charging':
+            raise UserError(_(
+                'Η έκβαση της χρέωσης είναι άγνωστη — πατήστε πρώτα «Ανάκτηση '
+                'Εκκρεμούς».'))
+        move = self.move_id
+        linked = move.l10n_gr_prov_payment_ids.filtered(
+            lambda l: l.eft_payment_id == self)
+        if (not self.retrograde and linked
+                and move.l10n_gr_prov_state in ('sent', 'queued', 'offline')):
+            # The provider holds the document WITH this payment in it: voiding
+            # the charge now would leave AADE declaring money that went back.
+            raise UserError(_(
+                'Το παραστατικό έχει διαβιβαστεί με αυτή την πληρωμή — δεν '
+                'ακυρώνεται. Εκδώστε πιστωτικό.'))
+        cancel_signature = self.state in ('signed', 'paid') and self.signature
+        # Everything that can refuse runs BEFORE the void: a void the terminal
+        # approved cannot be rolled back by a raise that follows it.
+        if cancel_signature:
             if not self.cancel_reason:
                 raise UserError(_('Επιλέξτε Αιτία Ακύρωσης.'))
             if self.cancel_reason == 'OTHER' and not self.cancel_reason_text:
                 raise UserError(_(
                     'Για αιτία «Άλλη» απαιτείται η Περιγραφή Αιτίας.'))
+        if self.preloaded_at and not self.driver_response_code:
+            self._check_preload_cleared()
+        if (self.driver_response_code == 'APPROVED' and self.nsp_reference
+                and not self.voided_at):
+            # The card was actually charged — give the money back first, and
+            # record that it went back before anything else can fail.
+            self._void_terminal()
+            self.voided_at = fields.Datetime.now()
+            self._commit()
+        if cancel_signature:
             data = self._client().cancel_signature({
                 'signature': self.signature,
                 'signatureCancelReason': self.cancel_reason,
@@ -927,6 +1150,10 @@ class EftPayment(models.Model):
                 'Α.1155: ακυρώθηκε υπογραφή πληρωμής %(amount)s (%(reason)s).',
                 amount=f'{self.amount:.2f}',
                 reason=dict(CANCEL_REASONS)[self.cancel_reason]))
+        # The document must not go out declaring a voided transaction under a
+        # cancelled signature. The line stays, unsigned: sending the document
+        # asks again how that amount was paid.
+        linked.write({'eft_payment_id': False, 'transaction_id': False})
         self.state = 'cancelled'
 
     def unlink(self):

@@ -16,8 +16,10 @@ class AccountMove(models.Model):
         transaction id); the dialog then re-triggers this send with the
         signature attached, which passes straight through."""
         if len(self) == 1 and self.state == 'posted' and not self.l10n_gr_prov_mark:
+            # 'charging' too: a charge of unknown outcome must be settled
+            # before the document goes out, or it goes out without it.
             pending = self.l10n_gr_prov_eft_payment_ids.filtered(
-                lambda p: p.state in ('draft', 'signed'))
+                lambda p: p.state in ('draft', 'signed', 'charging'))
             card_lines = self.l10n_gr_prov_payment_ids.filtered(
                 lambda p: p.payment_type == '7' and not p.eft_payment_id)
             if pending:
@@ -35,6 +37,21 @@ class AccountMove(models.Model):
                     },
                 }
         return super().action_l10n_gr_prov_send()
+
+    def write(self, vals):
+        """Once the provider holds the document, every card payment that was
+        in it is submitted — not only the one whose dialog triggered the send.
+        With two cards on one document, the first used to stay «paid» forever
+        and could still be voided after AADE had it. Covers a later cron retry
+        or recovery as well as the dialog."""
+        res = super().write(vals)
+        if vals.get('l10n_gr_prov_state') in ('sent', 'queued'):
+            for move in self:
+                in_payload = move.l10n_gr_prov_payment_ids.eft_payment_id
+                in_payload.filtered(
+                    lambda p: p.state == 'paid' and not p.retrograde
+                ).write({'state': 'submitted', 'submit_error': False})
+        return res
 
     def _l10n_gr_prov_ilyda_build_payload(self):
         """Enrich type-7 payment methods with the Α.1155 signature fields

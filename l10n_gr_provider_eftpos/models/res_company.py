@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
-from odoo import fields, models
+from odoo import api, fields, models
+
+from .eft_driver import check_driver_url, check_driver_url_rights
 
 
 class ResCompany(models.Model):
@@ -29,6 +31,18 @@ class ResCompany(models.Model):
         help='Το ΑΦΜ με το οποίο εκδόθηκε το License Key. Στα δοκιμαστικά '
              'κλειδιά αυτό ΔΕΝ είναι πάντα το ΑΦΜ της εταιρείας — η ΙΛΥΔΑ '
              'ορίζει ποιο ΑΦΜ περνά στον driver. Κενό = το ΑΦΜ της εταιρείας.')
+
+    def write(self, vals):
+        url = vals.get('l10n_gr_prov_eft_driver_url')
+        if 'l10n_gr_prov_eft_driver_url' in vals and any(
+                (c.l10n_gr_prov_eft_driver_url or False) != (url or False) for c in self):
+            check_driver_url_rights(self.env)
+        return super().write(vals)
+
+    @api.constrains('l10n_gr_prov_eft_driver_url')
+    def _check_l10n_gr_prov_eft_driver_url(self):
+        for company in self:
+            check_driver_url(company.l10n_gr_prov_eft_driver_url)
 
     def _l10n_gr_prov_eft_driver_vat(self):
         """Bare ΑΦΜ the driver licence is bound to."""

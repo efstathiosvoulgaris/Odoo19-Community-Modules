@@ -20,7 +20,7 @@ import logging
 import requests
 
 from odoo import _
-from odoo.exceptions import UserError
+from odoo.exceptions import AccessError, UserError, ValidationError
 
 _logger = logging.getLogger(__name__)
 
@@ -28,6 +28,33 @@ TIMEOUT = 210  # the terminal itself waits up to 180s for the cardholder
 
 # Never written to the log. 'clientSecter' is the driver's own spelling.
 SECRET_KEYS = frozenset({'licenseKey', 'apiKey', 'clientSecret', 'clientSecter', 'otp'})
+
+
+class DriverRejected(UserError):
+    """The request never became a transaction: the driver could not be
+    reached, or refused the request (licence, body, auth). Nothing was
+    charged, so the caller may safely go back and try again."""
+
+
+class DriverNoAnswer(UserError):
+    """The request left, but no usable answer came back (read timeout, reset
+    connection, server error). The terminal MAY have charged the card: the
+    outcome is unknown until the driver's pending list says otherwise."""
+
+
+def check_driver_url(url):
+    if url and not url.lower().startswith(('http://', 'https://')):
+        raise ValidationError(_(
+            'Η διεύθυνση του MegEftPos Driver πρέπει να ξεκινά με http:// ή https://.'))
+
+
+def check_driver_url_rights(env):
+    """Every driver call carries the licence key, API keys and Viva secrets:
+    whoever sets the address decides where they go. Settings admins only."""
+    if not env.su and not env.user.has_group('base.group_system'):
+        raise AccessError(_(
+            'Μόνο οι διαχειριστές ρυθμίσεων αλλάζουν τη διεύθυνση του '
+            'MegEftPos Driver.'))
 
 
 def redact(value):
@@ -134,22 +161,49 @@ class MegEftPosDriver:
         # Transport and parsing are caught separately: json() raises ValueError,
         # and so does a bad Basic Auth credential (UnicodeEncodeError) — sharing
         # one handler leaves `resp` unbound on the second.
+        # Whether money may have moved decides everything downstream, so the
+        # failure is classified: a connection that never opened, or a request
+        # the driver answered with a client error, charged nothing; anything
+        # after the request left may have.
         try:
             resp = requests.post(url, json=payload, auth=self.auth, timeout=TIMEOUT)
-            resp.raise_for_status()
-        except requests.RequestException as e:
-            raise UserError(_(
-                'Ο MegEftPos Driver δεν απαντά (%(url)s): %(err)s',
+        except requests.ConnectTimeout as e:
+            raise DriverRejected(_(
+                'Ο MegEftPos Driver δεν απαντά (%(url)s): %(err)s', url=url, err=e))
+        except requests.ConnectionError as e:
+            if 'NewConnectionError' in repr(e) or 'Failed to establish' in str(e):
+                raise DriverRejected(_(
+                    'Ο MegEftPos Driver δεν απαντά (%(url)s): %(err)s', url=url, err=e))
+            raise DriverNoAnswer(_(
+                'Η σύνδεση με τον MegEftPos Driver διακόπηκε (%(url)s): %(err)s',
                 url=url, err=e))
+        except requests.RequestException as e:
+            raise DriverNoAnswer(_(
+                'Ο MegEftPos Driver δεν απάντησε έγκαιρα (%(url)s): %(err)s',
+                url=url, err=e))
+        if resp.status_code >= 500:
+            raise DriverNoAnswer(_(
+                'Σφάλμα διακομιστή από τον MegEftPos Driver (%(url)s): HTTP %(code)s',
+                url=url, code=resp.status_code))
+        if resp.status_code >= 400 and not resp.headers.get(
+                'Content-Type', '').startswith('application/json'):
+            raise DriverRejected(_(
+                'Ο MegEftPos Driver απέρριψε το αίτημα (%(url)s): HTTP %(code)s',
+                url=url, code=resp.status_code))
         try:
             data = resp.json()
         except ValueError:
-            # Not JSON. Usually the Windows HTTP stack answering instead of the
-            # driver — e.g. «Invalid Hostname» when the URL uses 127.0.0.1 but
-            # rest.server.host is localhost. Show it: the body names the cause.
-            raise UserError(_(
-                'Μη αναγνώσιμη απάντηση από τον MegEftPos Driver (%(url)s): '
-                '%(body)s', url=url, body=(resp.text or '')[:300]))
+            # Not JSON: usually the Windows HTTP stack answering instead of the
+            # driver. Name the known cause, but never echo the body — the URL is
+            # user-set, and echoing what it returns turns this into a probe.
+            if 'Invalid Hostname' in (resp.text or ''):
+                raise DriverRejected(_(
+                    'Ο MegEftPos Driver δεν δέχεται αυτή τη διεύθυνση (%(url)s): '
+                    'το rest.server.host του δεν ταιριάζει με το URL — ορίστε '
+                    'το σε «+».', url=url))
+            raise DriverRejected(_(
+                'Η διεύθυνση %(url)s δεν απάντησε ως MegEftPos Driver '
+                '(HTTP %(code)s, όχι JSON).', url=url, code=resp.status_code))
         _logger.info('MegEftPos %s response: %s', path, redact(data))
         return data
 
@@ -162,7 +216,9 @@ class MegEftPosDriver:
         """
         error = (data or {}).get('error') or {}
         if error.get('errorLevel') == 'EL_ERROR':
-            raise UserError(_(
+            # No transaction was produced (transaction() only lands here when
+            # the data block is empty), so nothing was charged.
+            raise DriverRejected(_(
                 'MegEftPos: %(code)s %(msg)s',
                 code=error.get('errorCode') or '',
                 msg=error.get('errorMessage') or ''))
