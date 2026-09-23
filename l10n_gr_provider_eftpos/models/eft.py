@@ -255,7 +255,7 @@ class EftPayment(models.Model):
         domain="[('move_type', 'in', ('out_invoice', 'out_refund')), ('state', '=', 'posted')]")
     company_id = fields.Many2one(
         'res.company', compute='_compute_company_id', store=True, index=True)
-    currency_id = fields.Many2one('res.currency', compute='_compute_company_id')
+    currency_id = fields.Many2one('res.currency', compute='_compute_currency_id')
     move_type = fields.Selection(related='move_id.move_type')
     partner_id = fields.Many2one(related='move_id.partner_id', string='Πελάτης')
     terminal_id = fields.Many2one(
@@ -408,12 +408,17 @@ class EftPayment(models.Model):
                 pay.state == 'signed'
                 and pay.signature_expiry and pay.signature_expiry < now)
 
-    @api.depends('move_id.company_id', 'move_id.currency_id', 'terminal_id.company_id')
+    # Two methods, not one: company_id is stored and currency_id is not, and
+    # Odoo 19 warns when one compute feeds both.
+    @api.depends('move_id.company_id', 'terminal_id.company_id')
     def _compute_company_id(self):
         for pay in self:
-            company = pay.move_id.company_id or pay.terminal_id.company_id
-            pay.company_id = company
-            pay.currency_id = pay.move_id.currency_id or company.currency_id
+            pay.company_id = pay.move_id.company_id or pay.terminal_id.company_id
+
+    @api.depends('move_id.currency_id', 'company_id')
+    def _compute_currency_id(self):
+        for pay in self:
+            pay.currency_id = pay.move_id.currency_id or pay.company_id.currency_id
 
     @api.depends('move_id', 'amount')
     def _compute_display_name(self):

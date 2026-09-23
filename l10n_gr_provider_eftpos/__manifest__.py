@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Greece - E-Invoicing Provider (EFT/POS Α.1155)',
-    'version': '1.13',
+    'version': '1.14',
     'category': 'Accounting/Localizations',
     'summary': 'Card-terminal payment signatures per Α.1155/2023 through the e-invoicing provider',
     'description': (
