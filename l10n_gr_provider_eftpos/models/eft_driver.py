@@ -66,6 +66,38 @@ def redact(value):
         return [redact(v) for v in value]
     return value
 
+
+def _is_greek(ch):
+    return 'Ͱ' <= ch <= 'Ͽ'
+
+
+def fix_greek(value):
+    """Undo the driver's mis-decoded Greek, recursively.
+
+    Some terminal libraries hand the driver Windows-1253 bytes that it reads
+    as Windows-1252, so «Παρακαλώ ελέγξτε» arrives as «Ðáñáêáëþ åëÝãîôå» —
+    already garbled in the driver's own log. A string with accented Latin
+    letters and no Greek is re-read as 1253 — only when accented letters are
+    most of its letters, so a real «Café Müller» is left alone.
+    """
+    if isinstance(value, dict):
+        return {k: fix_greek(v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [fix_greek(v) for v in value]
+    if not isinstance(value, str) or any(map(_is_greek, value)):
+        return value
+    accented = sum('À' <= ch <= 'ÿ' for ch in value)
+    if accented < 3 or accented * 2 < sum(ch.isalpha() for ch in value):
+        return value
+    for source in ('cp1252', 'latin-1'):
+        try:
+            fixed = value.encode(source).decode('cp1253')
+        except UnicodeError:
+            continue
+        if any(map(_is_greek, fixed)):
+            return fixed
+    return value
+
 # Παράρτημα Α — POS_PROTOCOL. NOT_SET is deliberately absent: it is the
 # «unsupported» member, so a terminal must name a real protocol.
 POS_PROTOCOLS = [
@@ -204,6 +236,7 @@ class MegEftPosDriver:
             raise DriverRejected(_(
                 'Η διεύθυνση %(url)s δεν απάντησε ως MegEftPos Driver '
                 '(HTTP %(code)s, όχι JSON).', url=url, code=resp.status_code))
+        data = fix_greek(data)
         _logger.info('MegEftPos %s response: %s', path, redact(data))
         return data
 
