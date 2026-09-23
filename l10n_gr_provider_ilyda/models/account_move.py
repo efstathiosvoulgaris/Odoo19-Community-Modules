@@ -1226,6 +1226,12 @@ class AccountMove(models.Model):
         }
         if inv_type == '8.6' and self.l10n_gr_prov_table_aa:
             aade_data['tableAA'] = self.l10n_gr_prov_table_aa
+        # TF-1: a document already issued with an offline QR goes out later
+        # flagged 1 (entity could not reach the provider). Without it the
+        # late submission is an ordinary one and AADE answers ER-30.
+        # ILYDA «Οδηγός Χρήσης TF1» §11.2; myDATA transmissionFailure {1,2}.
+        if self.l10n_gr_prov_offline_token:
+            aade_data['transmissionFailure'] = 1
         if income_classifications:
             aade_data['incomeClassifications'] = income_classifications
         if expenses_classifications:

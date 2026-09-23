@@ -21,6 +21,14 @@ from .gr_mydata import (
 
 _logger = logging.getLogger(__name__)
 
+# States in which a previous attempt may already have reached the provider:
+# look the document up by UID before any resubmission.
+RESEND_GUARDED_STATES = ('error', 'offline', 'queued', 'abandoned')
+
+# Stop a cron run with this many seconds left, so the last record never runs
+# into the worker's time limit mid-call.
+CRON_TIME_MARGIN = 120
+
 # Greek legal titles per myDATA type (printed forms + POS receipts)
 GR_DOC_TITLES = {
     '1.1': 'ΤΙΜΟΛΟΓΙΟ ΠΩΛΗΣΗΣ', '1.2': 'ΤΙΜΟΛΟΓΙΟ ΠΩΛΗΣΗΣ (ΕΝΔΟΚΟΙΝΟΤΙΚΟ)',
@@ -513,6 +521,19 @@ class AccountMove(models.Model):
                 and bool(move.journal_id.l10n_gr_edi_inv_type_default)
             )
 
+    def _compute_l10n_gr_edi_enable_fields(self):
+        """Core l10n_gr_edi transmits sales documents straight to AADE. Once a
+        provider is configured, no sales document may take that channel — not
+        even one the provider itself skips (a journal without a myDATA type,
+        such as ΠΩΛ, holds old invoices that were already declared elsewhere).
+        This hides core's «Send to myDATA» button and drops it from Send & Print.
+        Vendor bills keep the core channel for expense classifications."""
+        super()._compute_l10n_gr_edi_enable_fields()
+        for move in self:
+            if (move.l10n_gr_edi_enable_send_invoices
+                    and move.company_id._l10n_gr_prov_active()):
+                move.l10n_gr_edi_enable_send_invoices = False
+
     @api.model
     def _get_suitable_journal_ids(self, move_type, company=False):
         """Drop POS/restaurant journals (8.4/8.5/8.6) from the invoice journal
@@ -628,7 +649,14 @@ class AccountMove(models.Model):
 
     # ── Actions ───────────────────────────────────────────────────────────────
     def action_l10n_gr_prov_send(self):
-        """Manual send button."""
+        """Manual send button.
+
+        A failed send is reported, not raised: raising would roll back the
+        error state, the chatter entry and the UID that _try_send just wrote,
+        leaving the document in 'to_send' with no trace — and a later resend
+        would then skip the duplicate guard.
+        """
+        failed = self.browse()
         for move in self:
             if not move.l10n_gr_prov_applicable:
                 raise UserError(_('No e-invoicing provider is configured for this document.'))
@@ -636,7 +664,23 @@ class AccountMove(models.Model):
                 raise UserError(_('Only posted documents can be sent to the provider.'))
             if move.l10n_gr_prov_mark:
                 raise UserError(_('This document already has a MARK from the provider.'))
-            move._l10n_gr_prov_try_send(raise_on_error=True)
+            move._l10n_gr_prov_try_send()
+            if move.l10n_gr_prov_state == 'error':
+                failed |= move
+        if not failed:
+            return False
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'type': 'danger',
+                'sticky': True,
+                'title': _('Η διαβίβαση στον πάροχο απέτυχε'),
+                'message': '\n'.join(
+                    f'{m.name}: {m.l10n_gr_prov_error or ""}' for m in failed),
+                'next': {'type': 'ir.actions.client', 'tag': 'soft_reload'},
+            },
+        }
 
     def action_l10n_gr_prov_refresh_b2g_status(self):
         for move in self:
@@ -705,8 +749,11 @@ class AccountMove(models.Model):
             # lookup itself fails we can't verify — so we do NOT resend; the
             # exception lands in the error state and the next cron pass retries.
             # Offline (TF-1) documents get the same guard: the send that made
-            # them offline may in fact have reached the provider.
-            if self.l10n_gr_prov_state in ('error', 'offline') and not self.l10n_gr_prov_mark:
+            # them offline may in fact have reached the provider. So do queued
+            # (TF-2: the provider holds it — Send & Print must not resubmit it)
+            # and abandoned ones (a manual resend after the cron gave up).
+            if (self.l10n_gr_prov_state in RESEND_GUARDED_STATES
+                    and not self.l10n_gr_prov_mark):
                 if self._l10n_gr_prov_dispatch('recover'):
                     return
             result = self._l10n_gr_prov_dispatch('send') or 'sent'
@@ -807,12 +854,24 @@ class AccountMove(models.Model):
         """Send queued documents, upload pending PDFs, poll B2G statuses.
 
         Each record is processed in its own savepoint so a single failure
-        does not roll back the entire batch.
+        does not roll back the entire batch, and committed right after, so a
+        MARK the provider returned is never lost when the worker is killed
+        later in the run. The run stops early when its time budget runs low;
+        the next run picks up where it left off.
         """
+        cron = self.env['ir.cron']
+
+        def commit():
+            """Make the record just processed durable. False = out of time."""
+            return cron._commit_progress(1) > CRON_TIME_MARGIN
+
         # 0. Give up on documents whose issue date has passed: AADE only accepts
         # a document on its own issue date (ER-30), so further retries are noise.
         # TF-1 'offline' documents are exempt — they carry a legal duty to be
         # transmitted and the provider takes them late, flagged as offline.
+        # Ask the provider first: an attempt whose response was lost may have
+        # been marked, and the chatter below tells the user to issue a new
+        # document — which would declare the same sale twice.
         stale = self.search([
             ('state', '=', 'posted'),
             ('l10n_gr_prov_state', 'in', ('to_send', 'error')),
@@ -820,28 +879,52 @@ class AccountMove(models.Model):
             ('invoice_date', '<', fields.Date.context_today(self)),
         ])
         for move in stale:
+            if move.l10n_gr_prov_applicable:
+                try:
+                    with self.env.cr.savepoint():
+                        found = move._l10n_gr_prov_dispatch('recover')
+                except Exception as e:
+                    # Can't verify — don't give up on it yet; next run asks again.
+                    _logger.warning('Provider lookup before abandoning %s failed: %s',
+                                    move.name, e)
+                    continue
+                if found:
+                    if not commit():
+                        return
+                    continue
             move.l10n_gr_prov_state = 'abandoned'
             move.message_post(body=_(
                 'Η αυτόματη επαναποστολή σταμάτησε: η ημερομηνία έκδοσης έχει '
                 'παρέλθει και η ΑΑΔΕ δεν δέχεται πλέον το παραστατικό (ER-30). '
-                'Διορθώστε το παραστατικό και στείλτε το χειροκίνητα, ή εκδώστε '
-                'νέο με τρέχουσα ημερομηνία.'))
+                'Ο πάροχος επιβεβαίωσε ότι δεν το έχει παραλάβει. Διορθώστε το '
+                'παραστατικό και στείλτε το χειροκίνητα, ή εκδώστε νέο με '
+                'τρέχουσα ημερομηνία.'))
+            if not commit():
+                return
 
-        # 1. Pending sends (auto-send companies) and previous errors (all companies)
+        # 1. Pending sends (auto-send companies) and previous errors (all companies).
+        # The auto-send and accounting-only-journal filters are in the domain,
+        # not in the loop: documents the loop would skip must not use up the
+        # batch limit and starve the ones it would process.
         domain = [
             ('state', '=', 'posted'),
+            ('l10n_gr_prov_mark', '=', False),
+            ('journal_id.l10n_gr_edi_inv_type_default', '!=', False),
+            '|',
             # 'offline' (TF-1) documents retry regardless of auto_send — the
             # 1-day legal transmission deadline doesn't wait for a human.
-            ('l10n_gr_prov_state', 'in', ('to_send', 'error', 'offline')),
-            ('l10n_gr_prov_mark', '=', False),
+            ('l10n_gr_prov_state', 'in', ('error', 'offline')),
+            # manual mode: only retry documents that were attempted (error state)
+            '&', ('l10n_gr_prov_state', '=', 'to_send'),
+                 ('company_id.l10n_gr_prov_auto_send', '=', True),
         ]
         for move in self.search(domain, limit=50):
             if not move.l10n_gr_prov_applicable:
                 continue
-            if move.l10n_gr_prov_state == 'to_send' and not move.company_id.l10n_gr_prov_auto_send:
-                continue  # manual mode: only retry documents that were attempted (error state)
             with self.env.cr.savepoint():
                 move._l10n_gr_prov_try_send()
+            if not commit():
+                return
 
         # 1b. TF-2: poll documents queued at the provider until the MARK arrives
         for move in self.search([('l10n_gr_prov_state', '=', 'queued')], limit=50):
@@ -850,6 +933,8 @@ class AccountMove(models.Model):
                     move._l10n_gr_prov_dispatch('recover')
                 except Exception as e:
                     _logger.warning('Provider queue poll failed for %s: %s', move.name, e)
+            if not commit():
+                return
 
         # 2. Upload PDFs for marked documents
         for move in self.search([
@@ -859,6 +944,8 @@ class AccountMove(models.Model):
         ], limit=50):
             with self.env.cr.savepoint():
                 move._l10n_gr_prov_try_upload_pdf()
+            if not commit():
+                return
 
         # 3. Poll B2G statuses
         for move in self.search([
@@ -872,9 +959,12 @@ class AccountMove(models.Model):
             ('l10n_gr_prov_b2g_status', 'not in', ['RE', 'AP', 'PD']),
         ], limit=50):
             try:
-                move._l10n_gr_prov_dispatch('poll_b2g_status')
+                with self.env.cr.savepoint():
+                    move._l10n_gr_prov_dispatch('poll_b2g_status')
             except Exception as e:
                 _logger.warning('B2G status poll failed for %s: %s', move.name, e)
+            if not commit():
+                return
 
     # ── Report helpers ──────────────────────────────────────────────────────
     # Which physical form this document prints on. SINGLE SOURCE OF TRUTH for

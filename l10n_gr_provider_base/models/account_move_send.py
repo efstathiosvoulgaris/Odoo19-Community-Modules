@@ -13,8 +13,14 @@ class AccountMoveSend(models.AbstractModel):
         provider is configured, sales documents are issued (and reported to
         myDATA) by the provider, so the ERP channel must not also send them.
         Vendor bills / expense classifications still use the ERP channel.
+
+        Keyed on the company, not on l10n_gr_prov_applicable: a sales document
+        on a journal without a myDATA type (ΠΩΛ) is not provider-routed, and
+        must not fall through to core either.
         """
-        if move.l10n_gr_prov_applicable:
+        if move.l10n_gr_prov_applicable or (
+                move.company_id._l10n_gr_prov_active()
+                and move.is_sale_document(include_receipts=True)):
             return False
         return super()._is_gr_edi_applicable(move)
 
