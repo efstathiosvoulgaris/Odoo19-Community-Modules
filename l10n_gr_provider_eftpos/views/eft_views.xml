@@ -84,7 +84,49 @@
         <field name="model">l10n.gr.prov.eft.payment</field>
         <field name="arch" type="xml">
             <form string="Πληρωμή με Κάρτα">
-                <field name="state" invisible="1"/>
+                <!-- Buttons live in the header, not a footer: a footer only
+                     renders in a dialog, and since POS charges have no invoice
+                     this form is mostly opened full-page from the menu. -->
+                <header>
+                    <button name="action_request_signature" type="object"
+                            string="OK — Έκδοση Υπογραφής" class="btn-primary"
+                            invisible="state != 'draft'"/>
+                    <button name="action_charge_terminal" type="object"
+                            string="Χρέωση Τερματικού" class="btn-primary"
+                            invisible="not move_id or state != 'signed' or not driver_enabled
+                                       or preloaded_at"/>
+                    <button name="action_preload_terminal" type="object"
+                            string="Προφόρτωση στο Τερματικό"
+                            invisible="not move_id or state != 'signed' or not driver_enabled
+                                       or preloaded_at or driver_response_code"/>
+                    <!-- charging = unknown outcome; after a preload there is no
+                         response code yet, so recovery stands on preloaded_at -->
+                    <button name="action_recover_pending" type="object"
+                            string="Ανάκτηση Εκκρεμούς"
+                            class="btn-primary"
+                            invisible="not driver_enabled
+                                       or (state != 'charging'
+                                           and (state != 'signed' or not preloaded_at))"/>
+                    <button name="action_mark_not_charged" type="object"
+                            string="Δεν χρεώθηκε (επιβεβαίωση)"
+                            groups="account.group_account_manager"
+                            confirm="Επιβεβαιώνετε ότι ελέγξατε το τερματικό και η κάρτα ΔΕΝ χρεώθηκε; Η ενέργεια καταγράφεται με το όνομά σας."
+                            invisible="state != 'charging'"/>
+                    <button name="action_complete" type="object"
+                            string="Ολοκλήρωση Αποστολής"
+                            class="btn-primary"
+                            invisible="not move_id or state != 'signed' or driver_enabled"/>
+                    <button name="action_retry_submit" type="object"
+                            string="Επανάληψη Διαβίβασης"
+                            class="btn-primary"
+                            invisible="state != 'paid' or overcharged"/>
+                    <button name="action_cancel" type="object"
+                            string="Ακύρωση Υπογραφής"
+                            invisible="state not in ('signed', 'paid')"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,signed,paid,submitted"/>
+                </header>
+                <sheet>
                 <field name="signature_expired" invisible="1"/>
                 <field name="company_id" invisible="1"/>
                 <field name="driver_enabled" invisible="1"/>
@@ -176,42 +218,9 @@
                     <field name="cancel_reason_text"
                            required="cancel_reason == 'OTHER'"/>
                 </group>
+                </sheet>
+                <chatter/>
                 <footer>
-                    <button name="action_request_signature" type="object"
-                            string="OK — Έκδοση Υπογραφής" class="btn-primary"
-                            invisible="state != 'draft'"/>
-                    <button name="action_charge_terminal" type="object"
-                            string="Χρέωση Τερματικού" class="btn-primary"
-                            invisible="not move_id or state != 'signed' or not driver_enabled
-                                       or preloaded_at"/>
-                    <button name="action_preload_terminal" type="object"
-                            string="Προφόρτωση στο Τερματικό"
-                            invisible="not move_id or state != 'signed' or not driver_enabled
-                                       or preloaded_at or driver_response_code"/>
-                    <!-- charging = unknown outcome; after a preload there is no
-                         response code yet, so recovery stands on preloaded_at -->
-                    <button name="action_recover_pending" type="object"
-                            string="Ανάκτηση Εκκρεμούς"
-                            class="btn-primary"
-                            invisible="not driver_enabled
-                                       or (state != 'charging'
-                                           and (state != 'signed' or not preloaded_at))"/>
-                    <button name="action_mark_not_charged" type="object"
-                            string="Δεν χρεώθηκε (επιβεβαίωση)"
-                            groups="account.group_account_manager"
-                            confirm="Επιβεβαιώνετε ότι ελέγξατε το τερματικό και η κάρτα ΔΕΝ χρεώθηκε; Η ενέργεια καταγράφεται με το όνομά σας."
-                            invisible="state != 'charging'"/>
-                    <button name="action_complete" type="object"
-                            string="Ολοκλήρωση Αποστολής"
-                            class="btn-primary"
-                            invisible="not move_id or state != 'signed' or driver_enabled"/>
-                    <button name="action_retry_submit" type="object"
-                            string="Επανάληψη Διαβίβασης"
-                            class="btn-primary"
-                            invisible="state != 'paid' or overcharged"/>
-                    <button name="action_cancel" type="object"
-                            string="Ακύρωση Υπογραφής"
-                            invisible="state not in ('signed', 'paid')"/>
                     <button special="cancel" string="Κλείσιμο" class="btn-secondary"/>
                 </footer>
             </form>
