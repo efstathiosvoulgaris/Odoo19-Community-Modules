@@ -46,7 +46,7 @@ Changelog
   SOAP envelope· ένας χαρακτήρας `&` στον κωδικό TaxisNet χαλούσε το αίτημα.
 * 1.0 — Initial public release.
 """,
-    "version": "1.1",
+    "version": "1.2",
     "author": "Efstathios Voulgaris",
     "publisher": "Efstathios Voulgaris",
     "category": "Localization/Greece",

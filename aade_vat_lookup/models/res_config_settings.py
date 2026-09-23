@@ -8,8 +8,10 @@ class ResConfigSettings(models.TransientModel):
     aade_username = fields.Char(
         related="company_id.aade_username",
         readonly=False,
+        groups="base.group_system",
     )
     aade_password = fields.Char(
         related="company_id.aade_password",
         readonly=False,
+        groups="base.group_system",
     )

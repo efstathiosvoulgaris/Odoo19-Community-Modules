@@ -109,8 +109,10 @@ class ResPartner(models.Model):
         """
         existing = existing or {}
         company = self.env.company
-        username = (company.aade_username or "").strip()
-        password = company.aade_password or ""
+        # The credentials are admin-only fields; any user may run the lookup.
+        creds = company.sudo()
+        username = (creds.aade_username or "").strip()
+        password = creds.aade_password or ""
         if not username or not password:
             raise UserError(_(
                 "Δεν έχουν οριστεί credentials AADE για την εταιρεία «%s».\n"

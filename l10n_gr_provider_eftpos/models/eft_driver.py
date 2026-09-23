@@ -26,6 +26,19 @@ _logger = logging.getLogger(__name__)
 
 TIMEOUT = 210  # the terminal itself waits up to 180s for the cardholder
 
+# Never written to the log. 'clientSecter' is the driver's own spelling.
+SECRET_KEYS = frozenset({'licenseKey', 'apiKey', 'clientSecret', 'clientSecter', 'otp'})
+
+
+def redact(value):
+    """Copy of a request/response with every secret masked, for logging."""
+    if isinstance(value, dict):
+        return {k: '***' if k in SECRET_KEYS and v else redact(v)
+                for k, v in value.items()}
+    if isinstance(value, list):
+        return [redact(v) for v in value]
+    return value
+
 # Παράρτημα Α — POS_PROTOCOL. NOT_SET is deliberately absent: it is the
 # «unsupported» member, so a terminal must name a real protocol.
 POS_PROTOCOLS = [
@@ -90,7 +103,8 @@ class MegEftPosDriver:
                 'Δεν έχει οριστεί η διεύθυνση του MegEftPos Driver — ορίστε '
                 'την στο τερματικό («MegEftPos Driver URL») ή γενικά στην '
                 'εταιρεία (Ρυθμίσεις → Ελληνικός Πάροχος → Driver EFT/POS).'))
-        if not company.l10n_gr_prov_eft_license_key:
+        # sudo: the key is an admin-only field, and cashiers charge cards too
+        if not company.sudo().l10n_gr_prov_eft_license_key:
             raise UserError(_(
                 'Δεν έχει οριστεί το License Key του MegEftPos Driver.'))
         self.base = base
@@ -116,7 +130,7 @@ class MegEftPosDriver:
 
     def _post(self, path, payload):
         url = f'{self.base}{path}'
-        _logger.info('MegEftPos %s payload: %s', path, payload)
+        _logger.info('MegEftPos %s payload: %s', path, redact(payload))
         # Transport and parsing are caught separately: json() raises ValueError,
         # and so does a bad Basic Auth credential (UnicodeEncodeError) — sharing
         # one handler leaves `resp` unbound on the second.
@@ -136,7 +150,7 @@ class MegEftPosDriver:
             raise UserError(_(
                 'Μη αναγνώσιμη απάντηση από τον MegEftPos Driver (%(url)s): '
                 '%(body)s', url=url, body=(resp.text or '')[:300]))
-        _logger.info('MegEftPos %s response: %s', path, data)
+        _logger.info('MegEftPos %s response: %s', path, redact(data))
         return data
 
     @staticmethod

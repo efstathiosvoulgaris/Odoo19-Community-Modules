@@ -7,9 +7,11 @@ class ResCompany(models.Model):
 
     aade_username = fields.Char(
         string="AADE Username",
+        groups="base.group_system",
         help="Όνομα χρήστη TaxisNet εξουσιοδοτημένο για την υπηρεσία RgWsPublic2.",
     )
     aade_password = fields.Char(
         string="AADE Password",
+        groups="base.group_system",
         help="Κωδικός TaxisNet για την υπηρεσία RgWsPublic2.",
     )
