@@ -14,6 +14,7 @@ import requests
 from odoo import api, fields, models, _
 from odoo.exceptions import AccessError, UserError
 from odoo.modules import module as odoo_module
+from odoo.tools import format_datetime
 
 from odoo.addons.l10n_gr_provider_ilyda.models.account_move import (
     IlydaClient, TIMEOUT, _r2,
@@ -544,7 +545,7 @@ class EftPayment(models.Model):
             'Α.1155: εκδόθηκε υπογραφή πληρωμής %(amount)s για το τερματικό '
             '%(terminal)s (λήξη %(expiry)s).',
             amount=f'{self.amount:.2f}', terminal=terminal.display_name,
-            expiry=self.signature_expiry or '—'))
+            expiry=self._expiry_label()))
         # The provider holds this signature now; an unused one turns into an
         # «Ανοιχτό Παραστατικό» at AADE after 24h, so we must not lose it.
         self._commit()
@@ -554,6 +555,14 @@ class EftPayment(models.Model):
         if self.driver_enabled:
             return self.action_charge_terminal()
         return self._reopen()
+
+    def _expiry_label(self):
+        """The signature's expiry in the user's timezone — a bare Datetime
+        in a message prints as UTC, three hours behind the till's clock."""
+        if not self.signature_expiry:
+            return '—'
+        return format_datetime(self.env, self.signature_expiry,
+                               dt_format='dd/MM/yyyy HH:mm')
 
     def _check_signature_usable(self):
         """Α.1155 §5.3, checked before the signature leaves for the terminal.
@@ -567,7 +576,7 @@ class EftPayment(models.Model):
             raise UserError(_(
                 'Η υπογραφή του παρόχου έληξε στις %(expiry)s και δεν μπορεί '
                 'να χρησιμοποιηθεί. Ακυρώστε την πληρωμή και ζητήστε νέα '
-                'υπογραφή.', expiry=self.signature_expiry))
+                'υπογραφή.', expiry=self._expiry_label()))
         # «Το ποσό του τρόπου πληρωμής ΠΡΕΠΕΙ να είναι ίσο ή μικρότερο από το
         # πληρωτέο της υπογραφής» — reachable because amount stays writable.
         if self.signature_amount and _r2(self.amount) > _r2(self.signature_amount):
@@ -1010,6 +1019,13 @@ class EftPayment(models.Model):
             raise UserError(_(
                 'Συμπληρώστε την Ταυτότητα Συναλλαγής από το τερματικό.'))
         self.state = 'paid'
+        # A hand-typed id has nothing behind it but the person who typed it:
+        # record who, and what, before the submission can fail.
+        self._log(body=_(
+            'Α.1155: χειροκίνητη χρέωση %(amount)s στο τερματικό %(terminal)s — '
+            'Ταυτότητα Συναλλαγής %(tid)s.',
+            amount=f'{self.amount:.2f}', terminal=self.terminal_id.display_name,
+            tid=self.transaction_id))
         self._commit()
         return self._submit()
 

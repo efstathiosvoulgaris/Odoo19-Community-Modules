@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from odoo import models
+from odoo import _, models
 
 
 class PosOrder(models.Model):
@@ -41,6 +41,11 @@ class PosOrder(models.Model):
                             'transaction_id': p.l10n_gr_prov_eft_transaction_id,
                             'state': 'paid',
                         })
+                        eft._log(body=_(
+                            'Α.1155: χειροκίνητη χρέωση %(amount)s στο ταμείο '
+                            '%(pos)s — Ταυτότητα Συναλλαγής %(tid)s.',
+                            amount=f'{eft.amount:.2f}', pos=self.config_id.name,
+                            tid=eft.transaction_id))
                     eft_lines.append((0, 0, {
                         # A payment carrying an Α.1155 signature went through
                         # the EFT/POS — always type 7, whether the customer
