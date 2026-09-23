@@ -132,7 +132,7 @@
                 </div>
                 <group>
                     <group>
-                        <field name="move_id" readonly="state != 'draft'"/>
+                        <field name="move_id" readonly="state != 'draft'" required="state == 'draft'"/>
                         <field name="terminal_id" readonly="state != 'draft'"/>
                         <field name="amount" readonly="state != 'draft'"/>
                         <field name="payment_method" widget="radio"
@@ -182,11 +182,11 @@
                             invisible="state != 'draft'"/>
                     <button name="action_charge_terminal" type="object"
                             string="Χρέωση Τερματικού" class="btn-primary"
-                            invisible="state != 'signed' or not driver_enabled
+                            invisible="not move_id or state != 'signed' or not driver_enabled
                                        or preloaded_at"/>
                     <button name="action_preload_terminal" type="object"
                             string="Προφόρτωση στο Τερματικό"
-                            invisible="state != 'signed' or not driver_enabled
+                            invisible="not move_id or state != 'signed' or not driver_enabled
                                        or preloaded_at or driver_response_code"/>
                     <!-- charging = unknown outcome; after a preload there is no
                          response code yet, so recovery stands on preloaded_at -->
@@ -204,7 +204,7 @@
                     <button name="action_complete" type="object"
                             string="Ολοκλήρωση Αποστολής"
                             class="btn-primary"
-                            invisible="state != 'signed' or driver_enabled"/>
+                            invisible="not move_id or state != 'signed' or driver_enabled"/>
                     <button name="action_retry_submit" type="object"
                             string="Επανάληψη Διαβίβασης"
                             class="btn-primary"

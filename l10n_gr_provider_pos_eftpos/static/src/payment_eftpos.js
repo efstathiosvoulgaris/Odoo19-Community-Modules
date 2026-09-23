@@ -3,7 +3,8 @@ import { _t } from "@web/core/l10n/translation";
 import { AlertDialog } from "@web/core/confirmation_dialog/confirmation_dialog";
 import { TextInputPopup } from "@point_of_sale/app/components/popups/text_input_popup/text_input_popup";
 import { NumberPopup } from "@point_of_sale/app/components/popups/number_popup/number_popup";
-import { makeAwaitable } from "@point_of_sale/app/utils/make_awaitable_dialog";
+import { ask, makeAwaitable } from "@point_of_sale/app/utils/make_awaitable_dialog";
+import { uuidv4 } from "@point_of_sale/utils";
 import OrderPaymentValidation from "@point_of_sale/app/utils/order_payment_validation";
 import { PaymentScreen } from "@point_of_sale/app/screens/payment_screen/payment_screen";
 import { ConfirmationDialog } from "@web/core/confirmation_dialog/confirmation_dialog";
@@ -12,9 +13,15 @@ import { ConfirmationDialog } from "@web/core/confirmation_dialog/confirmation_d
  * Α.1155 EFT/POS flow for card payments in the POS.
  *
  * Before an order is validated, every card payment line (myDATA payment type
- * 7) that isn't signed yet gets a provider signature; the cashier charges the
- * terminal and types the transaction id back. The signature + transaction id
- * ride on the payment line to the invoice, which is transmitted with them.
+ * 7) that isn't signed yet gets a provider signature; with the MegEftPos
+ * Driver the card is charged server-side in the same call, otherwise the
+ * cashier charges the terminal and types the transaction id back. The
+ * signature + transaction id ride on the payment line to the invoice, which is
+ * transmitted with them.
+ *
+ * Every attempt is recorded on the server (l10n.gr.prov.eft.payment) under a
+ * key the till makes up, BEFORE the card is charged. When an answer is lost
+ * the till asks what happened to that key instead of charging again.
  */
 patch(OrderPaymentValidation.prototype, {
     _grIsCardLine(line) {
@@ -99,15 +106,18 @@ patch(OrderPaymentValidation.prototype, {
         }
         const count = Math.trunc(Number(answer));
         if (!(count >= 1 && count <= max)) {
-            this.pos.dialog.add(AlertDialog, {
-                title: _t("Μη έγκυρες δόσεις"),
-                body: _t("Δώστε αριθμό από 1 έως %s.", max),
-            });
+            this._grAlert(_t("Μη έγκυρες δόσεις"), _t("Δώστε αριθμό από 1 έως %s.", max));
             return null;
         }
         return count;
     },
 
+    /**
+     * Sign — and with the driver, charge — every unsigned card line.
+     *
+     * A line whose attempt has no definite outcome can only be settled by
+     * «Ανάκτηση»; nothing here charges it a second time.
+     */
     async _grSignCardPayments(touched) {
         const order = this.order;
         // A return is a credit document, and §5.3 makes signature and
@@ -124,66 +134,134 @@ patch(OrderPaymentValidation.prototype, {
             (l) => this._grIsCardLine(l) && l.getAmount() !== 0 && !l.l10n_gr_prov_eft_signature
         );
         for (const line of cardLines) {
-            // 0. Δόσεις, when the till offers them and this is a charge.
-            const installments = isRefund ? 0 : await this._grAskInstallments();
-            if (installments === null) {
-                return false;
+            let result = null;
+
+            // 0. An earlier attempt on this line never got a definite answer:
+            // ask the server what became of it before anything else.
+            if (line.l10n_gr_prov_eft_client_key) {
+                result = await this._grCall("l10n_gr_prov_pos_status", order, {
+                    client_key: line.l10n_gr_prov_eft_client_key,
+                });
+                if (!result) {
+                    return false;
+                }
+                if (result.status === "unknown") {
+                    if (!this._grAttemptExpired(line.l10n_gr_prov_eft_client_key)) {
+                        // It may still be signing or charging on the server.
+                        this._grAlert(
+                            _t("Η προηγούμενη χρέωση δεν έχει ακόμη αποτέλεσμα"),
+                            _t(
+                                "ΜΗΝ χρεώσετε ξανά την κάρτα. Περιμένετε λίγο και " +
+                                    "πατήστε ξανά Επικύρωση για να ελεγχθεί."
+                            )
+                        );
+                        return false;
+                    }
+                    result = null; // never reached the server: start over
+                } else if (["cancelled", "error"].includes(result.status)) {
+                    result = null; // nothing charged: start over
+                }
+                if (!result) {
+                    line.l10n_gr_prov_eft_client_key = false;
+                }
             }
 
-            // 1. Request the provider signature for this card amount.
-            let result;
-            try {
-                result = await this.pos.data.call(
-                    "l10n.gr.prov.eft.terminal",
-                    "l10n_gr_prov_pos_sign",
-                    [
-                        {
-                            config_id: order.config_id.id,
-                            amount: abs(line.getAmount()),
-                            net: abs(order.priceExcl),
-                            vat: abs(order.amountTaxes),
-                            gross: abs(order.priceIncl),
-                            vat_rate: this._grVatRate(order),
-                            is_timologio: Boolean(order.to_invoice),
-                            is_refund: isRefund,
-                            installments: installments,
-                        },
-                    ]
-                );
-            } catch (e) {
-                this.pos.dialog.add(AlertDialog, {
-                    title: _t("Σφάλμα υπογραφής Α.1155"),
-                    body: e?.message?.data?.message || e?.message || String(e),
-                });
-                return false;
-            }
-            if (!result || result.error) {
-                this.pos.dialog.add(AlertDialog, {
-                    title: _t("Αποτυχία λήψης υπογραφής"),
-                    body: result?.error || _t("Άγνωστο σφάλμα."),
-                });
-                return false;
+            // 1. A new attempt: Δόσεις first — the signature is spent on the
+            // charge that follows it, so nothing the cashier can abandon may
+            // sit between the two.
+            if (!result) {
+                const installments = isRefund ? 0 : await this._grAskInstallments();
+                if (installments === null) {
+                    return false;
+                }
+                const key = `${Date.now()}-${uuidv4()}`;
+                line.l10n_gr_prov_eft_client_key = key;
+                try {
+                    result = await this.pos.data.call(
+                        "l10n.gr.prov.eft.terminal",
+                        "l10n_gr_prov_pos_sign",
+                        [
+                            {
+                                config_id: order.config_id.id,
+                                client_key: key,
+                                amount: abs(line.getAmount()),
+                                net: abs(order.priceExcl),
+                                vat: abs(order.amountTaxes),
+                                gross: abs(order.priceIncl),
+                                vat_rate: this._grVatRate(order),
+                                is_timologio: Boolean(order.to_invoice),
+                                is_refund: isRefund,
+                                installments: installments,
+                            },
+                        ]
+                    );
+                } catch (e) {
+                    // The answer was lost — not necessarily the charge. The
+                    // key stays on the line; the next Επικύρωση asks for it.
+                    this._grAlert(
+                        _t("Χάθηκε η απάντηση του διακομιστή"),
+                        _t(
+                            "Η κάρτα ίσως χρεώθηκε — ΜΗΝ χρεώσετε ξανά. Πατήστε " +
+                                "ξανά Επικύρωση για να ελεγχθεί η κατάσταση.\n\n%s",
+                            this._grErrorText(e)
+                        )
+                    );
+                    return false;
+                }
             }
 
-            // 2. The transaction id. With the MegEftPos Driver the card was
-            // already charged server-side and it came back with the
-            // signature; a standalone terminal is charged by hand.
-            let txId = result.transaction_id;
-            if (!txId && this.pos.config.l10n_gr_prov_eft_require_signature) {
-                // This till may not take a card without the terminal having
-                // answered for it — a typed transaction id is a promise, not
-                // a proof. Release the signature we just minted.
-                await this._grCancelSignature(order, result.signature);
-                this.pos.dialog.add(AlertDialog, {
-                    title: _t("Το τερματικό δεν απάντησε"),
+            // 2. Outcome unknown: only the terminal can tell.
+            while (result.status === "pending") {
+                const recover = await ask(this.pos.dialog, {
+                    title: _t("Άγνωστη έκβαση χρέωσης"),
                     body: _t(
-                        "Το ταμείο απαιτεί χρέωση μέσω του τερματικού. " +
-                            "Επαναλάβετε ή επιλέξτε άλλον τρόπο πληρωμής."
+                        "%s\n\nΗ κάρτα ίσως χρεώθηκε — ΜΗΝ χρεώσετε ξανά. " +
+                            "Να ρωτηθεί το τερματικό;",
+                        result.error || ""
                     ),
+                    confirmLabel: _t("Ανάκτηση"),
+                    cancelLabel: _t("Αργότερα"),
                 });
+                if (!recover) {
+                    return false;
+                }
+                const recovered = await this._grCall("l10n_gr_prov_pos_recover", order, {
+                    client_key: line.l10n_gr_prov_eft_client_key,
+                });
+                if (!recovered) {
+                    return false;
+                }
+                result = recovered;
+            }
+            if (result.status !== "approved" && result.status !== "signed") {
+                line.l10n_gr_prov_eft_client_key = false;
+                this._grAlert(
+                    _t("Η χρέωση δεν ολοκληρώθηκε"),
+                    result.error || _t("Άγνωστο σφάλμα.")
+                );
                 return false;
             }
-            if (!txId) {
+
+            // 3. The transaction id. With the MegEftPos Driver the card was
+            // already charged server-side; a standalone terminal (and any
+            // return) is charged by hand.
+            let txId = result.transaction_id;
+            if (result.status === "signed") {
+                if (this.pos.config.l10n_gr_prov_eft_require_signature && !isRefund) {
+                    // This till may not take a card without the terminal having
+                    // answered for it — a typed transaction id is a promise, not
+                    // a proof. Returns are exempt: they are always keyed in by
+                    // hand, so the rule would make card refunds impossible.
+                    await this._grRelease(order, line);
+                    this._grAlert(
+                        _t("Το τερματικό δεν απάντησε"),
+                        _t(
+                            "Το ταμείο απαιτεί χρέωση μέσω του τερματικού. " +
+                                "Επαναλάβετε ή επιλέξτε άλλον τρόπο πληρωμής."
+                        )
+                    );
+                    return false;
+                }
                 txId = await makeAwaitable(this.pos.dialog, TextInputPopup, {
                     title: isRefund
                         ? _t(
@@ -200,24 +278,17 @@ patch(OrderPaymentValidation.prototype, {
                 });
                 if (!txId) {
                     // Abandoned after signing — release the unused signature.
-                    await this._grCancelSignature(order, result.signature);
+                    await this._grRelease(order, line);
                     return false;
                 }
             }
 
-            // 3. Stash on the payment line; synced to the invoice on save.
+            // 4. Stash on the payment line; synced to the invoice on save. The
+            // references a Void needs stay on the server-side record.
             line.l10n_gr_prov_eft_signature = result.signature;
             line.l10n_gr_prov_eft_signing_author = result.signing_author;
             line.l10n_gr_prov_eft_terminal_code = result.terminal_code;
             line.l10n_gr_prov_eft_transaction_id = String(txId).trim();
-            // Only present on the driver path — this is what makes the charge
-            // reversible, so it has to be stored before anything else can fail.
-            line.l10n_gr_prov_eft_signed_content = result.signed_content;
-            line.l10n_gr_prov_eft_signature_uid = result.signature_uid;
-            line.l10n_gr_prov_eft_signature_ts = result.signature_ts;
-            line.l10n_gr_prov_eft_ecr_reference = result.ecr_reference;
-            line.l10n_gr_prov_eft_bank_auth_code = result.bank_auth_code;
-            line.l10n_gr_prov_eft_receipt_number = result.receipt_number;
             // Every signed line, not only the driver-charged ones: a manually
             // charged line holds a signature that has to be released too.
             touched.push(line);
@@ -225,35 +296,52 @@ patch(OrderPaymentValidation.prototype, {
         return true;
     },
 
-    /** A line the driver actually took money for, so it can be given back. */
-    _grIsCharged(line) {
-        return Boolean(
-            line.l10n_gr_prov_eft_transaction_id && line.l10n_gr_prov_eft_signed_content
-        );
+    /** Attempt keys start with their creation time (ms). */
+    _grAttemptExpired(key) {
+        // Longer than the driver's own timeout (210s) plus the provider's
+        // (90s): past this, an attempt the server never recorded never will.
+        const created = Number(String(key).split("-")[0]);
+        return !created || Date.now() - created > 6 * 60 * 1000;
     },
 
-    async _grVoidCharge(order, line) {
-        const result = await this.pos.data.call(
-            "l10n.gr.prov.eft.terminal",
-            "l10n_gr_prov_pos_void",
-            [
-                {
-                    config_id: order.config_id.id,
-                    amount: line.getAmount(),
-                    net: order.priceExcl,
-                    vat: order.amountTaxes,
-                    gross: order.priceIncl,
-                    signature: line.l10n_gr_prov_eft_signature,
-                    signed_content: line.l10n_gr_prov_eft_signed_content,
-                    signature_uid: line.l10n_gr_prov_eft_signature_uid,
-                    signature_ts: line.l10n_gr_prov_eft_signature_ts,
-                    transaction_id: line.l10n_gr_prov_eft_transaction_id,
-                    ecr_reference: line.l10n_gr_prov_eft_ecr_reference,
-                    bank_auth_code: line.l10n_gr_prov_eft_bank_auth_code,
-                    receipt_number: line.l10n_gr_prov_eft_receipt_number,
-                },
-            ]
-        );
+    async _grCall(method, order, vals) {
+        try {
+            return await this.pos.data.call("l10n.gr.prov.eft.terminal", method, [
+                { config_id: order.config_id.id, ...vals },
+            ]);
+        } catch (e) {
+            this._grAlert(_t("Σφάλμα επικοινωνίας Α.1155"), this._grErrorText(e));
+            return null;
+        }
+    },
+
+    _grAlert(title, body) {
+        this.pos.dialog.add(AlertDialog, { title, body });
+    },
+
+    _grErrorText(e) {
+        return e?.data?.message || e?.message?.data?.message || e?.message || String(e);
+    },
+
+    /**
+     * Give a line's attempt back: the server voids a driver charge from its
+     * own record and cancels the signature. Returns the server's answer.
+     */
+    async _grRelease(order, line) {
+        if (!line.l10n_gr_prov_eft_client_key) {
+            this._grClearLine(line);
+            return { ok: true, voided: false };
+        }
+        let result;
+        try {
+            result = await this.pos.data.call(
+                "l10n.gr.prov.eft.terminal",
+                "l10n_gr_prov_pos_release",
+                [{ config_id: order.config_id.id, client_key: line.l10n_gr_prov_eft_client_key }]
+            );
+        } catch (e) {
+            result = { error: this._grErrorText(e) };
+        }
         if (result?.ok) {
             this._grClearLine(line);
         }
@@ -267,6 +355,7 @@ patch(OrderPaymentValidation.prototype, {
             "signing_author",
             "terminal_code",
             "transaction_id",
+            "client_key",
             "signed_content",
             "signature_uid",
             "signature_ts",
@@ -293,60 +382,35 @@ patch(OrderPaymentValidation.prototype, {
         const failed = [];
         const manual = [];
         for (const line of lines) {
-            if (!this._grIsCharged(line)) {
-                // Manual terminal: no driver, so nothing to void — but the
-                // signature is live and must not be left to expire.
-                if (line.l10n_gr_prov_eft_transaction_id) {
-                    manual.push(this.pos.env.utils.formatCurrency(line.getAmount()));
-                }
-                await this._grCancelSignature(order, line.l10n_gr_prov_eft_signature);
-                this._grClearLine(line);
-                continue;
-            }
-            let result;
-            try {
-                result = await this._grVoidCharge(order, line);
-            } catch (e) {
-                result = { error: e?.message?.data?.message || e?.message || String(e) };
-            }
+            const amount = this.pos.env.utils.formatCurrency(line.getAmount());
+            const typedByHand = Boolean(line.l10n_gr_prov_eft_transaction_id);
+            const result = await this._grRelease(order, line);
             if (!result?.ok) {
-                failed.push(
-                    `${this.pos.env.utils.formatCurrency(line.getAmount())}: ${
-                        result?.error || _t("άγνωστο σφάλμα")
-                    }`
-                );
+                failed.push(`${amount}: ${result?.error || _t("άγνωστο σφάλμα")}`);
+            } else if (!result.voided && typedByHand) {
+                manual.push(amount);
             }
         }
         if (failed.length) {
-            this.pos.dialog.add(AlertDialog, {
-                title: _t("Η χρέωση ΔΕΝ ακυρώθηκε"),
-                body: _t(
+            this._grAlert(
+                _t("Η χρέωση ΔΕΝ ακυρώθηκε"),
+                _t(
                     "Έχει χρεωθεί κάρτα και η ακύρωση απέτυχε. Ακυρώστε τη " +
                         "συναλλαγή από το τερματικό.\n\n%s",
                     failed.join("\n")
-                ),
-            });
+                )
+            );
         }
         if (manual.length) {
-            this.pos.dialog.add(AlertDialog, {
-                title: _t("Ακυρώστε τη συναλλαγή στο τερματικό"),
-                body: _t(
+            this._grAlert(
+                _t("Ακυρώστε τη συναλλαγή στο τερματικό"),
+                _t(
                     "Η υπογραφή ακυρώθηκε, αλλά η κάρτα χρεώθηκε χειροκίνητα " +
                         "και δεν μπορεί να ακυρωθεί από εδώ. Ακυρώστε τη " +
                         "συναλλαγή στο τερματικό.\n\n%s",
                     manual.join("\n")
-                ),
-            });
-        }
-    },
-
-    async _grCancelSignature(order, signature) {
-        try {
-            await this.pos.data.call("l10n.gr.prov.eft.terminal", "l10n_gr_prov_pos_cancel", [
-                { config_id: order.config_id.id, signature },
-            ]);
-        } catch {
-            // best-effort; the provider auto-releases unused signatures after 24h
+                )
+            );
         }
     },
 });
@@ -358,17 +422,30 @@ patch(OrderPaymentValidation.prototype, {
 patch(PaymentScreen.prototype, {
     deletePaymentLine(uuid) {
         const line = this.paymentLines.find((l) => l.uuid === uuid);
+        if (line?.l10n_gr_prov_eft_client_key && !line.l10n_gr_prov_eft_signature) {
+            // An attempt with no definite outcome: the card may be charged,
+            // and deleting the line would drop the only handle on it here.
+            this.dialog.add(AlertDialog, {
+                title: _t("Εκκρεμής χρέωση κάρτας"),
+                body: _t(
+                    "Η χρέωση αυτής της γραμμής έχει άγνωστη έκβαση. Πατήστε " +
+                        "Επικύρωση για να ελεγχθεί, ή λύστε την από Λογιστική → " +
+                        "myDATA → Πληρωμές EFT/POS."
+                ),
+            });
+            return;
+        }
+        // Any signed line, not only a driver-charged one: a manually charged
+        // line still holds a live signature that has to be released.
+        if (!line || !line.l10n_gr_prov_eft_signature) {
+            return super.deletePaymentLine(uuid);
+        }
         // The screen builds a fresh validation object per action; do the same
         // rather than reimplement the void logic here.
         const validation = new OrderPaymentValidation({
             pos: this.pos,
             orderUuid: this.currentOrder.uuid,
         });
-        // Any signed line, not only a driver-charged one: a manually charged
-        // line still holds a live signature that has to be released.
-        if (!line || !line.l10n_gr_prov_eft_signature) {
-            return super.deletePaymentLine(uuid);
-        }
         this.dialog.add(ConfirmationDialog, {
             title: _t("Ακύρωση χρέωσης κάρτας"),
             body: _t(

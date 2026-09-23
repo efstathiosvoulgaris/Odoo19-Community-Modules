@@ -1,57 +1,165 @@
 # -*- coding: utf-8 -*-
 import logging
 
-from odoo import api, models, _
+from odoo import api, fields, models, _
+from odoo.exceptions import AccessError, UserError
 
 from odoo.addons.l10n_gr_provider_eftpos.models.eft import (
     EftIlydaClient, _fatal_errors, _format_errors,
-)
-from odoo.addons.l10n_gr_provider_eftpos.models.eft_driver import (
-    MegEftPosDriver, RESPONSE_CODES,
 )
 from odoo.addons.l10n_gr_provider_ilyda.models.account_move import _r2
 
 _logger = logging.getLogger(__name__)
 
+# pos.session states in which a till is actually open
+OPEN_SESSION_STATES = ('opening_control', 'opened', 'closing_control')
+
+
+class L10nGrProvEftPayment(models.Model):
+    """POS card charges live in the same ledger as backend ones.
+
+    Every attempt at the payment screen becomes a record BEFORE the card is
+    charged, keyed by a uuid the till chose. The terminal's answer is committed
+    on it the moment it arrives, so a charge survives anything that goes wrong
+    afterwards — a proxy timing out, the worker being killed, the browser
+    closing — and the till can ask what happened instead of charging again.
+    Stuck charges show up in the back office list with everything else.
+    """
+    _inherit = 'l10n.gr.prov.eft.payment'
+
+    pos_config_id = fields.Many2one(
+        'pos.config', string='Ταμείο POS', readonly=True, copy=False, index=True)
+    pos_client_key = fields.Char(
+        string='Κλειδί Ταμείου', readonly=True, copy=False, index=True,
+        help='Μοναδικό ανά προσπάθεια χρέωσης στο ταμείο. Αν χαθεί η απάντηση, '
+             'το ταμείο ρωτά με αυτό τι έγινε, αντί να χρεώσει ξανά.')
+
+    _pos_client_key_uniq = models.Constraint(
+        'UNIQUE(pos_client_key)',
+        'Το κλειδί προσπάθειας του ταμείου υπάρχει ήδη.',
+    )
+
+    def _is_pos_charge(self):
+        return bool(self.pos_config_id)
+
+    def _l10n_gr_prov_origin_label(self):
+        if not self.move_id and self.pos_config_id:
+            return _('POS %s', self.pos_config_id.name)
+        return super()._l10n_gr_prov_origin_label()
+
+    def _l10n_gr_prov_pos_result(self):
+        """What the till needs to know about this attempt, by state.
+
+        status: approved (charged by the driver) · signed (charge the terminal
+        by hand) · pending (outcome unknown — do NOT charge again) · cancelled
+        (nothing charged, or charged and given back).
+        """
+        self.ensure_one()
+        result = {
+            'client_key': self.pos_client_key,
+            'signature': self.signature,
+            'signing_author': self.signing_author,
+            'terminal_code': self.terminal_id.code,
+        }
+        if self.state == 'paid' and self.transaction_id:
+            result.update(status='approved', transaction_id=self.transaction_id)
+        elif self.state == 'signed' and not self.driver_response_code:
+            result['status'] = 'signed'
+        elif self.state in ('charging', 'paid'):
+            # 'paid' without a transaction id: approved but unusable, and the
+            # void that should have followed did not go through.
+            result.update(status='pending', error=self.driver_message or _(
+                'Άγνωστη έκβαση της χρέωσης.'))
+        else:
+            result.update(status='cancelled', error=self.driver_message or _(
+                'Η χρέωση δεν ολοκληρώθηκε.'))
+        return result
+
+    def _l10n_gr_prov_pos_release(self, reason=False):
+        """Give back whatever this attempt holds: void an approved charge,
+        cancel the signature. Never raises; returns an error text or False."""
+        self.ensure_one()
+        if self.state in ('cancelled', 'submitted'):
+            return False
+        try:
+            self.cancel_reason = 'TRANSACTION_CANCELLED'
+            self.action_cancel()
+        except Exception as e:
+            _logger.warning('Α.1155 POS release of %s failed: %s', self.display_name, e)
+            return str(e)
+        if reason:
+            self.driver_message = reason
+        return False
+
 
 class L10nGrProvEftTerminal(models.Model):
     _inherit = 'l10n.gr.prov.eft.terminal'
 
+    # ── Access ────────────────────────────────────────────────────────────────
+
+    @api.model
+    def _l10n_gr_prov_pos_config(self, vals):
+        """The till a POS call acts for — only for a POS user with a session
+        open on it. Everything after this runs as sudo: the charge ledger and
+        the provider credentials are not something a cashier reads directly."""
+        if not self.env.user.has_group('point_of_sale.group_pos_user'):
+            raise AccessError(_('Μόνο χρήστες POS.'))
+        config = self.env['pos.config'].browse(int(vals.get('config_id') or 0)).exists()
+        if not config or not self.env['pos.session'].sudo().search_count([
+                ('config_id', '=', config.id),
+                ('state', 'in', OPEN_SESSION_STATES)]):
+            raise AccessError(_('Δεν υπάρχει ανοιχτή βάρδια σε αυτό το ταμείο.'))
+        return config.sudo()
+
+    @api.model
+    def _l10n_gr_prov_pos_attempt(self, config, client_key):
+        if not client_key:
+            return self.env['l10n.gr.prov.eft.payment']
+        payment = self.env['l10n.gr.prov.eft.payment'].sudo().search(
+            [('pos_client_key', '=', client_key)], limit=1)
+        if payment and payment.pos_config_id != config:
+            raise AccessError(_('Η χρέωση ανήκει σε άλλο ταμείο.'))
+        return payment
+
+    # ── Calls from the payment screen ─────────────────────────────────────────
+
     @api.model
     def l10n_gr_prov_pos_sign(self, vals):
-        """Request an Α.1155 payment signature for a POS card payment, before
-        the invoice exists (called from the payment screen).
+        """Sign — and, with the MegEftPos Driver, charge — one POS card line.
 
-        The realtime sign endpoint signs against the document totals + series +
-        invoice type — none of which need the serial number — so it works at
-        payment time. `vals`: config_id, amount, net, vat, gross, vat_rate,
-        is_timologio, is_refund, installments (amounts always positive, like
-        the document).
-        Returns the signature dict, or {'error': <text>}.
+        `vals`: config_id, client_key (uuid of this attempt), amount, net, vat,
+        gross, vat_rate, is_timologio, is_refund, installments — amounts always
+        positive, like the document.
 
-        When the terminal is driven by the MegEftPos Driver the card is also
-        charged here and `transaction_id` comes back alongside the signature,
-        so the cashier never types it. Both steps happen in one call because
-        the signature exists only to be spent on this charge: issued but
-        unused, it reaches AADE as an «Ανοιχτό Παραστατικό» after 24h.
+        Idempotent on client_key: calling it again for an attempt that already
+        exists never signs or charges twice, it reports that attempt. So a till
+        that lost the answer can simply ask again.
+
+        Returns the attempt's status (see _l10n_gr_prov_pos_result), or
+        {'status': 'error', 'error': …} when nothing was signed.
         """
-        config = self.env['pos.config'].browse(vals['config_id'])
+        config = self._l10n_gr_prov_pos_config(vals)
+        existing = self._l10n_gr_prov_pos_attempt(config, vals.get('client_key'))
+        if existing:
+            return existing._l10n_gr_prov_pos_result()
         terminal = config.l10n_gr_prov_eft_terminal_id
         if not terminal:
-            return {'error': _(
+            return {'status': 'error', 'error': _(
                 'Δεν έχει οριστεί τερματικό EFT/POS στο POS (Ρυθμίσεις → '
                 'Πάροχος myDATA → Τερματικό Α.1155).')}
         company = terminal.company_id
         journal = self._l10n_gr_prov_pos_sign_journal(config, vals)
         if not journal:
-            return {'error': _('Δεν έχει οριστεί ημερολόγιο ΑΛΠ/ΤΙΜ/ΠΛΠ στο POS.')}
+            return {'status': 'error', 'error': _(
+                'Δεν έχει οριστεί ημερολόγιο ΑΛΠ/ΤΙΜ/ΠΛΠ στο POS.')}
+        net, vat, gross = (_r2(vals.get(k) or 0) for k in ('net', 'vat', 'gross'))
         body = {
             'amount': _r2(vals['amount']),
             'terminalId': terminal.code,
             'nspProtocol': terminal.nsp_protocol,
-            'netAmount': _r2(vals.get('net') or 0),
-            'vatAmount': _r2(vals.get('vat') or 0),
-            'grossAmount': _r2(vals.get('gross') or 0),
+            'netAmount': net,
+            'vatAmount': vat,
+            'grossAmount': gross,
             'vatRate': _r2(vals.get('vat_rate') or 0),
             'sellerVat': self.env['account.move']._ilyda_vat(
                 company.vat, prefixed=False),
@@ -62,21 +170,38 @@ class L10nGrProvEftTerminal(models.Model):
         try:
             data = EftIlydaClient(company).sign(body)
         except Exception as e:
-            return {'error': str(e)}
+            return {'status': 'error', 'error': str(e)}
         fatal = _fatal_errors(data)
         if fatal:
-            return {'error': _format_errors(fatal)}
+            return {'status': 'error', 'error': _format_errors(fatal)}
         sigs = data.get('invoiceSignatures') or []
         if not sigs:
-            return {'error': _('Ο πάροχος δεν επέστρεψε υπογραφή.')}
+            return {'status': 'error', 'error': _('Ο πάροχος δεν επέστρεψε υπογραφή.')}
         sig = sigs[0]
-        result = {
+        Payment = self.env['l10n.gr.prov.eft.payment']
+        payment = Payment.sudo().create({
+            'terminal_id': terminal.id,
+            'pos_config_id': config.id,
+            'pos_client_key': vals.get('client_key') or False,
+            'amount': _r2(vals['amount']),
+            'installments': int(vals.get('installments') or 0),
             'signature': sig.get('signature'),
             'signing_author': sig.get('signingAuthor'),
-            'terminal_code': terminal.code,
-        }
+            'signature_uid': sig.get('uidHash') or sig.get('uid'),
+            'signed_at': Payment._epoch_to_dt(sig.get('signedAt')),
+            'signature_expiry': Payment._epoch_to_dt(sig.get('signatureExpirationDate')),
+            'signed_content': sig.get('signedContent'),
+            'signature_amount': sig.get('amount') or _r2(vals['amount']),
+            'signature_net': sig.get('netAmount') or net,
+            'signature_vat': sig.get('vatAmount') or vat,
+            'signature_gross': sig.get('grossAmount') or gross,
+            'state': 'signed',
+        })
+        # The provider holds this signature now; losing the record would leave
+        # it to become an «Ανοιχτό Παραστατικό».
+        payment._commit()
         if vals.get('is_refund') or not terminal._l10n_gr_prov_driver_enabled():
-            # standalone terminal: the cashier charges it.
+            # Standalone terminal: the cashier charges it and types the id.
             # ponytail: refunds are always charged by hand, even on a driver
             # terminal. A driver Refund must quote the original Sale's
             # ecr/nsp/bankAuth/receipt references, and the payment screen has
@@ -85,16 +210,79 @@ class L10nGrProvEftTerminal(models.Model):
             # exactly this reason. Α.1155 only requires the signature, which
             # this path issues; wire driver.refund here if tills start doing
             # enough card returns for the manual step to hurt.
-            return result
-        charge = terminal._l10n_gr_prov_pos_charge(sig, vals)
-        if charge.get('error'):
-            # Nothing was charged, so release the signature rather than leave
-            # it to expire into an open document.
-            self.l10n_gr_prov_pos_cancel({
-                'config_id': vals['config_id'], 'signature': result['signature']})
-            return charge
-        result.update(charge)
-        return result
+            return payment._l10n_gr_prov_pos_result()
+        try:
+            payment.action_charge_terminal()
+        except UserError as e:
+            # Refused before a transaction existed (driver unreachable, bad
+            # configuration): nothing charged, release the signature.
+            error = payment._l10n_gr_prov_pos_release(str(e))
+            return {'status': 'error', 'error': error or str(e)}
+        if payment.state == 'paid' and not payment.transaction_id:
+            # Approved, but without the nspReferenceNumber AADE needs as the
+            # transaction id: the charge can never be declared — and a Void
+            # needs that very reference, so it cannot be given back from here
+            # either. Releasing only the signature would leave the money taken
+            # with nothing on record. Keep it, flagged for a human.
+            payment.submit_error = _(
+                'Το τερματικό ενέκρινε τη χρέωση χωρίς nspReferenceNumber — δεν '
+                'μπορεί ούτε να διαβιβαστεί ούτε να ακυρωθεί αυτόματα. '
+                'Ακυρώστε τη συναλλαγή στο τερματικό και μετά την πληρωμή εδώ.')
+            payment._commit()
+            return dict(payment._l10n_gr_prov_pos_result(), error=payment.submit_error)
+        elif payment.state == 'signed':
+            # Declined: nothing charged; this signature will not be used.
+            payment._l10n_gr_prov_pos_release()
+        return payment._l10n_gr_prov_pos_result()
+
+    @api.model
+    def l10n_gr_prov_pos_status(self, vals):
+        """What became of an attempt the till lost the answer to. Never
+        charges. {'status': 'unknown'} when no such attempt was recorded —
+        it may still be signing; ask again shortly."""
+        config = self._l10n_gr_prov_pos_config(vals)
+        payment = self._l10n_gr_prov_pos_attempt(config, vals.get('client_key'))
+        if not payment:
+            return {'status': 'unknown', 'client_key': vals.get('client_key')}
+        return payment._l10n_gr_prov_pos_result()
+
+    @api.model
+    def l10n_gr_prov_pos_recover(self, vals):
+        """«Ανάκτηση» from the till: ask the driver about a pending attempt."""
+        config = self._l10n_gr_prov_pos_config(vals)
+        payment = self._l10n_gr_prov_pos_attempt(config, vals.get('client_key'))
+        if not payment:
+            return {'status': 'unknown', 'client_key': vals.get('client_key')}
+        try:
+            payment.action_recover_pending()
+        except UserError as e:
+            return dict(payment._l10n_gr_prov_pos_result(), error=str(e))
+        return payment._l10n_gr_prov_pos_result()
+
+    @api.model
+    def l10n_gr_prov_pos_release(self, vals):
+        """Give an attempt back: void the charge if the driver made one, and
+        cancel the signature. For a validation that is abandoned or a card line
+        the cashier removes. The references come from the server-side record,
+        never from the browser.
+
+        Returns {'ok': True, 'voided': bool} or {'error': …}. `voided` False
+        on a line the cashier charged by hand: only the signature could be
+        released, the money has to be reversed on the terminal.
+        """
+        config = self._l10n_gr_prov_pos_config(vals)
+        payment = self._l10n_gr_prov_pos_attempt(config, vals.get('client_key'))
+        if not payment:
+            return {'error': _('Δεν βρέθηκε η χρέωση.')}
+        if payment.state == 'charging':
+            return {'error': _(
+                'Η έκβαση της χρέωσης είναι άγνωστη — κάντε πρώτα «Ανάκτηση».')}
+        error = payment._l10n_gr_prov_pos_release()
+        if error:
+            return {'error': error}
+        return {'ok': True, 'voided': bool(payment.voided_at)}
+
+    # ── Helpers ───────────────────────────────────────────────────────────────
 
     def _l10n_gr_prov_pos_sign_journal(self, config, vals):
         """The series the signature is issued against.
@@ -109,148 +297,9 @@ class L10nGrProvEftTerminal(models.Model):
                     else config.l10n_gr_prov_alp_journal_id)
         if not is_timologio and config.l10n_gr_prov_pla_journal_id:
             return config.l10n_gr_prov_pla_journal_id
-        return self.env['account.journal'].search([
+        return self.env['account.journal'].sudo().search([
             ('company_id', '=', config.company_id.id),
             ('type', '=', 'sale'),
             ('l10n_gr_edi_inv_type_default', '=', '5.1' if is_timologio else '11.4'),
             ('l10n_gr_prov_delivery_note', '=', False),
         ], limit=1)
-
-    def _l10n_gr_prov_pos_charge(self, sig, vals):
-        """Charge the card for a POS order through the MegEftPos Driver.
-
-        Returns {'transaction_id': …} on approval, else {'error': …}. Unlike
-        the backend flow there is no record to park a failed charge on, so an
-        unapproved response is reported and the signature released; an
-        interrupted one is left to the driver's own pending list, which the
-        cashier resolves from the terminal.
-        """
-        self.ensure_one()
-        signed_at = sig.get('signedAt')
-        request = self._l10n_gr_prov_pos_request(vals, {
-            'signed_content': sig.get('signedContent') or '',
-            'signature': sig.get('signature') or '',
-            # the uidHash, not the uid — see the backend signature block
-            'signature_uid': sig.get('uidHash') or sig.get('uid') or '',
-            # provider timestamps are epoch millis, the driver wants seconds
-            'signature_ts': int(float(signed_at) / 1000) if signed_at else 0,
-        })
-        try:
-            data = MegEftPosDriver(self.company_id, self).sale(
-                self._l10n_gr_prov_pos_device(), request)
-        except Exception as e:
-            return {'error': str(e)}
-        _logger.info('MegEftPos POS sale result: %s', data)
-        code = (data or {}).get('responseCode')
-        if code != 'APPROVED':
-            return {'error': _(
-                'Η χρέωση στο τερματικό δεν εγκρίθηκε: %(code)s %(msg)s',
-                code=dict(RESPONSE_CODES).get(code, code or '—'),
-                msg=(data or {}).get('nspResponseCodeDescription')
-                    or (data or {}).get('nspResponseCodeDescripton')
-                    or (data or {}).get('driverError') or '')}
-        # nspReferenceNumber is what AADE expects as the transactionId.
-        transaction_id = data.get('nspReferenceNumber')
-        if not transaction_id:
-            return {'error': _(
-                'Το τερματικό ενέκρινε τη συναλλαγή αλλά δεν επέστρεψε '
-                'nspReferenceNumber — δεν μπορεί να διαβιβαστεί.')}
-        # Everything a later Void has to quote back, plus the bank trail.
-        return {
-            'transaction_id': transaction_id,
-            'signed_content': request['providerInput'],
-            'signature_uid': request['providerUid'],
-            'signature_ts': request['signatureTimestamp'],
-            'ecr_reference': data.get('ecrReferenceNumber') or '',
-            'bank_auth_code': data.get('bankAuthorizationCode')
-                              or data.get('bankAuthorizatonCode') or '',
-            'receipt_number': data.get('receiptNumber') or '',
-        }
-
-    def _l10n_gr_prov_pos_request(self, vals, sig):
-        """The money + signature block shared by Sale and Void."""
-        self.ensure_one()
-        return {
-            'amount': _r2(vals['amount']),
-            'invoiceAmount': _r2(vals.get('gross') or 0),
-            'netAmount': _r2(vals.get('net') or 0),
-            'vatAmount': _r2(vals.get('vat') or 0),
-            'tipAmount': 0,
-            'cashier': self.env.user.name,
-            # Optional everywhere, and NSPs without δόσεις reject a value:
-            # only sent when instalments were actually asked for.
-            **({'installments': int(vals['installments'])}
-               if int(vals.get('installments') or 0) > 1 else {}),
-            'providerId': 'ILYDA',
-            'providerInput': sig.get('signed_content') or '',
-            'providerSignature': sig.get('signature') or '',
-            'providerUid': sig.get('signature_uid') or '',
-            'signatureTimestamp': sig.get('signature_ts') or 0,
-            # paymentMethodId is deliberately omitted (it is optional — the
-            # driver's own preload example leaves it out). At a counter the
-            # cashier cannot know whether the customer will tap a card or pay
-            # the IRIS QR, and preselecting one can hide the other on NSPs
-            # that honour it. Either way it is the same EFT/POS transaction.
-        }
-
-    @api.model
-    def l10n_gr_prov_pos_void(self, vals):
-        """Give back a charge the driver already made for a POS order.
-
-        Called when the order does not go through after the card was charged
-        — a later payment line failing, validation being abandoned, or the
-        cashier removing a charged line. The signature is released too: it was
-        never spent on a transmitted document.
-
-        `vals` carries what the charge returned (transaction_id, ecr_reference,
-        bank_auth_code, receipt_number, signature…) plus the order totals.
-        Returns {'ok': True} or {'error': <text>}.
-        """
-        config = self.env['pos.config'].browse(vals['config_id'])
-        terminal = config.l10n_gr_prov_eft_terminal_id
-        if not terminal or not terminal._l10n_gr_prov_driver_enabled():
-            return {'error': _('Το τερματικό δεν είναι συνδεδεμένο με driver.')}
-        request = terminal._l10n_gr_prov_pos_request(vals, vals)
-        request.update({
-            'ecrReferenceNumber': vals.get('ecr_reference') or '',
-            'nspReferenceNumber': vals.get('transaction_id') or '',
-            'bankAuthorizationCode': vals.get('bank_auth_code') or '',
-            'receiptNumber': vals.get('receipt_number') or '',
-        })
-        try:
-            data = MegEftPosDriver(terminal.company_id, terminal).void(
-                terminal._l10n_gr_prov_pos_device(), request)
-        except Exception as e:
-            return {'error': str(e)}
-        _logger.info('MegEftPos POS void result: %s', data)
-        code = (data or {}).get('responseCode')
-        if code != 'APPROVED':
-            return {'error': _(
-                'Η ακύρωση της χρέωσης στο τερματικό δεν εγκρίθηκε: '
-                '%(code)s %(msg)s',
-                code=dict(RESPONSE_CODES).get(code, code or '—'),
-                msg=(data or {}).get('nspResponseCodeDescription')
-                    or (data or {}).get('nspResponseCodeDescripton')
-                    or (data or {}).get('driverError') or '')}
-        # The money is back; the signature was never used on a sent document.
-        if vals.get('signature'):
-            self.l10n_gr_prov_pos_cancel({
-                'config_id': vals['config_id'], 'signature': vals['signature']})
-        return {'ok': True}
-
-    @api.model
-    def l10n_gr_prov_pos_cancel(self, vals):
-        """Cancel an unused Α.1155 signature (order abandoned after signing —
-        AADE auto-transmits unused signatures after 24h, so release it)."""
-        config = self.env['pos.config'].browse(vals['config_id'])
-        company = (config.l10n_gr_prov_eft_terminal_id.company_id
-                   or self.env.company)
-        try:
-            data = EftIlydaClient(company).cancel_signature({
-                'signature': vals['signature'],
-                'signatureCancelReason': 'TRANSACTION_CANCELLED',
-            })
-        except Exception as e:
-            return {'error': str(e)}
-        fatal = _fatal_errors(data)
-        return {'error': _format_errors(fatal)} if fatal else {'ok': True}

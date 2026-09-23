@@ -12,10 +12,13 @@ class PosPayment(models.Model):
     l10n_gr_prov_eft_signing_author = fields.Char(copy=False)
     l10n_gr_prov_eft_transaction_id = fields.Char(copy=False)
     l10n_gr_prov_eft_terminal_code = fields.Char(copy=False)
+    # The attempt's key: finds the l10n.gr.prov.eft.payment behind this line,
+    # which holds the driver's answer and everything a Void needs. A plain key,
+    # not a Many2one — the POS data layer would try to load the related model.
+    l10n_gr_prov_eft_client_key = fields.Char(copy=False, index=True)
 
-    # What the MegEftPos Driver needs to reverse this charge, kept because a
-    # Void must quote the very values the Sale answered with. They are also
-    # the reconciliation trail against the bank.
+    # Before pos_eftpos 1.6 the till kept what a Void needs on the line itself;
+    # the charge record holds it now. Kept so older payments stay readable.
     l10n_gr_prov_eft_signed_content = fields.Char(copy=False)
     l10n_gr_prov_eft_signature_uid = fields.Char(copy=False)
     l10n_gr_prov_eft_signature_ts = fields.Integer(copy=False)

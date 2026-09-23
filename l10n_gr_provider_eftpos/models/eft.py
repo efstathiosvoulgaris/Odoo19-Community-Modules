@@ -239,15 +239,23 @@ class EftTerminal(models.Model):
 
 class EftPayment(models.Model):
     _name = 'l10n.gr.prov.eft.payment'
+    _inherit = ['mail.thread']
     _description = 'Πληρωμή EFT/POS (Α.1155)'
     _order = 'id desc'
 
+    # A backend payment belongs to a document from the start. A POS charge
+    # (l10n_gr_provider_pos_eftpos) is signed and made at the payment screen,
+    # before its invoice exists: it is recorded here anyway — a charge is too
+    # important to live only in a browser — and linked to the invoice once the
+    # order is saved. Hence no required=True, and company/currency that fall
+    # back to the terminal.
     move_id = fields.Many2one(
-        'account.move', string='Παραστατικό', required=True, index=True,
+        'account.move', string='Παραστατικό', index=True,
         ondelete='restrict',
         domain="[('move_type', 'in', ('out_invoice', 'out_refund')), ('state', '=', 'posted')]")
-    company_id = fields.Many2one(related='move_id.company_id', store=True)
-    currency_id = fields.Many2one(related='move_id.currency_id')
+    company_id = fields.Many2one(
+        'res.company', compute='_compute_company_id', store=True, index=True)
+    currency_id = fields.Many2one('res.currency', compute='_compute_company_id')
     move_type = fields.Selection(related='move_id.move_type')
     partner_id = fields.Many2one(related='move_id.partner_id', string='Πελάτης')
     terminal_id = fields.Many2one(
@@ -400,10 +408,29 @@ class EftPayment(models.Model):
                 pay.state == 'signed'
                 and pay.signature_expiry and pay.signature_expiry < now)
 
+    @api.depends('move_id.company_id', 'move_id.currency_id', 'terminal_id.company_id')
+    def _compute_company_id(self):
+        for pay in self:
+            company = pay.move_id.company_id or pay.terminal_id.company_id
+            pay.company_id = company
+            pay.currency_id = pay.move_id.currency_id or company.currency_id
+
     @api.depends('move_id', 'amount')
     def _compute_display_name(self):
         for pay in self:
-            pay.display_name = f'{pay.move_id.name or "?"} · {pay.amount:.2f}'
+            pay.display_name = f'{pay._l10n_gr_prov_origin_label()} · {pay.amount:.2f}'
+
+    def _l10n_gr_prov_origin_label(self):
+        return self.move_id.name or '?'
+
+    def _is_pos_charge(self):
+        """True for a charge made at a POS till (extended by the POS bridge)."""
+        return False
+
+    def _log(self, body):
+        """Chatter entry on the document, or on the payment itself while it
+        has none (a POS charge before its order is saved)."""
+        (self.move_id or self).message_post(body=body)
 
     @api.onchange('move_id')
     def _onchange_move_id(self):
@@ -425,7 +452,7 @@ class EftPayment(models.Model):
 
     # ── Flow ──────────────────────────────────────────────────────────────────
     def _client(self):
-        return EftIlydaClient(self.move_id.company_id)
+        return EftIlydaClient(self.company_id)
 
     def _commit(self):
         """Make everything so far durable NOW.
@@ -508,7 +535,7 @@ class EftPayment(models.Model):
             'retrograde': bool(move.l10n_gr_prov_mark),
             'state': 'signed',
         })
-        move.message_post(body=_(
+        self._log(body=_(
             'Α.1155: εκδόθηκε υπογραφή πληρωμής %(amount)s για το τερματικό '
             '%(terminal)s (λήξη %(expiry)s).',
             amount=f'{self.amount:.2f}', terminal=terminal.display_name,
@@ -545,8 +572,11 @@ class EftPayment(models.Model):
                 'για το σωστό ποσό.',
                 amount=f'{self.amount:.2f}', signed=f'{self.signature_amount:.2f}'))
         # «Η υπογραφή πρέπει να αφορά το συγκεκριμένο παραστατικό»: same net,
-        # vat and gross. Only drifts if the document was edited after signing.
+        # vat and gross. Only drifts if the document was edited after signing
+        # — and a POS charge has no document yet to drift from.
         move = self.move_id
+        if not move:
+            return
         drift = [
             (label, signed, current)
             for label, signed, current in (
@@ -570,11 +600,13 @@ class EftPayment(models.Model):
         """The money block every driver request carries."""
         self.ensure_one()
         move = self.move_id
+        # Without a document (POS), the totals the signature was issued for.
         block = {
             'amount': _r2(self.amount),
-            'invoiceAmount': _r2(move._l10n_gr_prov_payable()),
-            'netAmount': _r2(move.amount_untaxed),
-            'vatAmount': _r2(move.amount_tax),
+            'invoiceAmount': _r2(move._l10n_gr_prov_payable() if move
+                                 else self.signature_gross),
+            'netAmount': _r2(move.amount_untaxed if move else self.signature_net),
+            'vatAmount': _r2(move.amount_tax if move else self.signature_vat),
             'tipAmount': _r2(self.tip_amount) if self.tip_amount else 0,
         }
         # Optional everywhere, and NSPs that do not offer δόσεις reject a value:
@@ -587,7 +619,7 @@ class EftPayment(models.Model):
         """Α.1155 fields tying the charge to the provider's signature."""
         self.ensure_one()
         signed_at = self.signed_at
-        return {
+        block = {
             'providerId': 'ILYDA',
             'providerInput': self.signed_content or '',
             'providerSignature': self.signature or '',
@@ -598,8 +630,13 @@ class EftPayment(models.Model):
             'signatureTimestamp': int(
                 signed_at.replace(tzinfo=timezone.utc).timestamp()
             ) if signed_at else 0,
-            'paymentMethodId': self.payment_method,
         }
+        # Optional. At a POS counter the cashier cannot know whether the
+        # customer will tap a card or pay the IRIS QR, and preselecting one can
+        # hide the other on NSPs that honour it — so a till never sends it.
+        if not self._is_pos_charge():
+            block['paymentMethodId'] = self.payment_method
+        return block
 
     def _store_driver_result(self, data):
         """Keep whatever the terminal answered, approved or not.
@@ -667,7 +704,7 @@ class EftPayment(models.Model):
             # a raise would roll that record back. Flag it; the payment is not
             # submitted, and «Ακύρωση Υπογραφής» voids it on the terminal.
             self.overcharged = True
-            self.move_id.message_post(body=_(
+            self._log(body=_(
                 'Α.1155: το τερματικό χρέωσε %(paid)s ενώ ζητήθηκαν %(asked)s. '
                 'Το επιπλέον ποσό δεν καλύπτεται από την υπογραφή — η πληρωμή '
                 'ΔΕΝ διαβιβάζεται. Ακυρώστε την (επιστρέφονται τα χρήματα στην '
@@ -675,7 +712,7 @@ class EftPayment(models.Model):
                 paid=f'{paid:.2f}', asked=f'{requested:.2f}'))
             return
         self.amount = paid
-        self.move_id.message_post(body=_(
+        self._log(body=_(
             'Α.1155: το τερματικό χρέωσε %(paid)s αντί για %(asked)s — η '
             'πληρωμή προσαρμόστηκε. Υπόλοιπο %(rest)s προς εξόφληση με άλλο '
             'τρόπο πληρωμής.',
@@ -724,7 +761,7 @@ class EftPayment(models.Model):
         request['cashier'] = self.env.user.name
         if is_refund:
             request.update(self._original_transaction_block())
-        driver = MegEftPosDriver(self.move_id.company_id, self.terminal_id)
+        driver = MegEftPosDriver(self.company_id, self.terminal_id)
         device = self.terminal_id._l10n_gr_prov_pos_device()
         # From here the card may be charged. Say so durably BEFORE the call, so
         # a worker killed mid-call leaves «charging», not «signed» — which
@@ -756,12 +793,12 @@ class EftPayment(models.Model):
             return self._charge_outcome_unknown(self.driver_message or code or '')
         self._commit()
         if code != 'APPROVED':
-            self.move_id.message_post(body=_(
+            self._log(body=_(
                 'Α.1155: η συναλλαγή κάρτας δεν εγκρίθηκε (%(code)s) %(msg)s',
                 code=code, msg=self.driver_message or ''))
             return self._reopen()
         self._reconcile_paid_amount()
-        self.move_id.message_post(body=_(
+        self._log(body=_(
             'Α.1155: %(kind)s %(amount)s εγκρίθηκε — έγκριση τράπεζας '
             '%(auth)s, NSP ref %(nsp)s.',
             kind=(_('επιστροφή') if self.move_id.move_type == 'out_refund'
@@ -775,7 +812,7 @@ class EftPayment(models.Model):
         """No definite answer: the card may have been charged. Stay in
         «charging» — no second charge until recovery settles it."""
         self.write({'state': 'charging', 'driver_message': reason or False})
-        self.move_id.message_post(body=_(
+        self._log(body=_(
             'Α.1155: άγνωστη έκβαση της χρέωσης %(amount)s (%(reason)s). Η '
             'κάρτα ίσως χρεώθηκε — ΜΗΝ χρεώσετε ξανά· πατήστε «Ανάκτηση '
             'Εκκρεμούς».', amount=f'{self.amount:.2f}', reason=reason or '—'))
@@ -793,6 +830,8 @@ class EftPayment(models.Model):
         self.ensure_one()
         if self.state != 'signed':
             raise UserError(_('Χρειάζεται πρώτα υπογραφή παρόχου.'))
+        if not self.move_id:
+            raise UserError(_('Η προφόρτωση αφορά ήδη εκδοθέν παραστατικό.'))
         self._check_signature_usable()
         if not self.driver_enabled:
             raise UserError(_(
@@ -806,7 +845,7 @@ class EftPayment(models.Model):
         issue_date = move.invoice_date or fields.Date.context_today(self)
         request['receiptTimestamp'] = int(datetime.combine(
             issue_date, datetime.min.time(), tzinfo=timezone.utc).timestamp())
-        data = MegEftPosDriver(move.company_id, self.terminal_id).preload(
+        data = MegEftPosDriver(self.company_id, self.terminal_id).preload(
             self.terminal_id._l10n_gr_prov_pos_device(), request)
         code = (data or {}).get('responseCode')
         if code != 'APPROVED':
@@ -823,7 +862,7 @@ class EftPayment(models.Model):
             'ecr_reference': data.get('ecrReferenceNumber') or self.ecr_reference,
         })
         self._commit()  # the only handle on a charge the customer makes later
-        move.message_post(body=_(
+        self._log(body=_(
             'Α.1155: προφορτώθηκε στο τερματικό %(terminal)s πληρωμή '
             '%(amount)s. Μετά την πληρωμή από τον πελάτη, χρησιμοποιήστε την '
             '«Ανάκτηση Συναλλαγής».',
@@ -845,7 +884,7 @@ class EftPayment(models.Model):
             'receiptNumber': self.receipt_number or '',
         })
         request['cashier'] = self.env.user.name
-        data = MegEftPosDriver(self.move_id.company_id, self.terminal_id).void(
+        data = MegEftPosDriver(self.company_id, self.terminal_id).void(
             self.terminal_id._l10n_gr_prov_pos_device(), request)
         code = (data or {}).get('responseCode')
         if code != 'APPROVED':
@@ -855,7 +894,7 @@ class EftPayment(models.Model):
                 msg=(data or {}).get('nspResponseCodeDescription')
                     or (data or {}).get('nspResponseCodeDescripton')
                     or (data or {}).get('driverError') or ''))
-        self.move_id.message_post(body=_(
+        self._log(body=_(
             'Α.1155: ακυρώθηκε στο τερματικό η χρέωση %(amount)s (NSP ref '
             '%(nsp)s).', amount=f'{self.amount:.2f}', nsp=self.nsp_reference))
 
@@ -874,7 +913,7 @@ class EftPayment(models.Model):
                 # The driver keeps every transaction it started; nothing there
                 # means nothing was charged, and charging again is safe.
                 self.write({'state': 'signed', 'driver_response_code': False})
-                self.move_id.message_post(body=_(
+                self._log(body=_(
                     'Α.1155: ο driver δεν βρήκε τη συναλλαγή %(amount)s — η '
                     'κάρτα δεν χρεώθηκε. Μπορείτε να χρεώσετε ξανά.',
                     amount=f'{self.amount:.2f}'))
@@ -893,7 +932,7 @@ class EftPayment(models.Model):
         only when its amount is this payment's — never «the only one there»,
         which may be another till's sale or an unrelated preload.
         """
-        driver = MegEftPosDriver(self.move_id.company_id, self.terminal_id)
+        driver = MegEftPosDriver(self.company_id, self.terminal_id)
         device = self.terminal_id._l10n_gr_prov_pos_device()
         if self.ecr_reference:
             return driver.pending_by_ecr(device, self.ecr_reference)
@@ -921,7 +960,7 @@ class EftPayment(models.Model):
         if self.state != 'charging':
             raise UserError(_('Η πληρωμή δεν είναι σε εκκρεμή χρέωση.'))
         self.write({'state': 'signed', 'driver_response_code': False})
-        self.move_id.message_post(body=_(
+        self._log(body=_(
             'Α.1155: ο/η %(user)s επιβεβαίωσε χειροκίνητα ότι η κάρτα ΔΕΝ '
             'χρεώθηκε για την πληρωμή %(amount)s.',
             user=self.env.user.name, amount=f'{self.amount:.2f}'))
@@ -989,6 +1028,9 @@ class EftPayment(models.Model):
         self.ensure_one()
         if self.overcharged:
             return self._reopen()
+        if not self.move_id:
+            # POS charge: it reaches the provider inside its order's invoice.
+            return False
         try:
             with self.env.cr.savepoint():
                 if self.retrograde or self.move_id.l10n_gr_prov_mark:
@@ -998,7 +1040,7 @@ class EftPayment(models.Model):
         except Exception as e:
             _logger.exception('Α.1155 submission failed for %s', self.display_name)
             self.submit_error = str(e)
-            self.move_id.message_post(body=_(
+            self._log(body=_(
                 'Α.1155: η χρέωση %(amount)s καταχωρίστηκε, αλλά η διαβίβαση '
                 'απέτυχε: %(error)s — «Επανάληψη Διαβίβασης» από την πληρωμή.',
                 amount=f'{self.amount:.2f}', error=e))
@@ -1050,7 +1092,7 @@ class EftPayment(models.Model):
             'state': 'submitted',
         })
         self._sync_move_payment_line()
-        move.message_post(body=_(
+        self._log(body=_(
             'Α.1155: διαβιβάστηκε πληρωμή POS %(amount)s — MARK πληρωμής %(mark)s.',
             amount=f'{self.amount:.2f}',
             mark=self.payment_method_mark or '—'))
@@ -1146,7 +1188,7 @@ class EftPayment(models.Model):
             if fatal:
                 raise UserError(_(
                     'Αποτυχία ακύρωσης υπογραφής: %s', _format_errors(fatal)))
-            self.move_id.message_post(body=_(
+            self._log(body=_(
                 'Α.1155: ακυρώθηκε υπογραφή πληρωμής %(amount)s (%(reason)s).',
                 amount=f'{self.amount:.2f}',
                 reason=dict(CANCEL_REASONS)[self.cancel_reason]))
