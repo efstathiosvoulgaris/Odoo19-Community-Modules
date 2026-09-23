@@ -11,6 +11,17 @@ class AccountMove(models.Model):
         'l10n.gr.prov.catering.order', 'closing_move_id',
         string='Δελτία Παραγγελίας Εστίασης', copy=False)
 
+    def write(self, vals):
+        """The notes a document closes are closed when it is MARKED — by the
+        POS send, a later cron retry or a provider lookup alike. Until then
+        they are still open at AADE, and the 24-hour alert must keep seeing
+        them."""
+        res = super().write(vals)
+        if vals.get('l10n_gr_prov_mark'):
+            self.l10n_gr_prov_catering_order_ids.filtered(
+                lambda n: n.state == 'sent').write({'state': 'closed'})
+        return res
+
     def _l10n_gr_prov_sends_quantity(self, inv_type):
         # A closing document gets quantities added below (DP-0007), so it is
         # subject to the same «quantity > 0» rule as a dispatch note.

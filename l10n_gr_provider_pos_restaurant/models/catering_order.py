@@ -267,10 +267,13 @@ class L10nGrProvCateringOrder(models.Model):
                 [('l10n_gr_prov_catering_alert_hours', '>', 0)]):
             deadline = fields.Datetime.now() - timedelta(
                 hours=config.l10n_gr_prov_catering_alert_hours)
+            # Open at AADE = transmitted and not closed by a MARKED document.
+            # A closing document that failed to transmit closes nothing.
             notes = Note.search([
                 ('config_id', '=', config.id),
                 ('state', '=', 'sent'),
-                ('closing_move_id', '=', False),
+                '|', ('closing_move_id', '=', False),
+                     ('closing_move_id.l10n_gr_prov_mark', '=', False),
                 ('create_date', '<=', deadline),
             ])
             if not notes:
@@ -326,8 +329,12 @@ class L10nGrProvCateringOrder(models.Model):
 
     def action_total_cancel(self):
         """Back-office «Καθολική Ακύρωση» over the selected open notes."""
+        # A closing document the cron gave up on (abandoned) will never close
+        # its notes, so they must be cancellable here before the 24h limit.
         notes = self.filtered(
-            lambda n: n.state == 'sent' and n.mark and not n.closing_move_id)
+            lambda n: n.state == 'sent' and n.mark and (
+                not n.closing_move_id
+                or n.closing_move_id.l10n_gr_prov_state == 'abandoned'))
         if not notes:
             raise UserError(_('Επιλέξτε διαβιβασμένα δελτία που δεν έχουν κλείσει.'))
         for _company, group in notes.grouped('company_id').items():
@@ -363,7 +370,9 @@ class L10nGrProvCateringOrder(models.Model):
         })
         cancel._l10n_gr_prov_send()
         if cancel.state == 'sent':
-            marks.write({'state': 'cancelled'})
+            # Detach from an abandoned closing document: resent by hand later,
+            # it must not correlate notes that are cancelled at AADE.
+            marks.write({'state': 'cancelled', 'closing_move_id': False})
         return cancel
 
     # ── Payload ──────────────────────────────────────────────────────────────

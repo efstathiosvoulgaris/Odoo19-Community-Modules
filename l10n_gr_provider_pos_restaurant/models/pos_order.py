@@ -37,5 +37,10 @@ class PosOrder(models.Model):
         invoice = super()._generate_pos_order_invoice()
         notes = invoice.l10n_gr_prov_catering_order_ids
         if notes:
-            notes.write({'state': 'closed', 'pos_order_id': self.id})
+            # Not 'closed' yet: the notes close at AADE only when this document
+            # is marked, which happens after this method (and possibly much
+            # later, from the retry cron). account.move.write closes them then.
+            notes.write({'pos_order_id': self.id})
+            if invoice.l10n_gr_prov_mark:
+                notes.write({'state': 'closed'})
         return invoice

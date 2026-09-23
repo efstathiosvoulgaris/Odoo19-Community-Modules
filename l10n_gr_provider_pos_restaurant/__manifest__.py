@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Greece - E-Invoicing Provider (Restaurant Order Notes 8.6)',
-    'version': '1.2',
+    'version': '1.3',
     'category': 'Accounting/Localizations',
     'summary': 'Δελτίο Παραγγελίας Εστίασης (8.6) from the restaurant Point of Sale',
     'description': (

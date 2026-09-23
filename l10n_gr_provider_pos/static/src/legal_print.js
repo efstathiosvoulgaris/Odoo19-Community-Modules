@@ -27,6 +27,14 @@ patch(PosStore.prototype, {
             || this.config.l10n_gr_prov_print_mode === "receipt") {
             return false;
         }
+        // Only a document the provider holds is the legal document. One that
+        // failed to transmit would print with its number and the provider
+        // line but no ΜΑΡΚ, no QR and no warning — a legal-looking paper AADE
+        // never received. Those fall back to the thermal receipt, which says
+        // «ΔΕΝ ΔΙΑΒΙΒΑΣΤΗΚΕ».
+        if (!["sent", "queued", "offline"].includes(order?.l10n_gr_prov_state)) {
+            return false;
+        }
         // raw: account_move is a plain id on the client, not a loaded relation.
         return order?.raw?.account_move || false;
     },

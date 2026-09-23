@@ -179,21 +179,28 @@ class PosOrder(models.Model):
         move = self.account_move
         if not move.l10n_gr_prov_applicable or move.l10n_gr_prov_mark:
             return
+        # _try_send stores a failure on the move instead of raising, so the
+        # outcome is read from the state: sent, queued (TF-2) and offline
+        # (TF-1 QR) all mean the customer's document is legally covered.
+        # The except only catches what _try_send itself does not.
         try:
             move._l10n_gr_prov_try_send()
-        except Exception as error:
+            error = (None if move.l10n_gr_prov_state in ('sent', 'queued', 'offline')
+                     else move.l10n_gr_prov_error or _('άγνωστο σφάλμα'))
+        except Exception as e:
             _logger.exception(
                 'Provider send failed for POS order %s (%s)',
                 self.name, move.name)
-            if self.config_id.l10n_gr_prov_send_failure == 'block':
-                # ponytail: raising rolls the whole sync back, so the order
-                # returns to the till unsaved and the cashier retries. That is
-                # the point — this till may not hand over an untransmitted
-                # document. A softer «hold the order» would need its own state
-                # machine on pos.order.
-                raise UserError(_(
-                    'Η διαβίβαση στον πάροχο απέτυχε και το ταμείο είναι '
-                    'ρυθμισμένο να μην ολοκληρώνει πωλήσεις χωρίς διαβίβαση.\n\n'
-                    '%(error)s', error=error)) from error
+            error = e
+        if error and self.config_id.l10n_gr_prov_send_failure == 'block':
+            # ponytail: raising rolls the whole sync back, so the order
+            # returns to the till unsaved and the cashier retries. That is
+            # the point — this till may not hand over an untransmitted
+            # document. A softer «hold the order» would need its own state
+            # machine on pos.order.
+            raise UserError(_(
+                'Η διαβίβαση στον πάροχο απέτυχε και το ταμείο είναι '
+                'ρυθμισμένο να μην ολοκληρώνει πωλήσεις χωρίς διαβίβαση.\n\n'
+                '%(error)s', error=error))
         # 'warn' is rendered by the front end: the receipt screen already reads
         # l10n_gr_prov_state, so an un-marked document is visible there.
