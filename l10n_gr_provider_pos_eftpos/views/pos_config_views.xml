@@ -13,6 +13,12 @@
                     <field name="pos_l10n_gr_prov_eft_terminal_id"/>
                 </div>
                 <div class="row" invisible="not pos_l10n_gr_prov_eft_terminal_id">
+                    <label string="Επιπλέον τερματικά" for="pos_l10n_gr_prov_eft_terminal_ids"
+                           class="col-lg-4 o_light_label"/>
+                    <field name="pos_l10n_gr_prov_eft_terminal_ids" widget="many2many_tags"
+                           placeholder="μόνο αν ο ταμίας διαλέγει τερματικό"/>
+                </div>
+                <div class="row" invisible="not pos_l10n_gr_prov_eft_terminal_id">
                     <field name="pos_l10n_gr_prov_eft_require_signature" class="col-lg-1"/>
                     <label string="Υποχρεωτική υπογραφή Α.1155 για πληρωμές με κάρτα"
                            for="pos_l10n_gr_prov_eft_require_signature" class="col-lg-10 o_light_label"/>

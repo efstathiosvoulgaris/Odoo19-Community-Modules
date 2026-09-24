@@ -8,6 +8,7 @@ import { uuidv4 } from "@point_of_sale/utils";
 import OrderPaymentValidation from "@point_of_sale/app/utils/order_payment_validation";
 import { PaymentScreen } from "@point_of_sale/app/screens/payment_screen/payment_screen";
 import { ConfirmationDialog } from "@web/core/confirmation_dialog/confirmation_dialog";
+import { GrTerminalDialog } from "./terminal_dialog";
 
 /**
  * Α.1155 EFT/POS flow for card payments in the POS.
@@ -84,6 +85,40 @@ patch(OrderPaymentValidation.prototype, {
             await this._grVoidCharges(this.order, touched);
         }
         return proceed;
+    },
+
+    /**
+     * Which terminal this charge runs on. With one terminal (or none) nothing
+     * is asked and the server uses the till's default; with several the
+     * cashier picks, the last pick on this till offered first. null = the
+     * cashier backed out.
+     */
+    async _grChooseTerminal() {
+        const terminals = this.pos.config.l10n_gr_prov_eft_terminal_choices || [];
+        if (terminals.length < 2) {
+            return terminals[0]?.id || false;
+        }
+        const storageKey = `l10n_gr_prov_eft_terminal_${this.pos.config.id}`;
+        let last = null;
+        try {
+            last = Number(localStorage.getItem(storageKey)) || null;
+        } catch {
+            // private window or blocked storage: no preselection
+        }
+        const picked = await makeAwaitable(this.pos.dialog, GrTerminalDialog, {
+            title: _t("Σε ποιο τερματικό θα γίνει η χρέωση;"),
+            terminals,
+            preselected: terminals.some((t) => t.id === last) ? last : terminals[0].id,
+        });
+        if (!picked) {
+            return null;
+        }
+        try {
+            localStorage.setItem(storageKey, String(picked));
+        } catch {
+            // not remembered; harmless
+        }
+        return picked;
     },
 
     /**
@@ -170,6 +205,10 @@ patch(OrderPaymentValidation.prototype, {
             // charge that follows it, so nothing the cashier can abandon may
             // sit between the two.
             if (!result) {
+                const terminalId = await this._grChooseTerminal();
+                if (terminalId === null) {
+                    return false;
+                }
                 const installments = isRefund ? 0 : await this._grAskInstallments();
                 if (installments === null) {
                     return false;
@@ -184,6 +223,7 @@ patch(OrderPaymentValidation.prototype, {
                             {
                                 config_id: order.config_id.id,
                                 client_key: key,
+                                terminal_id: terminalId,
                                 amount: abs(line.getAmount()),
                                 net: abs(order.priceExcl),
                                 vat: abs(order.amountTaxes),

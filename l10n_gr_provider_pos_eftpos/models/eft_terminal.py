@@ -127,7 +127,8 @@ class L10nGrProvEftTerminal(models.Model):
     def l10n_gr_prov_pos_sign(self, vals):
         """Sign — and, with the MegEftPos Driver, charge — one POS card line.
 
-        `vals`: config_id, client_key (uuid of this attempt), amount, net, vat,
+        `vals`: config_id, client_key (uuid of this attempt), terminal_id (the
+        cashier's pick; the till's default when absent), amount, net, vat,
         gross, vat_rate, is_timologio, is_refund, installments — amounts always
         positive, like the document.
 
@@ -142,11 +143,19 @@ class L10nGrProvEftTerminal(models.Model):
         existing = self._l10n_gr_prov_pos_attempt(config, vals.get('client_key'))
         if existing:
             return existing._l10n_gr_prov_pos_result()
-        terminal = config.l10n_gr_prov_eft_terminal_id
-        if not terminal:
+        allowed = config._l10n_gr_prov_eft_terminals()
+        if not allowed:
             return {'status': 'error', 'error': _(
                 'Δεν έχει οριστεί τερματικό EFT/POS στο POS (Ρυθμίσεις → '
                 'Πάροχος myDATA → Τερματικό Α.1155).')}
+        # The till says which terminal the customer is paying on; only one
+        # this till is set up for is accepted.
+        terminal = allowed[:1]
+        if vals.get('terminal_id'):
+            terminal = allowed.filtered(lambda t: t.id == int(vals['terminal_id']))
+            if not terminal:
+                return {'status': 'error', 'error': _(
+                    'Το τερματικό δεν είναι ρυθμισμένο για αυτό το ταμείο.')}
         company = terminal.company_id
         journal = self._l10n_gr_prov_pos_sign_journal(config, vals)
         if not journal:

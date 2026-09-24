@@ -22,6 +22,10 @@
         <field name="model">l10n.gr.prov.eft.terminal</field>
         <field name="arch" type="xml">
             <form string="Τερματικό EFT/POS">
+                <header>
+                    <button name="action_check_driver" type="object"
+                            string="Έλεγχος Driver" invisible="not pos_protocol"/>
+                </header>
                 <sheet>
                     <field name="needs_host" invisible="1"/>
                     <field name="needs_api_key" invisible="1"/>
@@ -61,6 +65,7 @@
                         </group>
                     </group>
                 </sheet>
+                <chatter/>
             </form>
         </field>
     </record>

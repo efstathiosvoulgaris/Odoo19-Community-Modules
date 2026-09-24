@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from odoo import fields, models, _
+from odoo.exceptions import UserError
 
 
 class AccountMove(models.Model):
@@ -37,6 +38,55 @@ class AccountMove(models.Model):
                     },
                 }
         return super().action_l10n_gr_prov_send()
+
+    def _l10n_gr_prov_eft_hold(self):
+        """Why this document must not reach the provider yet, or False.
+
+        The interception above only guards the button. The retry cron (auto
+        send), Send & Print and the POS all transmit through _try_send
+        directly — and did so while the card dialog was still open, putting
+        the document at AADE without its Α.1155 signature or transaction id.
+        """
+        self.ensure_one()
+        # Not 'draft': an abandoned dialog signed nothing and would hold the
+        # document forever; its card line is caught as unsigned below.
+        pending = self.l10n_gr_prov_eft_payment_ids.filtered(
+            lambda p: p.state in ('signed', 'charging'))
+        if pending:
+            return _(
+                'Εκκρεμεί πληρωμή με κάρτα (Α.1155) σε κατάσταση «%(state)s» — '
+                'το παραστατικό διαβιβάζεται μόλις ολοκληρωθεί ή ακυρωθεί.',
+                state=dict(pending[0]._fields['state'].selection)[pending[0].state])
+        # A POS invoice carries what the till charged; whether an unsigned card
+        # line is acceptable there is the till's setting, not ours.
+        if 'pos_order_ids' in self._fields and self.pos_order_ids:
+            return False
+        unsigned = self.l10n_gr_prov_payment_ids.filtered(
+            lambda p: p.payment_type == '7' and not p.eft_payment_id)
+        if unsigned and self.env['l10n.gr.prov.eft.terminal'].search_count(
+                [('company_id', '=', self.company_id.id)], limit=1):
+            return _(
+                'Η πληρωμή με κάρτα δεν έχει υπογραφή Α.1155 — πατήστε «Send to '
+                'Provider» για να ολοκληρωθεί η πληρωμή στο τερματικό.')
+        return False
+
+    def _l10n_gr_prov_try_send(self, raise_on_error=False):
+        """Hold the document while its card payment is unsettled.
+
+        Nothing is written to the state: the document stays «to send» and goes
+        out, signature included, once the payment is done. The reason is shown
+        on the document, posted to the chatter only when it changes, so the
+        hourly cron does not repeat it.
+        """
+        reason = self._l10n_gr_prov_eft_hold()
+        if not reason:
+            return super()._l10n_gr_prov_try_send(raise_on_error=raise_on_error)
+        if raise_on_error:
+            raise UserError(reason)
+        if self.l10n_gr_prov_error != reason:
+            self.l10n_gr_prov_error = reason
+            self.message_post(body=reason)
+        return None
 
     def write(self, vals):
         """Once the provider holds the document, every card payment that was

@@ -22,7 +22,8 @@ from odoo.addons.l10n_gr_provider_ilyda.models.account_move import (
 from .eft_driver import (
     MegEftPosDriver, POS_PROTOCOLS, RESPONSE_CODES, PAYMENT_METHODS,
     PROTOCOLS_NEED_HOST, PROTOCOLS_NEED_API_KEY, PROTOCOLS_NEED_CLIENT,
-    DriverNoAnswer, DriverRejected, check_driver_url, check_driver_url_rights,
+    DriverNoAnswer, DriverRejected, as_user_error, check_driver_url,
+    check_driver_url_rights,
 )
 
 _logger = logging.getLogger(__name__)
@@ -86,6 +87,9 @@ def _format_errors(errors):
 
 class EftTerminal(models.Model):
     _name = 'l10n.gr.prov.eft.terminal'
+    # Activities: the driver health check assigns one when the driver stops
+    # answering, and closes it when it answers again.
+    _inherit = ['mail.thread', 'mail.activity.mixin']
     _description = 'Τερματικό EFT/POS (Α.1155)'
 
     name = fields.Char(string='Ονομασία', required=True)
@@ -166,6 +170,79 @@ class EftTerminal(models.Model):
             terminal.needs_api_key = protocol in PROTOCOLS_NEED_API_KEY
             terminal.needs_client = protocol in PROTOCOLS_NEED_CLIENT
 
+    # ── Driver health ────────────────────────────────────────────────────────
+
+    HEALTH_SUMMARY = 'MegEftPos Driver δεν απαντά'
+
+    def _l10n_gr_prov_driver_ping(self):
+        """False when the driver answers, the reason when it does not.
+
+        Any HTTP answer counts — the driver replies 404 to «/», and 401 when
+        BASIC_AUTH is on and the credentials in Odoo are wrong (which is a
+        problem too, so 401 is reported).
+        """
+        self.ensure_one()
+        try:
+            driver = MegEftPosDriver(self.company_id, self)
+            resp = requests.get(f'{driver.base}/', auth=driver.auth, timeout=10)
+        except UserError as e:
+            return e.args[0] if e.args else str(e)
+        except requests.RequestException as e:
+            return _('Δεν απαντά (%(url)s): %(err)s',
+                     url=self._l10n_gr_prov_driver_url(), err=e)
+        if resp.status_code == 401:
+            return _('Απορρίπτει τα στοιχεία σύνδεσης (HTTP 401) — ελέγξτε Driver '
+                     'Username / Password στις Ρυθμίσεις.')
+        if resp.status_code >= 500:
+            return _('Σφάλμα διακομιστή (HTTP %s).', resp.status_code)
+        return False
+
+    def action_check_driver(self):
+        self.ensure_one()
+        problem = self._l10n_gr_prov_driver_ping()
+        self._l10n_gr_prov_driver_alert(problem)
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'type': 'danger' if problem else 'success',
+                'title': _('MegEftPos Driver'),
+                'message': problem or _('Ο driver απαντά (%s).',
+                                        self._l10n_gr_prov_driver_url()),
+            },
+        }
+
+    @api.model
+    def _cron_l10n_gr_prov_driver_health(self):
+        """Every driver in use, once per address: a driver that stopped
+        answering stops every card payment of every till behind it — and the
+        first to notice is usually a customer at the counter."""
+        terminals = self.search([('pos_protocol', '!=', False)])
+        for url, group in terminals.grouped(
+                lambda t: t._l10n_gr_prov_driver_url() or '').items():
+            if not url:
+                continue
+            problem = group[0]._l10n_gr_prov_driver_ping()
+            for terminal in group:
+                terminal._l10n_gr_prov_driver_alert(problem)
+
+    def _l10n_gr_prov_driver_alert(self, problem):
+        """One open activity while the driver is down; closed on recovery."""
+        self.ensure_one()
+        open_alert = self.activity_ids.filtered(
+            lambda a: a.summary == self.HEALTH_SUMMARY)
+        if problem and not open_alert:
+            managers = self.env.ref('account.group_account_manager').user_ids.filtered(
+                lambda u: self.company_id in u.company_ids and not u.share)
+            self.activity_schedule(
+                'mail.mail_activity_data_todo',
+                user_id=(managers[:1] or self.env.ref('base.user_admin')).id,
+                summary=self.HEALTH_SUMMARY,
+                note=_('%(problem)s<br/>Μέχρι να επανέλθει, οι κάρτες σε αυτό το '
+                       'τερματικό χρεώνονται χειροκίνητα.', problem=problem))
+        elif not problem and open_alert:
+            open_alert.action_feedback(feedback=_('Ο driver απαντά ξανά.'))
+
     def _l10n_gr_prov_driver_url(self):
         """Where this terminal's driver lives.
 
@@ -220,8 +297,9 @@ class EftTerminal(models.Model):
         self.ensure_one()
         if not self.otp:
             raise UserError(_('Καταχωρίστε το OTP που εμφανίζει το τερματικό.'))
-        data = MegEftPosDriver(self.company_id, self).redeem_otp(
-            self._l10n_gr_prov_pos_device_for_otp(), self.otp)
+        with as_user_error():
+            data = MegEftPosDriver(self.company_id, self).redeem_otp(
+                self._l10n_gr_prov_pos_device_for_otp(), self.otp)
         api_key = (data or {}).get('apiKey')
         if not api_key:
             raise UserError(_('Ο driver δεν επέστρεψε API Key.'))
@@ -859,8 +937,9 @@ class EftPayment(models.Model):
         issue_date = move.invoice_date or fields.Date.context_today(self)
         request['receiptTimestamp'] = int(datetime.combine(
             issue_date, datetime.min.time(), tzinfo=timezone.utc).timestamp())
-        data = MegEftPosDriver(self.company_id, self.terminal_id).preload(
-            self.terminal_id._l10n_gr_prov_pos_device(), request)
+        with as_user_error():
+            data = MegEftPosDriver(self.company_id, self.terminal_id).preload(
+                self.terminal_id._l10n_gr_prov_pos_device(), request)
         code = (data or {}).get('responseCode')
         if code != 'APPROVED':
             raise UserError(_(
@@ -898,8 +977,9 @@ class EftPayment(models.Model):
             'receiptNumber': self.receipt_number or '',
         })
         request['cashier'] = self.env.user.name
-        data = MegEftPosDriver(self.company_id, self.terminal_id).void(
-            self.terminal_id._l10n_gr_prov_pos_device(), request)
+        with as_user_error():
+            data = MegEftPosDriver(self.company_id, self.terminal_id).void(
+                self.terminal_id._l10n_gr_prov_pos_device(), request)
         code = (data or {}).get('responseCode')
         if code != 'APPROVED':
             raise UserError(_(
@@ -921,7 +1001,17 @@ class EftPayment(models.Model):
         self.ensure_one()
         if self.state not in ('signed', 'charging'):
             raise UserError(_('Δεν υπάρχει εκκρεμής χρέωση για ανάκτηση.'))
-        found = self._find_pending()
+        try:
+            found = self._find_pending()
+        except (DriverRejected, DriverNoAnswer) as e:
+            # The terminal could not be asked (unreachable, driver down): the
+            # outcome is exactly as unknown as before — say so, change nothing.
+            raise UserError(_(
+                'Το τερματικό δεν μπόρεσε να ρωτηθεί, οπότε η έκβαση μένει '
+                'άγνωστη — ΜΗΝ χρεώσετε ξανά.\n%(err)s\n\nΔοκιμάστε ξανά '
+                'αργότερα. Αν ελέγξατε το ίδιο το τερματικό και η κάρτα δεν '
+                'χρεώθηκε, ο υπεύθυνος λογιστηρίου πατά «Δεν χρεώθηκε».',
+                err=e.args[0] if e.args else e)) from None
         if not found:
             if self.state == 'charging':
                 # The driver keeps every transaction it started; nothing there
@@ -952,9 +1042,10 @@ class EftPayment(models.Model):
             return driver.pending_by_ecr(device, self.ecr_reference)
         if self.nsp_reference:
             return driver.pending_by_nsp(device, self.nsp_reference)
+        pending = driver.pending_all(device)
         wanted = {_r2(self.amount), _r2(self.amount + self.tip_amount)}
         found = [
-            t for t in driver.pending_all(device)
+            t for t in pending
             if _r2(t.get('originalAmount') or t.get('amount')
                    or t.get('paidAmount') or 0) in wanted
         ]
@@ -983,7 +1074,9 @@ class EftPayment(models.Model):
     def _check_preload_cleared(self):
         """A preload the customer can still pay must not outlive its
         signature: cancelling here does nothing on the terminal."""
-        if self._find_pending():
+        with as_user_error():
+            still_pending = self._find_pending()
+        if still_pending:
             raise UserError(_(
                 'Η προφόρτωση εκκρεμεί ακόμη στο τερματικό — ο πελάτης μπορεί να '
                 'την πληρώσει. Ακυρώστε τη στο τερματικό ή πατήστε «Ανάκτηση '

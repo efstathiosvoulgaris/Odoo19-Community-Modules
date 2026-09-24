@@ -16,6 +16,7 @@ Every call is {licenseKey, vatNumber, posDevice, request} and answers
 {data, error{errorLevel, errorCode, errorMessage}}.
 """
 import logging
+from contextlib import contextmanager
 
 import requests
 
@@ -40,6 +41,21 @@ class DriverNoAnswer(UserError):
     """The request left, but no usable answer came back (read timeout, reset
     connection, server error). The terminal MAY have charged the card: the
     outcome is unknown until the driver's pending list says otherwise."""
+
+
+@contextmanager
+def as_user_error():
+    """Show a driver failure as the plain message it is.
+
+    The web client only renders odoo's own exception classes as a message; a
+    subclass (DriverRejected, DriverNoAnswer) arrives as «Odoo Server Error»
+    with a traceback. Wrap every call made straight from a button in this.
+    Paths that must tell the two apart (the charge itself) catch them first.
+    """
+    try:
+        yield
+    except (DriverRejected, DriverNoAnswer) as e:
+        raise UserError(str(e)) from None
 
 
 def check_driver_url(url):

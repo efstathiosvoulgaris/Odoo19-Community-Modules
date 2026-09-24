@@ -522,7 +522,11 @@ class SkroutzOrder(models.Model):
         sales_group = self.env.ref('sales_team.group_sale_salesman', raise_if_not_found=False)
         if not sales_group:
             return
-        partners = sales_group.user_ids.mapped('partner_id')
+        # all_user_ids, not user_ids: in Odoo 19 user_ids holds direct members
+        # only, and sales managers / admins are salespeople by implication —
+        # with user_ids nobody at all was notified.
+        partners = sales_group.all_user_ids.filtered(
+            lambda u: u.active and not u.share).mapped('partner_id')
         if not partners:
             return
         body = Markup('New Skroutz order <b>%s</b> received.') % self.code

@@ -1,6 +1,6 @@
 # Skroutz Connector for Odoo 19
 
-**Version:** 1.8 | **Odoo:** 19 | **License:** LGPL-3
+**Version:** 1.9 | **Odoo:** 19 | **License:** LGPL-3
 
 Connects Odoo 19 to the [Skroutz Marketplace](https://www.skroutz.gr) via:
 - XML product feed (for Skroutz to crawl)
@@ -65,6 +65,11 @@ The product is included in the feed when it is **published on the website** and 
 If the [`l10n_gr_partner`](https://github.com/) addon is installed, the street number from the shipping address is written to the partner's `arithmos_odou` field instead of being concatenated into the street name.
 
 ## Changelog
+
+### 1.9
+- New-order notification reached nobody: `res.groups.user_ids` holds direct
+  members only in Odoo 19, and sales managers / admins are salespeople by
+  implication. Now `all_user_ids` (active internal users).
 
 ### 1.8
 - **Webhook requires a secret.** Without one every call is refused (403): the
