@@ -6,9 +6,9 @@
         <field name="model">res.config.settings</field>
         <field name="inherit_id" ref="l10n_gr_provider_base.res_config_settings_view_form_l10n_gr_prov"/>
         <field name="arch" type="xml">
-            <setting name="l10n_gr_prov_auto_setting" position="after">
-                <setting string="ILYDA Credentials" name="l10n_gr_prov_ilyda_setting"
-                         help="Username and Password issued by ILYDA support (Basic Authentication)."
+            <setting name="l10n_gr_prov_test_setting" position="after">
+                <setting string="Στοιχεία Σύνδεσης ILYDA" name="l10n_gr_prov_ilyda_setting"
+                         help="Το Username και το Password που δίνει η υποστήριξη της ILYDA (Basic Authentication). Διαφορετικά για δοκιμαστικό και παραγωγή."
                          invisible="l10n_gr_prov_provider != 'ilyda'">
                     <field name="l10n_gr_prov_ilyda_username" placeholder="Username"/>
                     <field name="l10n_gr_prov_ilyda_password" password="True"

@@ -1,0 +1,31 @@
+/* ─── Product cards: the whole name, then price and stock ─────────────── */
+.pos .product-list .product .product-content {
+    flex-direction: column;
+    justify-content: space-between;
+}
+.pos .product-list .product .product-name {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    white-space: normal;
+    font-size: 0.8rem;
+    max-height: none;
+}
+.pos .product-list .product .pos-rui-meta {
+    font-size: 0.8rem;
+    padding-top: 2px;
+}
+/* Room for the cart-quantity badge, which sits bottom-right. */
+.pos .product-list .product:has(.product-cart-qty) .pos-rui-stock {
+    display: none;
+}
+
+/* ─── Order lines: readable at arm's length on a touch screen ─────────── */
+.pos .order-container .orderline {
+    font-size: 1rem;
+    color: var(--gray-900, #212529);
+}
+.pos .order-container .orderline .price-per-unit {
+    font-size: 0.85rem;
+    color: var(--gray-700, #495057);
+}

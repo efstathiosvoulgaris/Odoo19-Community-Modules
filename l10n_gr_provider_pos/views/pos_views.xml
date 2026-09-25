@@ -1,44 +1,73 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
+    <!-- Per-till options on the «Πάροχος myDATA» settings page, not in the
+         Point of Sale settings. The till picker is the same pos_config_id the
+         POS settings use: the related pos_* fields follow it. -->
     <record id="res_config_settings_view_form_l10n_gr_prov_pos" model="ir.ui.view">
         <field name="name">res.config.settings.view.form.l10n.gr.prov.pos</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="l10n_gr_provider_base.res_config_settings_view_form_l10n_gr_prov"/>
+        <field name="arch" type="xml">
+            <block name="l10n_gr_prov_business_block" position="before">
+                <block title="Ταμεία (Σημείο Πώλησης)" name="l10n_gr_prov_pos_block">
+                    <setting string="Ταμείο" name="l10n_gr_prov_pos_config_setting"
+                             help="Οι ρυθμίσεις αυτής της ενότητας ισχύουν για κάθε ταμείο χωριστά. Διαλέξτε ποιο ρυθμίζετε. Οι αλλαγές φαίνονται στο ταμείο μετά από επαναφόρτωση.">
+                        <field name="pos_config_id" options="{'no_create': True, 'no_open': True}"/>
+                    </setting>
+                    <setting string="Σειρές Παραστατικών" name="l10n_gr_prov_pos_setting"
+                             invisible="not pos_config_id"
+                             help="Σε ποιο ημερολόγιο εκδίδεται κάθε παραστατικό του ταμείου. Χωρίς σειρά ΑΛΠ το ταμείο δουλεύει όπως το στάνταρ Odoo, χωρίς πάροχο.">
+                        <div class="row mt16">
+                            <label string="ΑΛΠ (11.x)" for="pos_l10n_gr_prov_alp_journal_id" class="col-lg-4 o_light_label"/>
+                            <field name="pos_l10n_gr_prov_alp_journal_id"/>
+                        </div>
+                        <div class="row">
+                            <label string="ΤΙΜ (1.1)" for="pos_l10n_gr_prov_tim_journal_id" class="col-lg-4 o_light_label"/>
+                            <field name="pos_l10n_gr_prov_tim_journal_id"/>
+                        </div>
+                        <div class="row">
+                            <label string="ΠΛΠ (11.4)" for="pos_l10n_gr_prov_pla_journal_id" class="col-lg-4 o_light_label"/>
+                            <field name="pos_l10n_gr_prov_pla_journal_id"/>
+                        </div>
+                        <div class="row">
+                            <field name="pos_l10n_gr_prov_allow_tim" class="col-lg-1"/>
+                            <label string="Έκδοση Τιμολογίου (ΤΙΜ) από το ταμείο"
+                                   for="pos_l10n_gr_prov_allow_tim" class="col-lg-10 o_light_label"/>
+                        </div>
+                    </setting>
+                    <setting string="Έκδοση στο Ταμείο" name="l10n_gr_prov_pos_issue_setting"
+                             invisible="not pos_config_id"
+                             help="Ο πελάτης της απόδειξης όταν ο ταμίας δεν διαλέξει κανέναν, τι τυπώνεται, και τι γίνεται όταν ο πάροχος δεν απαντά τη στιγμή της πληρωμής.">
+                        <div class="row mt16">
+                            <label string="Πελάτης Λιανικής" for="pos_l10n_gr_prov_walkin_partner_id" class="col-lg-4 o_light_label"/>
+                            <field name="pos_l10n_gr_prov_walkin_partner_id"/>
+                        </div>
+                        <div class="row">
+                            <label string="Εκτύπωση" for="pos_l10n_gr_prov_print_mode" class="col-lg-4 o_light_label"/>
+                            <field name="pos_l10n_gr_prov_print_mode"/>
+                        </div>
+                        <div class="row">
+                            <label string="Αποτυχία Διαβίβασης" for="pos_l10n_gr_prov_send_failure" class="col-lg-4 o_light_label"/>
+                            <field name="pos_l10n_gr_prov_send_failure"/>
+                        </div>
+                    </setting>
+                </block>
+            </block>
+        </field>
+    </record>
+
+    <!-- The old spot in the Point of Sale settings: say where things went. -->
+    <record id="res_config_settings_view_form_l10n_gr_prov_pos_pointer" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.l10n.gr.prov.pos.pointer</field>
         <field name="model">res.config.settings</field>
         <field name="inherit_id" ref="point_of_sale.res_config_settings_view_form"/>
         <field name="arch" type="xml">
             <block id="pos_accounting_section" position="inside">
-                <setting string="Πάροχος myDATA (ΑΛΠ / ΤΙΜ / ΠΛΑ)"
-                         name="l10n_gr_prov_pos_setting"
-                         help="Κάθε παραγγελία εκδίδεται στο αντίστοιχο ελληνικό ημερολόγιο και διαβιβάζεται στον πάροχο. Χωρίς ημερολόγιο ΑΛΠ το POS δουλεύει όπως το στάνταρ Odoo.">
-                    <div class="row mt16">
-                        <label string="ΑΛΠ (11.x)" for="pos_l10n_gr_prov_alp_journal_id" class="col-lg-4 o_light_label"/>
-                        <field name="pos_l10n_gr_prov_alp_journal_id"/>
-                    </div>
-                    <div class="row">
-                        <label string="ΤΙΜ (1.1)" for="pos_l10n_gr_prov_tim_journal_id" class="col-lg-4 o_light_label"/>
-                        <field name="pos_l10n_gr_prov_tim_journal_id"/>
-                    </div>
-                    <div class="row">
-                        <label string="ΠΛΠ (11.4)" for="pos_l10n_gr_prov_pla_journal_id" class="col-lg-4 o_light_label"/>
-                        <field name="pos_l10n_gr_prov_pla_journal_id"/>
-                    </div>
-                    <div class="row">
-                        <label string="Πελάτης Λιανικής" for="pos_l10n_gr_prov_walkin_partner_id" class="col-lg-4 o_light_label"/>
-                        <field name="pos_l10n_gr_prov_walkin_partner_id"/>
-                    </div>
-                    <div class="row">
-                        <label string="Εκτύπωση" for="pos_l10n_gr_prov_print_mode" class="col-lg-4 o_light_label"/>
-                        <field name="pos_l10n_gr_prov_print_mode"/>
-                    </div>
-                    <div class="row">
-                        <label string="Αποτυχία Διαβίβασης" for="pos_l10n_gr_prov_send_failure" class="col-lg-4 o_light_label"/>
-                        <field name="pos_l10n_gr_prov_send_failure"/>
-                    </div>
-                    <div class="row">
-                        <field name="pos_l10n_gr_prov_allow_tim" class="col-lg-1"/>
-                        <label string="Έκδοση Τιμολογίου (ΤΙΜ) από το ταμείο"
-                               for="pos_l10n_gr_prov_allow_tim" class="col-lg-10 o_light_label"/>
-                    </div>
+                <setting string="Πάροχος myDATA" name="l10n_gr_prov_pos_pointer_setting"
+                         help="Οι σειρές ΑΛΠ/ΤΙΜ/ΠΛΠ, τα τερματικά καρτών και τα Δελτία Εστίασης ρυθμίζονται πλέον στο myDATA → Ρυθμίσεις → Ρυθμίσεις Παρόχου.">
+                    <button name="%(l10n_gr_provider_base.action_l10n_gr_prov_settings)d" type="action"
+                            string="Ρυθμίσεις Παρόχου" class="btn-link" icon="oi-arrow-right"/>
                 </setting>
             </block>
         </field>

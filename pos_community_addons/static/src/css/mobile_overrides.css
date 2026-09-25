@@ -1,20 +1,8 @@
-/* ─── Payment screen: hide Customer, Invoice, Tip ───────────────────────── */
-.payment-screen .customer-button,
-.payment-screen .partner-button,
-.payment-screen .invoice-toggle,
-.payment-screen .invoice-button,
-.payment-screen .tip-button,
-.payment-screen .tip-row {
-    display: none !important;
-}
-
-/* ─── Order screen actionpad: hide Customer/Partner button ──────────────── */
-.action-pad .partner-button,
-.action-pad .customer-button,
-.actionpad .partner-button,
-.actionpad .customer-button {
-    display: none !important;
-}
+/* The customer button used to be hidden here with display:none — on EVERY
+ * till, retail included, which is how the payment screen lost its customer
+ * and a Τιμολόγιο could not be issued. It is now a template t-if on the
+ * per-till option «Απλοποιημένο Ταμείο» (actionpad_widget.xml,
+ * payment_screen.xml). */
 
 /* ─── Floor plan: minimum touch target on position-mode tables (mobile) ─── */
 @media (max-width: 768px) {
@@ -29,14 +17,16 @@
 /*
  * pos_restaurant adds .has-change to lines that have unsent changes.
  * Sent lines have no .has-change → dim them to signal "kitchen knows".
+ * Restaurant tills only (.pos-ca-kitchen, orderline_swipe.js): a retail
+ * line never has a change to send, so it was dimmed from the start.
  * Scoped to .order-container so receipt lines are unaffected.
  */
-.order-container .orderline.has-change {
+.order-container .orderline.pos-ca-kitchen.has-change {
     border-left: 3px solid #f39c12;
     padding-left: calc(0.5rem + 3px);
 }
 
-.order-container .orderline:not(.has-change) {
+.order-container .orderline.pos-ca-kitchen:not(.has-change) {
     opacity: 0.55;
 }
 

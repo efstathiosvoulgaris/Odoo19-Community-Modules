@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Greece - E-Invoicing Provider (Restaurant Order Notes 8.6)',
-    'version': '1.4',
+    'version': '1.5',
     'category': 'Accounting/Localizations',
     'summary': 'Δελτίο Παραγγελίας Εστίασης (8.6) from the restaurant Point of Sale',
     'description': (
@@ -25,6 +25,9 @@
         '\n'
         'Changelog\n'
         '---------\n'
+        '1.5 — Οι επιλογές 8.6 στη σελίδα «Πάροχος myDATA», μόνο για ταμεία\n'
+        'εστίασης.\n'
+        '\n'
         '1.4 — Negative notes by reconciliation: on every send to the\n'
         'kitchen and before the payment screen the till reports every line\n'
         'as it stands, and the server credits (recType 7) whatever is below\n'

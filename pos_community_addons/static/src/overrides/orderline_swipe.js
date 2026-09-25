@@ -18,6 +18,14 @@ import { patch } from "@web/core/utils/patch";
 import { onMounted } from "@odoo/owl";
 
 patch(Orderline.prototype, {
+    /** Marks lines of a restaurant till: the sent/unsent styling is theirs. */
+    get lineContainerClasses() {
+        return {
+            ...super.lineContainerClasses,
+            "pos-ca-kitchen": Boolean(this.line.order_id?.config_id?.module_pos_restaurant),
+        };
+    },
+
     setup() {
         super.setup();
         if (this.props.mode === "display") {

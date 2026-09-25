@@ -6,29 +6,33 @@
         <field name="model">res.config.settings</field>
         <field name="inherit_id" ref="l10n_gr_provider_pos.res_config_settings_view_form_l10n_gr_prov_pos"/>
         <field name="arch" type="xml">
-            <field name="pos_l10n_gr_prov_walkin_partner_id" position="after">
-                <div class="row">
-                    <label string="Τερματικό Α.1155" for="pos_l10n_gr_prov_eft_terminal_id"
-                           class="col-lg-4 o_light_label"/>
-                    <field name="pos_l10n_gr_prov_eft_terminal_id"/>
-                </div>
-                <div class="row" invisible="not pos_l10n_gr_prov_eft_terminal_id">
-                    <label string="Επιπλέον τερματικά" for="pos_l10n_gr_prov_eft_terminal_ids"
-                           class="col-lg-4 o_light_label"/>
-                    <field name="pos_l10n_gr_prov_eft_terminal_ids" widget="many2many_tags"
-                           placeholder="μόνο αν ο ταμίας διαλέγει τερματικό"/>
-                </div>
-                <div class="row" invisible="not pos_l10n_gr_prov_eft_terminal_id">
-                    <field name="pos_l10n_gr_prov_eft_require_signature" class="col-lg-1"/>
-                    <label string="Υποχρεωτική υπογραφή Α.1155 για πληρωμές με κάρτα"
-                           for="pos_l10n_gr_prov_eft_require_signature" class="col-lg-10 o_light_label"/>
-                </div>
-                <div class="row" invisible="not pos_l10n_gr_prov_eft_terminal_id">
-                    <label string="Μέγιστες δόσεις" for="pos_l10n_gr_prov_eft_max_installments"
-                           class="col-lg-4 o_light_label"/>
-                    <field name="pos_l10n_gr_prov_eft_max_installments"/>
-                </div>
-            </field>
+            <setting name="l10n_gr_prov_pos_issue_setting" position="after">
+                <setting string="Κάρτες στο Ταμείο (Α.1155)" name="l10n_gr_prov_pos_eft_setting"
+                         invisible="not pos_config_id"
+                         help="Το τερματικό στο οποίο χρεώνει αυτό το ταμείο. Με επιπλέον τερματικά ο ταμίας διαλέγει σε κάθε χρέωση, και το ταμείο θυμάται την τελευταία επιλογή.">
+                    <div class="row mt16">
+                        <label string="Τερματικό" for="pos_l10n_gr_prov_eft_terminal_id"
+                               class="col-lg-4 o_light_label"/>
+                        <field name="pos_l10n_gr_prov_eft_terminal_id"/>
+                    </div>
+                    <div class="row" invisible="not pos_l10n_gr_prov_eft_terminal_id">
+                        <label string="Επιπλέον τερματικά" for="pos_l10n_gr_prov_eft_terminal_ids"
+                               class="col-lg-4 o_light_label"/>
+                        <field name="pos_l10n_gr_prov_eft_terminal_ids" widget="many2many_tags"
+                               placeholder="μόνο αν ο ταμίας διαλέγει τερματικό"/>
+                    </div>
+                    <div class="row" invisible="not pos_l10n_gr_prov_eft_terminal_id">
+                        <label string="Μέγιστες δόσεις" for="pos_l10n_gr_prov_eft_max_installments"
+                               class="col-lg-4 o_light_label"/>
+                        <field name="pos_l10n_gr_prov_eft_max_installments"/>
+                    </div>
+                    <div class="row" invisible="not pos_l10n_gr_prov_eft_terminal_id">
+                        <field name="pos_l10n_gr_prov_eft_require_signature" class="col-lg-1"/>
+                        <label string="Υποχρεωτική υπογραφή: πώληση με κάρτα μόνο όταν απαντήσει το τερματικό (οι επιστροφές εξαιρούνται)"
+                               for="pos_l10n_gr_prov_eft_require_signature" class="col-lg-10 o_light_label"/>
+                    </div>
+                </setting>
+            </setting>
         </field>
     </record>
 

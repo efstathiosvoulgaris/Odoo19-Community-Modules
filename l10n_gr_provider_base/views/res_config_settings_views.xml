@@ -1,50 +1,112 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
+    <!-- Defined here, before the settings page links to it. -->
+    <record id="action_l10n_gr_prov_vehicle" model="ir.actions.act_window">
+        <field name="name">Οχήματα Διακίνησης</field>
+        <field name="res_model">l10n.gr.prov.vehicle</field>
+        <field name="view_mode">list</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Καταχωρίστε τα οχήματα</p>
+            <p>Οι πινακίδες που χρησιμοποιούνται στα Δελτία Αποστολής
+               (aadeVehicleNumber).</p>
+        </field>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════════════════════════
+         «Πάροχος myDATA»: every option of the provider modules on one page of
+         its own, like Skroutz — not scattered over Accounting and Point of
+         Sale. Opened from myDATA → Ρυθμίσεις → Ρυθμίσεις Παρόχου.
+
+         Each addon adds only its own block (ILYDA, EFT/POS, Ταμεία, Εστίαση),
+         so a block simply does not exist when its addon is not installed.
+         The setting names below are anchors for those addons — keep them.
+         ══════════════════════════════════════════════════════════════════════ -->
     <record id="res_config_settings_view_form_l10n_gr_prov" model="ir.ui.view">
         <field name="name">res.config.settings.view.form.l10n.gr.prov</field>
         <field name="model">res.config.settings</field>
-        <field name="inherit_id" ref="account.res_config_settings_view_form"/>
+        <field name="inherit_id" ref="base.res_config_settings_view_form"/>
         <field name="arch" type="xml">
-            <block id="account_vendor_bills" position="after">
-                <block title="Greek E-Invoicing Provider (Y.PA.H.E.S.)" name="l10n_gr_prov_block">
-                    <setting string="Provider" name="l10n_gr_prov_provider_setting"
-                             help="Licensed provider used to issue your sales documents. Suppresses the myDATA ERP channel for those documents.">
-                        <field name="l10n_gr_prov_provider"/>
-                    </setting>
-                    <setting string="Test Environment" name="l10n_gr_prov_test_setting"
-                             help="Submit to the provider's test endpoint. Disable only when going live.">
-                        <field name="l10n_gr_prov_test_env"/>
-                    </setting>
-                    <setting string="Auto-send on Post" name="l10n_gr_prov_auto_setting"
-                             help="Queue posted invoices and let the scheduled job transmit them automatically.">
-                        <field name="l10n_gr_prov_auto_send"/>
-                    </setting>
-                    <setting string="Έλεγχος Φόρων στην Καταχώριση" name="l10n_gr_prov_guard_tax_setting"
-                             help="Η καταχώριση μπλοκάρει με σαφή λίστα λαθών: γραμμή χωρίς ΦΠΑ, φόρος εκτός επιτρεπτών για το παραστατικό, 0% χωρίς αιτία απαλλαγής, γραμμή χωρίς χαρακτηρισμό myDATA.">
-                        <field name="l10n_gr_prov_guard_tax"/>
-                    </setting>
-                    <setting string="Έλεγχος Νησιωτικών Συντελεστών" name="l10n_gr_prov_guard_island_setting"
-                             help="Μπλοκάρει 17/9/4% χωρίς καθεστώς Νησιών Αιγαίου και 24/13/6% όταν το καθεστώς ισχύει.">
-                        <field name="l10n_gr_prov_guard_island"/>
-                    </setting>
-                    <setting string="Κατηγορία Επιχείρησης" name="l10n_gr_prov_business_type_setting"
-                             help="Εμφανίζει τα παραστατικά του κλάδου. Κατάλυμα: Ειδικό Στοιχείο Τέλους Διαμονής (ΤΔΙ, 8.2) και το κουμπί του.">
-                        <field name="l10n_gr_prov_business_type"/>
-                        <div class="mt8" invisible="l10n_gr_prov_business_type != 'accommodation'">
-                            <label for="l10n_gr_prov_stay_fee_category" class="o_light_label"/>
-                            <field name="l10n_gr_prov_stay_fee_category"
-                                   required="l10n_gr_prov_business_type == 'accommodation'"/>
-                        </div>
-                    </setting>
-                    <setting string="Αυτόματη Ρύθμιση Λογιστικής" name="l10n_gr_prov_tidy_taxes_setting"
-                             help="Φέρνει τη λογιστική στη σωστή ελληνική κατάσταση με ένα πάτημα: σαφή ελληνικά ονόματα και ενεργοποίηση των απαραίτητων φόρων, αρχειοθέτηση αχρησιμοποίητων, διόρθωση των νησιωτικών ΦΠΑ στα ηπειρωτικά καθεστώτα, δημιουργία των ελληνικών ημερολογίων myDATA με προεπιλεγμένους λογαριασμούς και απενεργοποίηση των ακολουθιών πιστωτικών (R). Ασφαλές να ξαναπατηθεί — δεν πειράζει ημερολόγια ή φόρους που δεν δημιούργησε το ίδιο.">
-                        <button name="action_l10n_gr_prov_tidy_taxes" type="object"
-                                string="Αυτόματη Ρύθμιση Λογιστικής (myDATA)" class="btn-link" icon="oi-arrow-right"/>
-                    </setting>
-                </block>
-            </block>
+            <xpath expr="//form" position="inside">
+                <app string="Πάροχος myDATA" name="l10n_gr_provider_base"
+                     logo="/l10n_gr_provider_base/static/description/icon.svg">
+
+                    <block title="Σύνδεση με τον Πάροχο" name="l10n_gr_prov_connection_block">
+                        <setting string="Πάροχος" name="l10n_gr_prov_provider_setting"
+                                 help="Ο πιστοποιημένος πάροχος (ΥΠΑΗΕΣ) που εκδίδει και διαβιβάζει τα παραστατικά πωλήσεων στο myDATA. Όσο είναι ορισμένος, το κανάλι ERP του Odoo δεν στέλνει τίποτα για αυτά τα παραστατικά.">
+                            <field name="l10n_gr_prov_provider"/>
+                        </setting>
+                        <setting string="Δοκιμαστικό Περιβάλλον" name="l10n_gr_prov_test_setting"
+                                 help="Αποστολή στο δοκιμαστικό περιβάλλον του παρόχου: τα ΜΑΡΚ δεν έχουν φορολογική ισχύ. Απενεργοποιήστε το μόνο τη μέρα που περνάτε σε παραγωγή.">
+                            <field name="l10n_gr_prov_test_env"/>
+                            <div class="text-warning mt8" invisible="not l10n_gr_prov_test_env">
+                                Τα παραστατικά ΔΕΝ διαβιβάζονται στην ΑΑΔΕ.
+                            </div>
+                        </setting>
+                    </block>
+
+                    <block title="Αποστολή Παραστατικών" name="l10n_gr_prov_send_block">
+                        <setting string="Αυτόματη Αποστολή" name="l10n_gr_prov_auto_setting"
+                                 help="Κάθε παραστατικό που καταχωρίζεται μπαίνει σε ουρά και διαβιβάζεται από την προγραμματισμένη εργασία (κάθε 10 λεπτά). Χωρίς αυτό, η αποστολή γίνεται με το κουμπί στο παραστατικό.">
+                            <field name="l10n_gr_prov_auto_send"/>
+                        </setting>
+                        <setting string="Έλεγχος Φόρων στην Καταχώριση" name="l10n_gr_prov_guard_tax_setting"
+                                 help="Η καταχώριση σταματά με σαφή λίστα λαθών πριν φτάσει στον πάροχο: γραμμή χωρίς ΦΠΑ, φόρος που δεν επιτρέπεται για το είδος παραστατικού, 0% χωρίς αιτία απαλλαγής, γραμμή χωρίς χαρακτηρισμό myDATA.">
+                            <field name="l10n_gr_prov_guard_tax"/>
+                        </setting>
+                        <setting string="Έλεγχος Νησιωτικών Συντελεστών" name="l10n_gr_prov_guard_island_setting"
+                                 help="Σταματά 17/9/4% σε πελάτη χωρίς καθεστώς Νησιών Αιγαίου, και 24/13/6% όταν το καθεστώς ισχύει.">
+                            <field name="l10n_gr_prov_guard_island"/>
+                        </setting>
+                    </block>
+
+                    <block title="Επιχείρηση και Λογιστική" name="l10n_gr_prov_business_block">
+                        <setting string="Κατηγορία Επιχείρησης" name="l10n_gr_prov_business_type_setting"
+                                 help="Εμφανίζει τα παραστατικά του κλάδου. Κατάλυμα: Ειδικό Στοιχείο Τέλους Διαμονής (ΤΔΙ, 8.2) και το κουμπί του στο τιμολόγιο.">
+                            <field name="l10n_gr_prov_business_type"/>
+                            <div class="mt8" invisible="l10n_gr_prov_business_type != 'accommodation'">
+                                <label for="l10n_gr_prov_stay_fee_category" class="o_light_label"/>
+                                <field name="l10n_gr_prov_stay_fee_category"
+                                       required="l10n_gr_prov_business_type == 'accommodation'"/>
+                            </div>
+                        </setting>
+                        <setting string="Αυτόματη Ρύθμιση Λογιστικής" name="l10n_gr_prov_tidy_taxes_setting"
+                                 help="Φέρνει τη λογιστική σε σωστή ελληνική κατάσταση με ένα πάτημα: ελληνικά ονόματα και ενεργοποίηση των απαραίτητων φόρων, αρχειοθέτηση αχρησιμοποίητων, διόρθωση νησιωτικών ΦΠΑ, δημιουργία των ημερολογίων myDATA και απενεργοποίηση των ακολουθιών πιστωτικών (R). Ασφαλές να ξαναπατηθεί — δεν πειράζει ό,τι δεν δημιούργησε το ίδιο.">
+                            <button name="action_l10n_gr_prov_tidy_taxes" type="object"
+                                    string="Αυτόματη Ρύθμιση Λογιστικής (myDATA)" class="btn-link" icon="oi-arrow-right"/>
+                        </setting>
+                    </block>
+
+                    <block title="Πίνακες" name="l10n_gr_prov_tables_block">
+                        <setting string="Προεπιλογές Χαρακτηρισμού" name="l10n_gr_prov_cls_default_setting"
+                                 help="Ο χαρακτηρισμός εσόδων/εξόδων myDATA που παίρνει αυτόματα κάθε γραμμή, ανά είδος παραστατικού.">
+                            <button name="%(action_l10n_gr_prov_cls_default)d" type="action"
+                                    string="Προεπιλογές Χαρακτηρισμού" class="btn-link" icon="oi-arrow-right"/>
+                        </setting>
+                        <setting string="Οχήματα Διακίνησης" name="l10n_gr_prov_vehicle_setting"
+                                 help="Οι πινακίδες που επιλέγονται στα Δελτία Αποστολής.">
+                            <button name="%(action_l10n_gr_prov_vehicle)d" type="action"
+                                    string="Οχήματα" class="btn-link" icon="oi-arrow-right"/>
+                        </setting>
+                        <setting string="Κλειδιά Offline QR (TF-1)" name="l10n_gr_prov_offline_key_setting"
+                                 help="Τα κλειδιά με τα οποία υπογράφεται το QR όταν ο πάροχος δεν απαντά και το παραστατικό εκδίδεται offline.">
+                            <button name="%(action_l10n_gr_prov_offline_key)d" type="action"
+                                    string="Κλειδιά Offline" class="btn-link" icon="oi-arrow-right"/>
+                        </setting>
+                    </block>
+
+                </app>
+            </xpath>
         </field>
+    </record>
+
+    <!-- Opens the settings straight on the page above. -->
+    <record id="action_l10n_gr_prov_settings" model="ir.actions.act_window">
+        <field name="name">Ρυθμίσεις Παρόχου</field>
+        <field name="res_model">res.config.settings</field>
+        <field name="view_mode">form</field>
+        <field name="target">current</field>
+        <field name="context">{'module': 'l10n_gr_provider_base', 'bin_size': False}</field>
     </record>
 
 </odoo>

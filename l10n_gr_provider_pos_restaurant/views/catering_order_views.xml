@@ -24,28 +24,33 @@
         <field name="model">res.config.settings</field>
         <field name="inherit_id" ref="l10n_gr_provider_pos.res_config_settings_view_form_l10n_gr_prov_pos"/>
         <field name="arch" type="xml">
-            <field name="pos_l10n_gr_prov_allow_tim" position="after">
-                <div class="row" invisible="not pos_module_pos_restaurant">
-                    <field name="pos_l10n_gr_prov_catering_notes" class="col-lg-1"/>
-                    <label string="Δελτία Παραγγελίας Εστίασης (8.6) ανά αποστολή στην κουζίνα"
-                           for="pos_l10n_gr_prov_catering_notes" class="col-lg-10 o_light_label"/>
-                </div>
-                <div class="row" invisible="not pos_module_pos_restaurant or not pos_l10n_gr_prov_catering_notes">
-                    <field name="pos_l10n_gr_prov_catering_auto_cancel" class="col-lg-1"/>
-                    <label string="Αυτόματη «Καθολική Ακύρωση 8.6» στην ακύρωση παραγγελίας"
-                           for="pos_l10n_gr_prov_catering_auto_cancel" class="col-lg-10 o_light_label"/>
-                </div>
-                <div class="row" invisible="not pos_module_pos_restaurant or not pos_l10n_gr_prov_catering_notes">
-                    <field name="pos_l10n_gr_prov_catering_auto_negative" class="col-lg-1"/>
-                    <label string="Αυτόματο αρνητικό δελτίο στην αφαίρεση είδους"
-                           for="pos_l10n_gr_prov_catering_auto_negative" class="col-lg-10 o_light_label"/>
-                </div>
-                <div class="row" invisible="not pos_module_pos_restaurant or not pos_l10n_gr_prov_catering_notes">
-                    <label string="Ειδοποίηση ανοιχτών δελτίων (ώρες)"
-                           for="pos_l10n_gr_prov_catering_alert_hours" class="col-lg-4 o_light_label"/>
-                    <field name="pos_l10n_gr_prov_catering_alert_hours"/>
-                </div>
-            </field>
+            <setting name="l10n_gr_prov_pos_issue_setting" position="after">
+                <setting string="Δελτία Παραγγελίας Εστίασης (8.6)" name="l10n_gr_prov_pos_catering_setting"
+                         invisible="not pos_config_id or not pos_module_pos_restaurant"
+                         help="Κάθε αποστολή στην κουζίνα εκδίδει Δελτίο Παραγγελίας. Οι ακυρώσεις και οι μειώσεις κλείνουν με αρνητικό δελτίο ή Καθολική Ακύρωση. Δελτίο που μένει ανοιχτό πάνω από 24 ώρες σταματά τη διαβίβαση για όλη την επιχείρηση.">
+                    <field name="pos_module_pos_restaurant" invisible="1"/>
+                    <div class="row mt16">
+                        <field name="pos_l10n_gr_prov_catering_notes" class="col-lg-1"/>
+                        <label string="Έκδοση δελτίου σε κάθε αποστολή στην κουζίνα"
+                               for="pos_l10n_gr_prov_catering_notes" class="col-lg-10 o_light_label"/>
+                    </div>
+                    <div class="row" invisible="not pos_l10n_gr_prov_catering_notes">
+                        <field name="pos_l10n_gr_prov_catering_auto_cancel" class="col-lg-1"/>
+                        <label string="Αυτόματη «Καθολική Ακύρωση 8.6» όταν ακυρώνεται η παραγγελία"
+                               for="pos_l10n_gr_prov_catering_auto_cancel" class="col-lg-10 o_light_label"/>
+                    </div>
+                    <div class="row" invisible="not pos_l10n_gr_prov_catering_notes">
+                        <field name="pos_l10n_gr_prov_catering_auto_negative" class="col-lg-1"/>
+                        <label string="Αυτόματο αρνητικό δελτίο για έκπτωση, σβήσιμο ή μείωση είδους που έχει σταλεί"
+                               for="pos_l10n_gr_prov_catering_auto_negative" class="col-lg-10 o_light_label"/>
+                    </div>
+                    <div class="row" invisible="not pos_l10n_gr_prov_catering_notes">
+                        <label string="Ειδοποίηση ανοιχτών δελτίων μετά από (ώρες)"
+                               for="pos_l10n_gr_prov_catering_alert_hours" class="col-lg-4 o_light_label"/>
+                        <field name="pos_l10n_gr_prov_catering_alert_hours"/>
+                    </div>
+                </setting>
+            </setting>
         </field>
     </record>
 

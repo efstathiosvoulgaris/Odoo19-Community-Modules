@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates>
+
+    <!-- Product card: price and stock under the name. ProductScreen passes
+         the template as `product`; the combo popup does not, hence the
+         guards. -->
+    <t t-name="pos_community_addons.RetailProductCard" t-inherit="point_of_sale.ProductCard" t-inherit-mode="extension">
+        <xpath expr="//div[hasclass('product-name')]" position="after">
+            <div t-if="props.product and !props.isComboPopup" class="pos-rui-meta d-flex justify-content-between align-items-center gap-1">
+                <span class="pos-rui-price fw-bold" t-esc="props.product.displayPriceUnit"/>
+                <span t-if="props.product.is_storable" class="pos-rui-stock badge rounded-pill"
+                      t-att-class="props.product.qty_available > 0 ? 'text-bg-success' : 'text-bg-danger'"
+                      t-att-title="'Απόθεμα'">
+                    <t t-esc="Math.round(props.product.qty_available or 0)"/>
+                </span>
+            </div>
+        </xpath>
+    </t>
+
+    <!-- Payment: the customer button shows the ΑΦΜ too — the one thing the
+         cashier must check before a Τιμολόγιο. -->
+    <t t-name="pos_community_addons.RetailPaymentScreenButtons" t-inherit="point_of_sale.PaymentScreenButtons" t-inherit-mode="extension">
+        <xpath expr="//span[hasclass('partner-name')]" position="inside">
+            <small t-if="currentOrder.getPartner()?.vat" class="d-block lh-sm opacity-75">
+                ΑΦΜ <t t-esc="currentOrder.getPartner().vat"/>
+            </small>
+        </xpath>
+    </t>
+
+    <!-- Product screen: «Επιστροφή» one tap away instead of inside ⋮, and
+         «Reward» only when there is a reward to give. -->
+    <t t-name="pos_community_addons.RetailControlButtons" t-inherit="point_of_sale.ControlButtons" t-inherit-mode="extension">
+        <xpath expr="//button[hasclass('more-btn')]" position="before">
+            <button t-if="!props.showRemainingButtons and !ui.isSmall and this.pos.cashier._role != 'minimal' and !pos.config.module_pos_restaurant"
+                    class="btn btn-secondary btn-lg flex-shrink-0 pos-rui-refund"
+                    t-on-click="() => this.clickRefund()" title="Επιστροφή" aria-label="Επιστροφή">
+                <i class="fa fa-undo"/>
+            </button>
+        </xpath>
+        <xpath expr="//button[hasclass('control-button')][.//i[hasclass('text-favourite')]]" position="attributes">
+            <attribute name="t-if">state.nbrRewards</attribute>
+        </xpath>
+    </t>
+
+</templates>

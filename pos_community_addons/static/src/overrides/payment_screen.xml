@@ -13,6 +13,16 @@
         </xpath>
     </t>
 
+    <!-- Customer on the payment screen: hidden only with «Απλοποιημένο
+         Ταμείο», like on the product screen. -->
+    <t t-name="pos_community_addons.PaymentScreenButtons"
+       t-inherit="point_of_sale.PaymentScreenButtons"
+       t-inherit-mode="extension">
+        <xpath expr="//button[hasclass('partner-button')]" position="attributes">
+            <attribute name="t-if">!pos.config.pos_ca_simple_ui</attribute>
+        </xpath>
+    </t>
+
     <!-- The «Τιμολόγιο» button used to be deleted here. It is a fiscal feature:
          a customer may ask for a ΤΙΜ instead of an ΑΛΠ, and a deleted node
          cannot be brought back by a setting. Visibility is now the per-till

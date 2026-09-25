@@ -1372,3 +1372,201 @@ msgstr "Επιλέξτε το κατάστημά σας"
 #: code:addons/pos_community_addons/static/src/overrides/product_screen.xml:0
 msgid "Powered by"
 msgstr "Με την υποστήριξη του"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/retail_ui.xml:0
+msgid "Search products..."
+msgstr "Αναζήτηση προϊόντων..."
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/retail_ui.xml:0
+msgid "Customer Note"
+msgstr "Σημείωση Πελάτη"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/retail_ui.xml:0
+msgid "Enter Code"
+msgstr "Κωδικός Κουπονιού"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/retail_ui.xml:0
+msgid "Reward"
+msgstr "Ανταμοιβή"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/retail_ui.xml:0
+msgid "Reset Programs"
+msgstr "Επαναφορά Προγραμμάτων"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/retail_ui.xml:0
+msgid "Quotation/Order"
+msgstr "Προσφορά/Παραγγελία"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/retail_ui.xml:0
+msgid "Cancel Order"
+msgstr "Ακύρωση Παραγγελίας"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/retail_ui.xml:0
+msgid "Transfer / Merge"
+msgstr "Μεταφορά / Συγχώνευση"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/retail_ui.xml:0
+msgid "Transfer course"
+msgstr "Μεταφορά σειράς"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/retail_ui.xml:0
+msgid "Edit Order Name"
+msgstr "Όνομα Παραγγελίας"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/retail_ui.xml:0
+msgid "Tax"
+msgstr "Φόρος"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/retail_ui.xml:0
+msgid "Not available"
+msgstr "Μη διαθέσιμο"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/retail_ui.xml:0
+msgid "Ship Later"
+msgstr "Αποστολή Αργότερα"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/retail_ui.xml:0
+msgid "Open Cashbox"
+msgstr "Άνοιγμα Συρταριού"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/retail_ui.xml:0
+msgid "Tip"
+msgstr "Φιλοδώρημα"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/retail_ui.xml:0
+msgid "discount off on"
+msgstr "έκπτωση επί"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/retail_ui.xml:0
+msgid "Existing orderlines"
+msgstr "Υπάρχουσες γραμμές"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/retail_ui.xml:0
+msgid "%s has a total amount of %s, are you sure you want to delete this order?"
+msgstr "Η παραγγελία %s έχει σύνολο %s. Σίγουρα θέλετε να τη διαγράψετε;"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/retail_ui.xml:0
+msgid "No Product Yet?"
+msgstr "Δεν υπάρχουν προϊόντα;"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/retail_ui.xml:0
+msgid "Edit Plan"
+msgstr "Επεξεργασία Κάτοψης"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/retail_ui.xml:0
+msgid "Reload Data"
+msgstr "Επαναφόρτωση Δεδομένων"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/retail_ui.xml:0
+msgid "Create Product"
+msgstr "Νέο Προϊόν"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/retail_ui.xml:0
+msgid "Switch Floor View"
+msgstr "Αλλαγή Προβολής Κάτοψης"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/retail_ui.xml:0
+msgid "Local Network Access"
+msgstr "Πρόσβαση Τοπικού Δικτύου"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/retail_ui.xml:0
+msgid "Get QR Codes"
+msgstr "QR Codes Τραπεζιών"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/retail_ui.xml:0
+msgid "Search Orders..."
+msgstr "Αναζήτηση παραγγελιών..."
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/retail_ui.xml:0
+msgid "Ongoing"
+msgstr "Σε εξέλιξη"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/retail_ui.xml:0
+msgid "No orders found"
+msgstr "Δεν βρέθηκαν παραγγελίες"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/retail_ui.xml:0
+msgid "Select an order or scan QR code"
+msgstr "Επιλέξτε παραγγελία ή σαρώστε QR code"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/retail_ui.xml:0
+msgid "Select the product(s) to refund and set the quantity"
+msgstr "Επιλέξτε τα είδη προς επιστροφή και την ποσότητα"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/retail_ui.xml:0
+msgid "You are currently transferring the order %s"
+msgstr "Μεταφέρεται η παραγγελία %s"
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/retail_ui.xml:0
+msgid "Search Customers..."
+msgstr "Αναζήτηση πελατών..."
+
+#. module: pos_community_addons
+#. odoo-javascript
+#: code:addons/pos_community_addons/static/src/overrides/retail_ui.xml:0
+msgid "Unlock Register"
+msgstr "Ξεκλείδωμα Ταμείου"

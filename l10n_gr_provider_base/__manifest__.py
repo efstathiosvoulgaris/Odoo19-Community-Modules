@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Greece - E-Invoicing Provider (Base)',
-    'version': '2.13',
+    'version': '2.14',
     'category': 'Accounting/Localizations',
     'summary': 'Issue invoices through a licensed Greek e-invoicing provider (Y.PA.H.E.S.)',
     'description': (
@@ -17,6 +17,10 @@
         '\n'
         'Changelog\n'
         '---------\n'
+        '2.14 — Ρυθμίσεις σε μία σελίδα «Πάροχος myDATA», όπως του Skroutz,\n'
+        'με ελληνικές περιγραφές. Το myDATA γίνεται δική του εφαρμογή στην\n'
+        'αρχική οθόνη· το «Ρυθμίσεις Παρόχου» ανοίγει κατευθείαν τη σελίδα.\n'
+        '\n'
         '2.12 — «Κατηγορία Επιχείρησης» στις Ρυθμίσεις. Το Ειδικό Στοιχείο\n'
         'Τέλους Διαμονής (ΤΔΙ, 8.2) και το κουμπί του εμφανίζονται μόνο σε\n'
         '«Κατάλυμα». Η κατηγορία τέλους ορίζεται μία φορά εκεί· η προεπιλογή\n'

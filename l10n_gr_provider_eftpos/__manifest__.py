@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Greece - E-Invoicing Provider (EFT/POS Α.1155)',
-    'version': '1.20',
+    'version': '1.21',
     'category': 'Accounting/Localizations',
     'summary': 'Card-terminal payment signatures per Α.1155/2023 through the e-invoicing provider',
     'description': (
@@ -28,6 +28,9 @@
         '\n'
         'Changelog\n'
         '---------\n'
+        '1.21 — Driver, άδεια και σύνδεσμος στα Τερματικά σε δική τους\n'
+        'ενότητα στη σελίδα «Πάροχος myDATA».\n'
+        '\n'
         '1.10 — Η διεύθυνση του MegEftPos Driver ορίζεται πλέον ΑΝΑ ΤΕΡΜΑΤΙΚΟ.\n'
         'Ο driver είναι υπηρεσία στο PC του ταμείου και η Odoo τον καλεί από\n'
         'τον server, όχι από τον browser — οπότε μία διεύθυνση ανά εταιρεία\n'
@@ -89,8 +92,8 @@
     ],
     'data': [
         'security/ir.model.access.csv',
-        'views/res_config_settings_views.xml',
         'views/eft_views.xml',
+        'views/res_config_settings_views.xml',
         'views/pos_receipt_wizard_views.xml',
         'data/ir_cron.xml',
     ],

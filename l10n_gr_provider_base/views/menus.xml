@@ -2,22 +2,11 @@
 <odoo>
 
     <!-- ══════════════════════════════════════════════════════════════════════
-         Single «myDATA» section in the Accounting top bar: everything the
+         «myDATA» is an app of its own on the home screen: everything the
          provider modules add (documents AND options) lives here, clearly
-         separated from the stock Odoo configuration lists.
+         separated from the stock Odoo menus and settings.
          Loaded last so every referenced action already exists.
          ══════════════════════════════════════════════════════════════════════ -->
-
-    <record id="action_l10n_gr_prov_vehicle" model="ir.actions.act_window">
-        <field name="name">Οχήματα Διακίνησης</field>
-        <field name="res_model">l10n.gr.prov.vehicle</field>
-        <field name="view_mode">list</field>
-        <field name="help" type="html">
-            <p class="o_view_nocontent_smiling_face">Καταχωρίστε τα οχήματα</p>
-            <p>Οι πινακίδες που χρησιμοποιούνται στα Δελτία Αποστολής
-               (aadeVehicleNumber).</p>
-        </field>
-    </record>
 
     <!-- ── Ημερολόγιο διαβιβάσεων: όλα τα παραστατικά του παρόχου σε μια λίστα ── -->
     <record id="view_l10n_gr_prov_transmission_list" model="ir.ui.view">
@@ -90,8 +79,14 @@
 
     <menuitem id="menu_l10n_gr_prov_root"
               name="myDATA"
-              parent="account.menu_finance"
-              sequence="40"/>
+              web_icon="l10n_gr_provider_base,static/description/icon.svg"
+              groups="account.group_account_invoice"
+              sequence="45"/>
+    <!-- Up to 2.13 this sat under Τιμολόγηση; a menuitem without `parent`
+         does not clear the old one on upgrade, so say it outright. -->
+    <record id="menu_l10n_gr_prov_root" model="ir.ui.menu">
+        <field name="parent_id" eval="False"/>
+    </record>
 
     <menuitem id="menu_l10n_gr_prov_transmissions"
               name="Διαβιβάσεις"
@@ -136,12 +131,12 @@
               parent="menu_l10n_gr_prov_config"
               action="action_l10n_gr_prov_offline_key"
               sequence="30"/>
-    <!-- Πύλη προς τις εταιρικές ρυθμίσεις (πάροχος, credentials, auto-send) -->
+    <!-- Όλες οι επιλογές των addons του παρόχου σε μία σελίδα -->
     <menuitem id="menu_l10n_gr_prov_settings"
               name="Ρυθμίσεις Παρόχου"
               parent="menu_l10n_gr_prov_config"
-              action="account.action_account_config"
+              action="action_l10n_gr_prov_settings"
               groups="base.group_system"
-              sequence="40"/>
+              sequence="1"/>
 
 </odoo>

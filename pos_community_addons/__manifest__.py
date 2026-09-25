@@ -1,12 +1,40 @@
 # -*- coding: utf-8 -*-
 {
     "name": "POS Community Addons",
-    "summary": "Restaurant POS customizations: kitchen receipts, floor plan styling, streamlined UI",
-    "version": "1.8",
+    "summary": "POS customizations: restaurant (kitchen receipts, floor plan) and retail usability",
+    "version": "1.9",
     "description": """Coffee-shop optimised POS restaurant UI for Odoo 19 Community.
 
 Changelog
 ---------
+
+* 1.9 — Retail usability; retail tills no longer inherit restaurant styling
+
+  - Product card: the name on up to 3 lines, the price (tax as the till
+    shows it) and the stock — red at 0, storable products only. Stock is as
+    of the till loading; reload to refresh.
+
+  - Order lines larger and dark.
+
+  - Payment: the customer shows with his ΑΦΜ; «Τιμολόγιο» without a
+    customer opens the customer picker straight away.
+
+  - «Επιστροφή» next to ⋮ on non-restaurant tills; «Reward» shows only when
+    there is a reward to give.
+
+  - Search also matches the Skroutz MPN and the supplier's product
+    code/name (product.template.pos_search_extra).
+
+  - Greek for the Point of Sale texts core leaves in English.
+
+  - The customer button was hidden with CSS on every till, retail included,
+    which contradicted 1.8: the payment screen had no customer and a
+    Τιμολόγιο could not be issued. It is now a template t-if on
+    «Απλοποιημένο Ταμείο», on the payment screen as well.
+
+  - Sent/unsent order-line styling (dimmed / amber border) applies to
+    restaurant tills only. On a retail till every line was dimmed, since a
+    retail line never has a kitchen change.
 
 * 1.8 — UI cleanup became a per-till option instead of a deletion
 
@@ -102,7 +130,7 @@ Changelog
     "publisher": "Efstathios Voulgaris",
     "category": "Point of Sale",
     "license": "LGPL-3",
-    "depends": ["pos_restaurant"],
+    "depends": ["pos_restaurant", "pos_loyalty", "stock"],
     "data": [
         "views/pos_config_views.xml",
     ],
@@ -120,6 +148,9 @@ Changelog
             "pos_community_addons/static/src/overrides/receipt_screen.js",
             "pos_community_addons/static/src/overrides/orderline_swipe.js",
             "pos_community_addons/static/src/css/mobile_overrides.css",
+            "pos_community_addons/static/src/overrides/retail_ui.js",
+            "pos_community_addons/static/src/overrides/retail_ui.xml",
+            "pos_community_addons/static/src/css/retail_ui.css",
       ],
     },
     "images": ["static/description/icon.png", "static/description/banner.gif"],

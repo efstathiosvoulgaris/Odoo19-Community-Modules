@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Greece - E-Invoicing Provider: ILYDA',
-    'version': '2.8',
+    'version': '2.9',
     'category': 'Accounting/Localizations',
     'summary': 'ILYDA (vs.gr) driver for the Greek e-invoicing provider base',
     'description': (
@@ -15,6 +15,8 @@
         '\n'
         'Changelog\n'
         '---------\n'
+        '2.9 — Τα στοιχεία σύνδεσης στη σελίδα «Πάροχος myDATA».\n'
+        '\n'
         '2.6 — Η διεύθυνση του πωλητή και οι διευθύνσεις φόρτωσης/παράδοσης\n'
         'στέλνονται με χωριστό αριθμό οδού (MDP-0024 / MDP-0026). Δελτίο\n'
         'διακίνησης με ελλιπή διεύθυνση μπλοκάρεται πριν την αποστολή, με\n'
