@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Greece - E-Invoicing Provider (Point of Sale)',
-    'version': '1.11',
+    'version': '1.12',
     'category': 'Accounting/Localizations',
     'summary': 'POS receipts (ΑΛΠ) and invoices (ΤΙΜ) through the e-invoicing provider',
     'description': (
@@ -25,6 +25,10 @@
         '\n'
         'Changelog\n'
         '---------\n'
+        '1.12 — Review P1. Χωρίς ημερολόγιο για το είδος παραστατικού το ταμείο\n'
+        'σταματά με μήνυμα, αντί να εκδώσει σιωπηλά στο ημερολόγιο του core (#35).\n'
+        'Επιστροφή με μηδενικό σύνολο → πιστωτικό ημερολόγιο (#36).\n'
+        '\n'
         '1.11 — Οι ρυθμίσεις ανά ταμείο φεύγουν από τις ρυθμίσεις Σημείου\n'
         'Πώλησης στη σελίδα «Πάροχος myDATA», με δικό τους επιλογέα ταμείου.\n'
         'Στην παλιά θέση μένει σύνδεσμος.\n'

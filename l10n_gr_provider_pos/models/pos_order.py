@@ -43,7 +43,11 @@ class PosOrder(models.Model):
         never to the sale journal's R-sequence."""
         self.ensure_one()
         config = self.config_id
-        is_refund = self.amount_total < 0.0
+        # A refund whose returned and new items cancel out still reverses a
+        # sale: credit journal, not the sale one (an ΑΛΠ at 0 with the
+        # original's type-5.1 logic asked the cashier for an ΑΦΜ).
+        is_refund = self.amount_total < 0.0 or bool(
+            self.refunded_order_id and self.amount_total <= 0.0)
         if self.l10n_gr_prov_timologio:
             if is_refund:
                 return self._l10n_gr_prov_find_journal('5.1')
@@ -99,6 +103,16 @@ class PosOrder(models.Model):
                         'Ο πελάτης «%(partner)s» δεν έχει ΑΦΜ — δεν μπορεί να '
                         'εκδοθεί Τιμολόγιο. Συμπληρώστε το ΑΦΜ ή εκδώστε '
                         'απόδειξη λιανικής.', partner=self.partner_id.name))
+            # No journal for this kind of document: _prepare_invoice_vals would
+            # keep core's default journal, and the document would be issued
+            # outside the Greek series without anyone noticing.
+            if not self._l10n_gr_prov_pos_journal():
+                raise UserError(_(
+                    'Δεν έχει οριστεί ημερολόγιο για αυτό το παραστατικό '
+                    '(%(kind)s). Ρυθμίστε το στο myDATA → Ρυθμίσεις → Ρυθμίσεις '
+                    'Παρόχου → Ταμεία.',
+                    kind=_('Τιμολόγιο') if self.l10n_gr_prov_timologio
+                    else _('Απόδειξη')))
             # The customer must sit on the ORDER, not only on the invoice:
             # _create_payment_moves takes the receivable account from
             # payment.partner_id, so an anonymous order (which stock Odoo would

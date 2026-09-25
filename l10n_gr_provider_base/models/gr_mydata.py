@@ -169,6 +169,11 @@ def partner_class(is_company, country_code, eu_country_codes, has_vat):
     eu_country_codes: iterable of ISO codes considered EU (excl. GR).
     """
     cc = (country_code or '').upper()
+    # A foreign individual with no VAT number — a tourist at the counter — is
+    # a retail sale taxed in Greece, not an intra-community delivery or an
+    # export: 1.2/1.3 would send it at 0% VAT.
+    if cc and cc != 'GR' and not (is_company or has_vat):
+        return 'retail'
     if cc and cc != 'GR':
         return 'eu' if cc in eu_country_codes else 'third'
     # domestic (GR or unset): company vs individual

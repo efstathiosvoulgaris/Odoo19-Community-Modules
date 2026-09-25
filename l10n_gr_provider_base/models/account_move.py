@@ -492,7 +492,14 @@ class AccountMove(models.Model):
                 move.l10n_gr_prov_suitable_tax_ids = tax or Tax.search(base)
             else:
                 zero = Tax
-                for template_id in DOMESTIC_ZERO_TAX_TEMPLATES:
+                templates = DOMESTIC_ZERO_TAX_TEMPLATES
+                if inv_type in ('5.1', '5.2'):
+                    # A credit note reverses whatever it credits — an
+                    # intra-community delivery or an export too. Without their
+                    # 0% taxes the user picks a domestic exemption and the value
+                    # lands in the wrong box of the VAT return.
+                    templates += tuple({t for t, _code in INV_TYPE_ZERO_TAX.values()})
+                for template_id in templates:
                     zero |= gr_tax(self.env, move.company_id, template_id) or Tax
                 move.l10n_gr_prov_suitable_tax_ids = Tax.search(
                     base + [('amount', 'in', DOMESTIC_TAX_RATES)]) | zero
@@ -754,7 +761,8 @@ class AccountMove(models.Model):
             # and abandoned ones (a manual resend after the cron gave up).
             if (self.l10n_gr_prov_state in RESEND_GUARDED_STATES
                     and not self.l10n_gr_prov_mark):
-                if self._l10n_gr_prov_dispatch('recover'):
+                if self.with_context(
+                        l10n_gr_prov_quiet_recover=True)._l10n_gr_prov_dispatch('recover'):
                     return
             result = self._l10n_gr_prov_dispatch('send') or 'sent'
             if result == 'queued':
@@ -787,13 +795,17 @@ class AccountMove(models.Model):
                 except Exception:
                     _logger.exception('Offline QR fallback failed for %s', self.name)
             msg = str(e)
+            prev = self.l10n_gr_prov_error or ''
             # A document that already carries an offline QR stays 'offline'
             # through failed retries — the printed QR label and the retry cron
             # depend on the state; the error text is still recorded.
             state = 'offline' if self.l10n_gr_prov_offline_token else 'error'
             self.write({'l10n_gr_prov_state': state, 'l10n_gr_prov_error': msg})
-            self.message_post(body=_('Provider submission failed: %s', msg))
-            self._l10n_gr_prov_offline_deadline_warn()
+            # The cron retries every 10 minutes: post only a NEW failure, or the
+            # chatter fills with the same line ~144 times a day.
+            if msg not in prev:
+                self.message_post(body=_('Provider submission failed: %s', msg))
+            self._l10n_gr_prov_offline_deadline_warn(detail=msg, prev=prev)
             if raise_on_error:
                 raise
 
@@ -812,9 +824,15 @@ class AccountMove(models.Model):
             return False
         return bool(self._l10n_gr_prov_dispatch('issue_offline'))
 
-    def _l10n_gr_prov_offline_deadline_warn(self):
+    def _l10n_gr_prov_offline_deadline_warn(self, detail=None, prev=None):
         """Α.1112/2025: offline documents must be transmitted within 1 calendar
-        day. Post the breach once (keyed on the stored error text)."""
+        day. Post the breach once (keyed on the stored error text).
+
+        The warning goes IN FRONT of the provider's error, not instead of it —
+        replacing it hid the reason the document keeps failing. `prev` is the
+        error text before the caller overwrote it: the check for «already
+        posted» must look there.
+        """
         self.ensure_one()
         if not self.l10n_gr_prov_offline_token or self.l10n_gr_prov_mark:
             return
@@ -824,8 +842,14 @@ class AccountMove(models.Model):
         warn = _('Η προθεσμία διαβίβασης του offline παραστατικού (Α.1112/2025: '
                  'έως το τέλος της επόμενης ημέρας) έχει παρέλθει — το QR δεν '
                  'επαληθεύεται πλέον. Απαιτείται άμεση διαβίβαση.')
-        if self.l10n_gr_prov_error != warn:
-            self.l10n_gr_prov_error = warn
+        if prev is None:
+            prev = self.l10n_gr_prov_error or ''
+        if detail is None:
+            detail = prev.replace(warn, '').strip()
+        error = '\n'.join(filter(None, [warn, detail]))
+        if self.l10n_gr_prov_error != error:
+            self.l10n_gr_prov_error = error
+        if warn not in prev:
             self.message_post(body=warn)
 
     # ── PDF upload (after marking, once the legal PDF exists) ────────────────

@@ -374,7 +374,9 @@ class AccountMove(models.Model):
                     'l10n_gr_prov_error': _(
                         'Το παραστατικό δεν βρέθηκε πλέον στην ουρά του παρόχου.'),
                 })
-            else:
+            elif not self.env.context.get('l10n_gr_prov_quiet_recover'):
+                # Said when a person asked. The duplicate guard asks before
+                # every retry, i.e. every 10 minutes from the cron.
                 self.message_post(body=_(
                     'Αναζήτηση στον πάροχο: το παραστατικό δεν βρέθηκε (UID %s) — '
                     'ασφαλής η επανυποβολή.', doc_uid))
@@ -476,6 +478,11 @@ class AccountMove(models.Model):
             return False
         series, serial = self._l10n_gr_prov_ilyda_series_serial()
         issue_dt = self._ilyda_now_athens()
+        # The QR must carry what the later submission will declare (TQR-0030/
+        # 31/32): the payload's own AADE totals, not the move's — dispatch types
+        # send zero amounts, withholding comes off the gross, fees/stamp add on.
+        # The send that just failed built this payload already, so it builds.
+        totals = self._l10n_gr_prov_ilyda_build_payload()['docTotal']['aadeDocTotals']
         payload = {
             'sellerVat': self._ilyda_vat(self.company_id.vat, prefixed=False),
             'sellerBranch': int(self.company_id.partner_id.l10n_gr_edi_branch_number or 0),
@@ -483,12 +490,9 @@ class AccountMove(models.Model):
             'seriesNumber': series,
             'serialNumber': serial,
             'aadeInvoiceTypeCode': self._l10n_gr_prov_ilyda_inv_type() or '',
-            # ponytail: plain move totals; documents with fees/stamp/other extra
-            # taxes may trip TQR-0030 — derive from the submit builder's
-            # aadeDocTotals if that ever bites.
-            'netAmount': _r2(self.amount_untaxed),
-            'vatAmount': _r2(self.amount_tax),
-            'grossAmount': _r2(self.amount_total),
+            'netAmount': _r2(totals['aadeTotalNetValue']),
+            'vatAmount': _r2(totals['aadeTotalVatAmount']),
+            'grossAmount': _r2(totals['aadeTotalGrossValue']),
         }
         partner = self.commercial_partner_id
         if partner.vat:
@@ -691,6 +695,24 @@ class AccountMove(models.Model):
                 errors.append(_(
                     'Line "%s": myDATA income classification (category + E3 type) is missing.',
                     line_label))
+            # myDATA rows carry no negative amounts; AADE refuses the whole
+            # document without naming the row. A deduction belongs in the
+            # line's discount, a return in a credit document.
+            if inv_type not in TYPES_DISPATCH and (line.price_subtotal or 0) < 0:
+                errors.append(_(
+                    'Γραμμή «%s»: αρνητικό ποσό δεν διαβιβάζεται. Δώστε την '
+                    'έκπτωση ως ποσοστό στη γραμμή του είδους, και την επιστροφή '
+                    'με πιστωτικό παραστατικό.', line_label))
+            # The row's VAT is read as total − net, i.e. every tax on the line.
+            # A second tax (eco fee, levy) would be declared as VAT at the
+            # first tax's rate. Such charges go in the document's Τέλη /
+            # Λοιποί Φόροι fields instead.
+            if not no_vat and len(line.tax_ids) > 1:
+                errors.append(_(
+                    'Γραμμή «%s»: έχει περισσότερους από έναν φόρους (%s). Αφήστε '
+                    'μόνο τον ΦΠΑ· τέλη και λοιποί φόροι δηλώνονται στα αντίστοιχα '
+                    'πεδία του παραστατικού.',
+                    line_label, ', '.join(line.tax_ids.mapped('name'))))
             tax = line.tax_ids[:1]
             if not no_vat:
                 if not tax:
@@ -1021,13 +1043,19 @@ class AccountMove(models.Model):
                 'description': '##PARAKRAT|YPER3##',
             })
 
+        # Units of the invoice currency per 1 EUR — ILYDA's own example sends
+        # 1.14 on a USD invoice (examples_bundle/exchange_ratetest_b2b_foreign_
+        # currency.json). The reverse (EUR per USD, ≈0.87) was sent until 2.10.
+        # 5 decimals, not 2: rounded to cents, a yen rate still survives but a
+        # strong currency loses its precision, and the reverse direction made
+        # JPY 0.00. Direction asked of ILYDA in the 23/09 email (#29).
         exchange_rate = 0.0
         if self.currency_id and self.currency_id.name != 'EUR':
             company_currency = company.currency_id
-            exchange_rate = _r2(self.currency_id._get_conversion_rate(
-                self.currency_id, company_currency,
+            exchange_rate = round(self.currency_id._get_conversion_rate(
+                company_currency, self.currency_id,
                 company, self.invoice_date or self.date,
-            ))
+            ), 5)
 
         # ── taxTotals (TaxTotalsType) — one entry per non-zero extra tax ────────
         # taxType: 1=Παρακρατούμενοι, 2=Τέλη, 3=Λοιποί Φόροι, 4=Χαρτόσημο
