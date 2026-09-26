@@ -29,11 +29,10 @@
         </xpath>
     </t>
 
-    <!-- Desktop ActionpadWidget: remove "New" button (coffee shop doesn't need another-round ordering) -->
-    <t t-name="pos_community_addons.RestaurantActionpadNewButton"
-       t-inherit="pos_restaurant.ActionpadWidget"
-       t-inherit-mode="extension">
-        <xpath expr="//button[@t-on-click='() => this.clickNew()']" position="replace"/>
-    </t>
+    <!-- The pos_restaurant.ActionpadWidget / pos_restaurant.ProductScreen
+         extensions (remove «New», Pay-when-sent) were removed in 1.10: Odoo 19
+         has no such templates — pos_restaurant extends point_of_sale's own —
+         so they never applied and only logged «Missing (extension) parent
+         templates». Odoo 19 already shows Pay next to New after a send. -->
 
 </templates>

@@ -9,6 +9,7 @@
                 <field name="key_identifier"/>
                 <field name="key_version"/>
                 <field name="purpose"/>
+                <field name="test_env"/>
                 <field name="status" widget="badge"
                        decoration-success="status == 'verified'"
                        decoration-warning="status == 'issued'"

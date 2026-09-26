@@ -103,6 +103,22 @@ class PosOrder(models.Model):
                         'Ο πελάτης «%(partner)s» δεν έχει ΑΦΜ — δεν μπορεί να '
                         'εκδοθεί Τιμολόγιο. Συμπληρώστε το ΑΦΜ ή εκδώστε '
                         'απόδειξη λιανικής.', partner=self.partner_id.name))
+            # A credit document must cite the original's ΜΑΡΚ. While the sale
+            # is still queued/offline there is none: the credit would fail,
+            # be abandoned the next day, and the cash handed back would have
+            # no document at all. Refuse the refund until the ΜΑΡΚ arrives.
+            original = self.refunded_order_id.account_move
+            if (original and original.l10n_gr_prov_applicable
+                    and not original.l10n_gr_prov_mark):
+                if original.l10n_gr_prov_state in ('error', 'abandoned'):
+                    raise UserError(_(
+                        'Η αρχική πώληση %(doc)s δεν διαβιβάστηκε ποτέ στην ΑΑΔΕ, '
+                        'άρα δεν μπορεί να εκδοθεί πιστωτικό της. Ενημερώστε το '
+                        'λογιστήριο πριν επιστρέψετε χρήματα.', doc=original.name))
+                raise UserError(_(
+                    'Η αρχική πώληση %(doc)s δεν έχει ακόμη ΜΑΡΚ (διαβιβάζεται). '
+                    'Η επιστροφή γίνεται μόλις διαβιβαστεί — δοκιμάστε ξανά σε '
+                    'λίγα λεπτά.', doc=original.name))
             # No journal for this kind of document: _prepare_invoice_vals would
             # keep core's default journal, and the document would be issued
             # outside the Greek series without anyone noticing.
@@ -134,6 +150,14 @@ class PosOrder(models.Model):
             if not self.partner_id:
                 vals['partner_id'] = \
                     self.config_id._l10n_gr_prov_get_walkin_partner().id
+            # An order paid offline before midnight and synced after it would
+            # carry yesterday's date: AADE refuses a document past its issue
+            # date (ER-30), the cron abandons it, and a paid sale is left with
+            # no document. It is issued now — at the provider — so it is dated
+            # today.
+            today = fields.Date.context_today(self.with_context(tz='Europe/Athens'))
+            if not vals.get('invoice_date') or fields.Date.to_date(vals['invoice_date']) < today:
+                vals['invoice_date'] = today
             # Set the real myDATA payment methods HERE, before the invoice is
             # posted and transmitted. Core _generate_pos_order_invoice posts and
             # sends the document inside itself, i.e. before _l10n_gr_prov_pos_send

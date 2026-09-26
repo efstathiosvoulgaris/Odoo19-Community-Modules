@@ -7,12 +7,13 @@
         <field name="arch" type="xml">
             <list string="Service Tickets"
                   decoration-info="state == 'new'"
-                  decoration-warning="state in ('in_progress', 'waiting_for_parts')"
+                  decoration-warning="state in ('waiting_approval', 'in_progress', 'waiting_for_parts')"
                   decoration-success="state in ('resolved', 'picked_up')"
                   decoration-muted="state == 'cancelled'">
                 <field name="name"/>
                 <field name="partner_id"/>
                 <field name="phone"/>
+                <field name="serial_number" optional="hide"/>
                 <field name="job_type_ids" widget="many2many_tags" optional="show"/>
                 <field name="employee_id" optional="show"/>
                 <field name="brand_id" optional="show"/>
@@ -22,7 +23,7 @@
                 <field name="invoice_id" optional="show"/>
                 <field name="state" widget="badge"
                        decoration-info="state == 'new'"
-                       decoration-warning="state in ('in_progress', 'waiting_for_parts')"
+                       decoration-warning="state in ('waiting_approval', 'in_progress', 'waiting_for_parts')"
                        decoration-success="state in ('resolved', 'picked_up')"
                        decoration-muted="state == 'cancelled'"/>
                 <field name="create_date" optional="show"/>
@@ -37,8 +38,12 @@
         <field name="arch" type="xml">
             <form string="Service Ticket">
                 <header>
+                    <button name="action_request_approval" string="Αποστολή για Έγκριση" type="object"
+                            class="oe_highlight" invisible="state != 'new' or not estimate_amount"/>
+                    <button name="action_customer_approved" string="Έγκριση Πελάτη" type="object"
+                            class="oe_highlight" invisible="state != 'waiting_approval'"/>
                     <button name="action_in_progress" string="Ορισμός σε Εξέλιξη" type="object"
-                            class="oe_highlight" invisible="state != 'new'"/>
+                            class="oe_highlight" invisible="state != 'new' or estimate_amount"/>
                     <button name="action_waiting_for_parts" string="Αναμονή Ανταλλακτικών" type="object"
                             invisible="state != 'in_progress'"/>
                     <button name="action_in_progress" string="Επιστροφή σε Εξέλιξη" type="object"
@@ -55,13 +60,13 @@
                             class="oe_highlight" invisible="invoice_id != False"/>
                     <button name="action_view_invoice" string="Προβολή Τιμολογίου" type="object"
                             invisible="invoice_id == False"/>
-                    <button name="action_print_receipt" string="Εκτύπωση Απόδειξης" type="object"/>
+                    <button name="action_print_receipt" string="Εκτύπωση Δελτίου Παραλαβής" type="object"/>
                     <button name="action_cancelled" string="Ακύρωση Δελτίου" type="object"
                             class="btn-danger" style="margin-left: 32px;"
                             confirm="Είστε σίγουροι ότι θέλετε να ακυρώσετε αυτό το δελτίο; Αυτή η ενέργεια δεν μπορεί να αναιρεθεί."
                             invisible="state == 'cancelled'"/>
                     <field name="state" widget="statusbar"
-                           statusbar_visible="new,in_progress,waiting_for_parts,resolved,picked_up"/>
+                           statusbar_visible="new,waiting_approval,in_progress,waiting_for_parts,resolved,picked_up"/>
                 </header>
                 <sheet>
                     <div class="oe_button_box" name="button_box">
@@ -93,6 +98,30 @@
                             <field name="notified_date" invisible="not notified"/>
                             <field name="notified_uid" invisible="not notified"/>
                             <field name="notified" invisible="1"/>
+                        </group>
+                    </group>
+
+                    <group string="Παραλαβή Συσκευής">
+                        <group>
+                            <field name="serial_number"/>
+                            <field name="accessories" placeholder="π.χ. φορτιστής, θήκη, κάρτα SIM"/>
+                        </group>
+                        <group>
+                            <field name="intake_condition" rows="3"
+                                   placeholder="π.χ. γρατζουνιές πίσω, ραγισμένη γωνία οθόνης"/>
+                        </group>
+                    </group>
+
+                    <group string="Εκτίμηση και Έγκριση">
+                        <group>
+                            <field name="estimate_amount"/>
+                            <field name="approval_note" invisible="not estimate_amount"
+                                   placeholder="π.χ. τηλεφωνικά, ο ίδιος"/>
+                        </group>
+                        <group invisible="not approved">
+                            <field name="approved"/>
+                            <field name="approved_date"/>
+                            <field name="approved_uid"/>
                         </group>
                     </group>
 
@@ -174,6 +203,7 @@
             <search string="Search Service Tickets">
                 <field name="name"/>
                 <field name="partner_id"/>
+                <field name="serial_number"/>
                 <field name="job_type_ids"/>
                 <field name="brand_id"/>
                 <field name="product_model_id"/>
@@ -181,6 +211,7 @@
                 <field name="employee_id"/>
                 <separator/>
                 <filter string="New" name="state_new" domain="[('state', '=', 'new')]"/>
+                <filter string="Αναμονή Έγκρισης" name="state_waiting_approval" domain="[('state', '=', 'waiting_approval')]"/>
                 <filter string="In Progress" name="state_in_progress" domain="[('state', '=', 'in_progress')]"/>
                 <filter string="Waiting for Parts" name="state_waiting" domain="[('state', '=', 'waiting_for_parts')]"/>
                 <filter string="Resolved" name="state_resolved" domain="[('state', '=', 'resolved')]"/>
@@ -243,6 +274,8 @@
         <field name="arch" type="xml">
             <list string="Job Types" editable="bottom">
                 <field name="name"/>
+                <field name="product_id"/>
+                <field name="list_price" readonly="1" invisible="not product_id"/>
             </list>
         </field>
     </record>
@@ -256,6 +289,8 @@
                 <sheet>
                     <group>
                         <field name="name"/>
+                        <field name="product_id"/>
+                        <field name="list_price" readonly="1" invisible="not product_id"/>
                     </group>
                 </sheet>
             </form>

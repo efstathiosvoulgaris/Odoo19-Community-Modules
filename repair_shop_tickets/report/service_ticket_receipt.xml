@@ -18,7 +18,7 @@
     </record>
 
     <record id="action_report_service_receipt" model="ir.actions.report">
-        <field name="name">Service Receipt</field>
+        <field name="name">Δελτίο Παραλαβής Συσκευής</field>
         <field name="model">service.ticket</field>
         <field name="report_type">qweb-pdf</field>
         <field name="report_name">repair_shop_tickets.report_service_receipt</field>
@@ -51,8 +51,13 @@
                             <t t-esc="o.env.company.name"/>
                         </div>
                         <div style="font-size: 10pt; font-weight: bold; letter-spacing: 2px; margin-top: 2px;">
-                            <t t-if="is_greek">ΑΠΟΔΕΙΞΗ ΣΕΡΒΙΣ</t>
-                            <t t-else="">SERVICE RECEIPT</t>
+                            <t t-if="is_greek">ΔΕΛΤΙΟ ΠΑΡΑΛΑΒΗΣ ΣΥΣΚΕΥΗΣ</t>
+                            <t t-else="">DEVICE INTAKE SLIP</t>
+                        </div>
+                        <!-- Not a tax document: the legal one is the invoice or
+                             receipt issued through the provider. -->
+                        <div style="font-size: 8pt; font-weight: bold; margin-top: 1mm;">
+                            ΔΕΝ ΑΠΟΤΕΛΕΙ ΦΟΡΟΛΟΓΙΚΟ ΣΤΟΙΧΕΙΟ
                         </div>
                     </div>
 
@@ -125,7 +130,41 @@
                                 <t t-esc="o.product_model_id.name"/>
                             </div>
                         </t>
+                        <t t-if="o.serial_number">
+                            <div>
+                                <t t-if="is_greek">Σειριακός / IMEI:</t>
+                                <t t-else="">Serial / IMEI:</t>
+                                <t t-esc="o.serial_number"/>
+                            </div>
+                        </t>
+                        <t t-if="o.accessories">
+                            <div>
+                                <t t-if="is_greek">Παρελκόμενα:</t>
+                                <t t-else="">Accessories:</t>
+                                <t t-esc="o.accessories"/>
+                            </div>
+                        </t>
+                        <t t-if="o.intake_condition">
+                            <div>
+                                <t t-if="is_greek">Κατάσταση:</t>
+                                <t t-else="">Condition:</t>
+                                <t t-esc="o.intake_condition"/>
+                            </div>
+                        </t>
                     </div>
+
+                    <!-- ===== ESTIMATE ===== -->
+                    <t t-if="o.estimate_amount">
+                        <div style="margin-bottom: 4mm;">
+                            <t t-if="is_greek">Εκτίμηση κόστους:</t>
+                            <t t-else="">Estimated cost:</t>
+                            <b>&#8364;<t t-esc="'%.2f' % o.estimate_amount"/></b>
+                            <t t-if="o.approved">
+                                (<t t-if="is_greek">εγκρίθηκε</t><t t-else="">approved</t>
+                                <t t-esc="o.approved_date.strftime('%d/%m/%Y')"/>)
+                            </t>
+                        </div>
+                    </t>
 
                     <!-- ===== JOB TYPE ===== -->
                     <t t-if="o.job_type_ids">
@@ -224,7 +263,14 @@
 
                     <!-- ===== TERMS ===== -->
                     <div style="border-top: 1px dashed #000; padding-top: 3mm; font-size: 7.5pt; text-align: center;">
-                        <t t-if="is_greek">
+                        <!-- The shop's own terms (Ρυθμίσεις → Επισκευές) replace
+                             the defaults below. -->
+                        <t t-set="shop_terms" t-value="o._get_receipt_terms()"/>
+                        <t t-if="shop_terms">
+                            <div style="font-weight: bold; margin-bottom: 2mm; font-size: 8.5pt;">ΟΡΟΙ &amp; ΠΡΟΥΠΟΘΕΣΕΙΣ</div>
+                            <div style="text-align: left; line-height: 1.5;" t-out="shop_terms"/>
+                        </t>
+                        <t t-elif="is_greek">
                             <div style="font-weight: bold; margin-bottom: 2mm; font-size: 8.5pt;">ΟΡΟΙ &amp; ΠΡΟΥΠΟΘΕΣΕΙΣ</div>
                             <div style="text-align: left; line-height: 1.5;">
                                 <b>Δεδομένα (Backup):</b> Είστε αποκλειστικά υπεύθυνοι να έχετε κάνει backup. Η εταιρεία δεν φέρει καμία ευθύνη για τυχόν απώλεια αρχείων.

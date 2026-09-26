@@ -97,6 +97,16 @@ class IlydaClient:
             resp = requests.post(
                 f'{self.base}/api/invoice',
                 json=payload, headers=self._headers(), auth=self._auth, timeout=TIMEOUT)
+        except requests.ReadTimeout as e:
+            # The request went out and the provider went quiet: it may well
+            # have issued the document. That is NOT «unreachable» — an offline
+            # QR here would give the customer a paper that the later recovery
+            # contradicts with the real ΜΑΡΚ. Fail normally; the duplicate
+            # guard looks the document up before any retry.
+            raise UserError(_(
+                'Ο πάροχος δεν απάντησε εγκαίρως (%s). Το παραστατικό ίσως '
+                'εκδόθηκε — πριν από κάθε επανάληψη γίνεται αναζήτηση στον '
+                'πάροχο.', e)) from e
         except (requests.ConnectionError, requests.Timeout) as e:
             # TF-1 trigger: the provider is unreachable — the base send flow
             # falls back to the locally signed offline QR when a key exists.
@@ -171,7 +181,13 @@ class IlydaClient:
             data = resp.json()
         except ValueError:
             data = {}
-        if not resp.ok and not data:
+        # A failed call returns its body only when it speaks ILYDA's error
+        # format (a code, or an errors list) — callers read those. Any other
+        # JSON on a 401/403/5xx (e.g. a gateway's {"status": 401, ...}) would
+        # otherwise pass for a found document, and the duplicate guard would
+        # act on it.
+        speaks_errors = isinstance(data, dict) and (data.get('code') or data.get('errors'))
+        if not resp.ok and not speaks_errors:
             raise UserError(_(
                 'ILYDA API error %s: %s', resp.status_code, resp.text[:500]))
         return data

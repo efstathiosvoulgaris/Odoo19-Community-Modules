@@ -48,6 +48,12 @@ class L10nGrProvOfflineKey(models.Model):
         ('verified', 'Επαληθευμένο'),
         ('revoked', 'Ανακλήθηκε'),
     ], string='Κατάσταση', readonly=True, copy=False)
+    # Which provider environment issued the key. A test key must never sign a
+    # production QR; stamped at creation, existing keys get the company's
+    # current setting (test) when the column is added.
+    test_env = fields.Boolean(
+        string='Δοκιμαστικό Περιβάλλον', readonly=True, copy=False,
+        default=lambda self: self.env.company.l10n_gr_prov_test_env)
     valid_from = fields.Datetime(string='Ισχύει Από', readonly=True, copy=False)
     valid_to = fields.Datetime(string='Ισχύει Έως', readonly=True, copy=False)
     installation_verified_at = fields.Datetime(
@@ -93,6 +99,7 @@ class L10nGrProvOfflineKey(models.Model):
         return next(iter(self.search([
             ('company_id', '=', company.id),
             ('status', '=', 'verified'),
+            ('test_env', '=', company.l10n_gr_prov_test_env),
         ]).filtered(
             lambda k: (not k.valid_from or k.valid_from < now)
             and (not k.valid_to or now <= k.valid_to)

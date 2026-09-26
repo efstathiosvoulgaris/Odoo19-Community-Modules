@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Greece - E-Invoicing Provider: ILYDA',
-    'version': '2.10',
+    'version': '2.11',
     'category': 'Accounting/Localizations',
     'summary': 'ILYDA (vs.gr) driver for the Greek e-invoicing provider base',
     'description': (
@@ -15,6 +15,11 @@
         '\n'
         'Changelog\n'
         '---------\n'
+        '2.11 — Review P0 #17/#18. Read timeout στην αποστολή = κανονικό\n'
+        'σφάλμα, όχι «πάροχος εκτός» με offline QR (το έγγραφο ίσως εκδόθηκε·\n'
+        'η επανάληψη ψάχνει πρώτα). Απάντηση 401/403/5xx χωρίς κωδικό ILYDA\n'
+        'δεν περνά πλέον για «βρέθηκε έγγραφο».\n'
+        '\n'
         '2.10 — Review P1. Offline QR (TF-1) με τα ποσά aadeDocTotals της\n'
         'κανονικής αποστολής — διακίνηση, παρακράτηση, τέλη (#30). Έλεγχος πριν\n'
         'την αποστολή: γραμμή με δεύτερο φόρο (#31) και γραμμή με αρνητικό ποσό\n'

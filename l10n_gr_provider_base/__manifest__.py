@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Greece - E-Invoicing Provider (Base)',
-    'version': '2.15',
+    'version': '2.16',
     'category': 'Accounting/Localizations',
     'summary': 'Issue invoices through a licensed Greek e-invoicing provider (Y.PA.H.E.S.)',
     'description': (
@@ -17,6 +17,11 @@
         '\n'
         'Changelog\n'
         '---------\n'
+        '2.16 — Review P0 #15. Η μετάβαση από δοκιμαστικό σε παραγωγή\n'
+        'σταματά όσο υπάρχουν παραστατικά χωρίς ΜΑΡΚ σε to_send/error/offline/\n'
+        'queued — θα έπαιρναν πραγματικό ΜΑΡΚ. Κάθε κλειδί offline QR θυμάται\n'
+        'το περιβάλλον του· ένα δοκιμαστικό δεν υπογράφει ποτέ QR παραγωγής.\n'
+        '\n'
         '2.15 — Review P1. Πιστωτικό 5.1/5.2: διαθέσιμοι και οι 0% φόροι\n'
         'ενδοκοινοτικής παράδοσης/εξαγωγής (#33). Ιδιώτης εξωτερικού χωρίς ΑΦΜ\n'
         '= λιανική με ελληνικό ΦΠΑ, όχι 1.2/1.3 (#34). Αποτυχημένες επαναλήψεις:\n'

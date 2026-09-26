@@ -2,11 +2,22 @@
 {
     "name": "POS Community Addons",
     "summary": "POS customizations: restaurant (kitchen receipts, floor plan) and retail usability",
-    "version": "1.9",
+    "version": "1.10",
     "description": """Coffee-shop optimised POS restaurant UI for Odoo 19 Community.
 
 Changelog
 ---------
+
+* 1.10 — Receipt screen (review #27)
+
+  - Stays open when the sale did not get its ΜΑΡΚ, so the cashier sees
+    the «ΔΕΝ ΔΙΑΒΙΒΑΣΤΗΚΕ» warning; it used to close at once.
+
+  - Does not print on top of core's automatic printing (two copies).
+
+  - Removed two template extensions of pos_restaurant.ActionpadWidget /
+    pos_restaurant.ProductScreen: those templates do not exist in Odoo 19,
+    so they never applied and logged «Missing (extension) parent templates».
 
 * 1.9 — Retail usability; retail tills no longer inherit restaurant styling
 
@@ -140,7 +151,6 @@ Changelog
             "pos_community_addons/static/src/floor_screen/floor_screen.xml",
             "pos_community_addons/static/src/overrides/product_screen.js",
             "pos_community_addons/static/src/overrides/actionpad_widget.xml",
-            "pos_community_addons/static/src/overrides/product_screen.xml",
             "pos_community_addons/static/src/overrides/payment_screen.xml",
             "pos_community_addons/static/src/overrides/order_change_receipt.js",
             "pos_community_addons/static/src/overrides/order_change_receipt.xml",

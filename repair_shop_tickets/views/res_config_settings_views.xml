@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- «Επισκευές»: every option of the module on one settings page of its
+         own, opened from Service Tickets → Configuration → Ρυθμίσεις. -->
+    <record id="res_config_settings_view_form_repair" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.repair.shop.tickets</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="base.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form" position="inside">
+                <app string="Επισκευές" name="repair_shop_tickets"
+                     logo="/repair_shop_tickets/static/description/icon.png">
+
+                    <block title="Τιμολόγηση" name="repair_invoicing_block">
+                        <setting string="Προεπιλεγμένη Εργασία" name="repair_labor_product_setting"
+                                 help="Η υπηρεσία που μπαίνει στη γραμμή εργασίας του τιμολογίου — από αυτήν παίρνει ΦΠΑ, λογαριασμό εσόδων και χαρακτηρισμό myDATA. Ένας τύπος εργασίας με δικό του είδος έχει προτεραιότητα, και η τιμή του συμπληρώνει την τιμή εργασίας του δελτίου.">
+                            <field name="repair_labor_product_id"
+                                   options="{'no_create': True}"/>
+                            <div class="mt8">
+                                <button name="%(action_service_job_type)d" type="action"
+                                        string="Τύποι Εργασίας" class="btn-link" icon="oi-arrow-right"/>
+                            </div>
+                        </setting>
+                        <setting string="Ημερολόγια Παραστατικών" name="repair_journals_setting"
+                                 help="Σε ποιο ημερολόγιο ανοίγει το τιμολόγιο της επισκευής. Κενό = αυτόματα: ΑΛΠ ή Τιμολόγιο Πώλησης όταν υπάρχουν ανταλλακτικά, ΑΠΥ ή Τιμολόγιο Παροχής Υπηρεσιών όταν είναι μόνο εργασία. Επιχείρηση = πελάτης εταιρεία ή με ΑΦΜ.">
+                            <div class="row mt16">
+                                <label string="Ιδιώτες" for="repair_journal_retail_id" class="col-lg-4 o_light_label"/>
+                                <field name="repair_journal_retail_id" options="{'no_create': True}"/>
+                            </div>
+                            <div class="row">
+                                <label string="Επιχειρήσεις" for="repair_journal_business_id" class="col-lg-4 o_light_label"/>
+                                <field name="repair_journal_business_id" options="{'no_create': True}"/>
+                            </div>
+                        </setting>
+                    </block>
+
+                    <block title="Ανταλλακτικά" name="repair_parts_block">
+                        <setting string="Θέση Ανταλλακτικών" name="repair_location_setting"
+                                 help="Από ποια θέση αποθήκης βγαίνουν τα ανταλλακτικά. Κενό = η κύρια θέση (WH/Stock).">
+                            <field name="repair_location_id" options="{'no_create': True}"/>
+                        </setting>
+                        <setting string="Αφαίρεση από την Αποθήκη" name="repair_consume_setting"
+                                 help="Πότε τα ανταλλακτικά του δελτίου βγαίνουν από την αποθήκη. Αν η επισκευή αποτύχει ή το δελτίο ακυρωθεί, επιστρέφουν αυτόματα.">
+                            <field name="repair_consume_on" widget="radio"/>
+                        </setting>
+                    </block>
+
+                    <block title="Πελάτες" name="repair_customers_block">
+                        <setting string="Υπενθύμιση Μη Παραλαβής" name="repair_reminder_setting"
+                                 help="Μετά από τόσες ημέρες σε «Επιλύθηκε» χωρίς παραλαβή, μπαίνει δραστηριότητα στον τεχνικό να ξαναειδοποιήσει τον πελάτη. 0 = καμία υπενθύμιση.">
+                            <field name="repair_pickup_reminder_days"/>
+                            <span class="o_light_label ms-2">ημέρες</span>
+                        </setting>
+                        <setting string="Όροι στο Δελτίο Παραλαβής" name="repair_terms_setting"
+                                 help="Τυπώνονται στο δελτίο παραλαβής της συσκευής. Κενό = οι προεπιλεγμένοι όροι (backup, χρέωση ελέγχου, εγγύηση, εγκατάλειψη μετά από 90 ημέρες…).">
+                            <field name="repair_receipt_terms"/>
+                        </setting>
+                    </block>
+
+                </app>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="action_repair_settings" model="ir.actions.act_window">
+        <field name="name">Ρυθμίσεις Επισκευών</field>
+        <field name="res_model">res.config.settings</field>
+        <field name="view_mode">form</field>
+        <field name="target">current</field>
+        <field name="context">{'module': 'repair_shop_tickets', 'bin_size': False}</field>
+    </record>
+
+</odoo>

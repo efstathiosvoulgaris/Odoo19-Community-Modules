@@ -459,9 +459,12 @@ class L10nGrProvCateringOrder(models.Model):
                 hours=config.l10n_gr_prov_catering_alert_hours)
             # Open at AADE = transmitted and not closed by a MARKED document.
             # A closing document that failed to transmit closes nothing.
+            # A «Καθολική Ακύρωση» is itself the closing act: it never gets a
+            # closing ΑΛΠ, and flagging it would keep the alert up forever.
             notes = Note.search([
                 ('config_id', '=', config.id),
                 ('state', '=', 'sent'),
+                ('kind', '!=', 'cancel'),
                 '|', ('closing_move_id', '=', False),
                      ('closing_move_id.l10n_gr_prov_mark', '=', False),
                 ('create_date', '<=', deadline),

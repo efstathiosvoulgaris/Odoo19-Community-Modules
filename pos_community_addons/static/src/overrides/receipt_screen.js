@@ -14,12 +14,23 @@ patch(ReceiptScreen.prototype, {
     setup() {
         super.setup();
         onMounted(async () => {
-            try {
-                await this.pos.printReceipt({ order: this.currentOrder });
-            } catch (e) {
-                // Error already handled by PosStore.printReceipt patch below;
-                // this catch is a safety net only.
-                console.error("Receipt print failed:", e);
+            // With «automatic receipt printing» core prints on this screen
+            // itself: printing here too gave every customer two copies.
+            if (!this.pos.config.iface_print_auto) {
+                try {
+                    await this.pos.printReceipt({ order: this.currentOrder });
+                } catch (e) {
+                    // Error already handled by PosStore.printReceipt patch below;
+                    // this catch is a safety net only.
+                    console.error("Receipt print failed:", e);
+                }
+            }
+            // A sale that did not get its ΜΑΡΚ keeps the screen open: its
+            // «ΔΕΝ ΔΙΑΒΙΒΑΣΤΗΚΕ» warning lives here (l10n_gr_provider_pos),
+            // and closing straight away meant no cashier ever saw it.
+            const state = this.currentOrder.l10n_gr_prov_state;
+            if (state && state !== "sent") {
+                return;
             }
             this.pos.orderDone(this.currentOrder);
         });

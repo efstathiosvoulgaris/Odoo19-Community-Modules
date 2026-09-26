@@ -51,4 +51,11 @@
               parent="menu_service_ticket_config"
               action="action_service_job_type"
               sequence="20"/>
+
+    <menuitem id="menu_repair_settings"
+              name="Ρυθμίσεις"
+              parent="menu_service_ticket_config"
+              action="action_repair_settings"
+              groups="base.group_system"
+              sequence="1"/>
 </odoo>

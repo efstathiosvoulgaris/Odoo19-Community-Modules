@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Greece - E-Invoicing Provider (Restaurant Order Notes 8.6)',
-    'version': '1.5',
+    'version': '1.6',
     'category': 'Accounting/Localizations',
     'summary': 'Δελτίο Παραγγελίας Εστίασης (8.6) from the restaurant Point of Sale',
     'description': (
@@ -25,7 +25,10 @@
         '\n'
         'Changelog\n'
         '---------\n'
-        '1.5 — Οι επιλογές 8.6 στη σελίδα «Πάροχος myDATA», μόνο για ταμεία\n'
+        '1.6 — Η ειδοποίηση ανοιχτών δελτίων δεν μετρά πλέον τις ίδιες τις\n'
+        'Καθολικές Ακυρώσεις (δεν κλείνουν ποτέ με ΑΛΠ· η ειδοποίηση δεν έσβηνε).\n'
+        '\n'
+        '1.5 —Οι επιλογές 8.6 στη σελίδα «Πάροχος myDATA», μόνο για ταμεία\n'
         'εστίασης.\n'
         '\n'
         '1.4 — Negative notes by reconciliation: on every send to the\n'

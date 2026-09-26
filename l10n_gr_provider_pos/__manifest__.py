@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Greece - E-Invoicing Provider (Point of Sale)',
-    'version': '1.12',
+    'version': '1.13',
     'category': 'Accounting/Localizations',
     'summary': 'POS receipts (ΑΛΠ) and invoices (ΤΙΜ) through the e-invoicing provider',
     'description': (
@@ -25,6 +25,10 @@
         '\n'
         'Changelog\n'
         '---------\n'
+        '1.13 — Review P0 #25/#26. Παραγγελία που συγχρονίζεται μετά τα\n'
+        'μεσάνυχτα εκδίδεται με τη σημερινή ημερομηνία (αλλιώς ER-30). Επιστροφή\n'
+        'σε πώληση χωρίς ΜΑΡΚ σταματά με μήνυμα, πριν δοθούν χρήματα πίσω.\n'
+        '\n'
         '1.12 — Review P1. Χωρίς ημερολόγιο για το είδος παραστατικού το ταμείο\n'
         'σταματά με μήνυμα, αντί να εκδώσει σιωπηλά στο ημερολόγιο του core (#35).\n'
         'Επιστροφή με μηδενικό σύνολο → πιστωτικό ημερολόγιο (#36).\n'

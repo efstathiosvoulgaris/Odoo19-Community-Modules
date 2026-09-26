@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-from odoo import fields, models
+from odoo import _, fields, models
+from odoo.exceptions import UserError
 
 from .gr_mydata import OTHER_TAXES_CATEGORY_FIXED, OTHER_TAXES_CATEGORY_SELECTION
 
@@ -71,3 +72,28 @@ class ResCompany(models.Model):
     def _l10n_gr_prov_active(self):
         self.ensure_one()
         return bool(self.l10n_gr_prov_provider and self.l10n_gr_prov_provider != 'none')
+
+    def write(self, vals):
+        """Test → production: documents still waiting for a ΜΑΡΚ were made in
+        the test environment. Left as they are, the retry cron would send them
+        to production and they would get a real ΜΑΡΚ. Refuse until they are
+        dealt with (cancelled, or resolved while still on test)."""
+        if vals.get('l10n_gr_prov_test_env') is False:
+            going_live = self.filtered('l10n_gr_prov_test_env')
+            pending = self.env['account.move'].sudo().search([
+                ('company_id', 'in', going_live.ids),
+                ('state', '=', 'posted'),
+                ('l10n_gr_prov_mark', '=', False),
+                ('l10n_gr_prov_state', 'in', ('to_send', 'error', 'offline', 'queued')),
+            ]) if going_live else self.env['account.move']
+            if pending:
+                names = ', '.join(pending[:15].mapped('name'))
+                more = len(pending) - 15
+                raise UserError(_(
+                    'Δεν γίνεται μετάβαση σε παραγωγή: %(count)s παραστατικά του '
+                    'δοκιμαστικού περιβάλλοντος περιμένουν ακόμη ΜΑΡΚ και θα '
+                    'στέλνονταν στην παραγωγή (%(names)s%(more)s). Ακυρώστε τα ή '
+                    'ολοκληρώστε τα όσο είστε ακόμη σε δοκιμαστικό.',
+                    count=len(pending), names=names,
+                    more=_(' και %s ακόμη', more) if more > 0 else ''))
+        return super().write(vals)
