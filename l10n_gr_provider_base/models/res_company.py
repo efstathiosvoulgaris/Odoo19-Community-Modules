@@ -31,6 +31,35 @@ class ResCompany(models.Model):
              'the Send & Print flow.',
     )
 
+    # Αυτόματη εξόφληση: a document of the back office that gets its MARK is
+    # paid with these journals, per declared myDATA payment method. 5 (Επί
+    # Πιστώσει) has not been collected and 7 (card) is booked by its terminal,
+    # so neither is offered.
+    l10n_gr_prov_settle_journal_1_id = fields.Many2one(
+        'account.journal', string='1 - Λογαριασμός Πληρωμών Ημεδαπής',
+        domain="[('type', 'in', ('bank', 'cash'))]")
+    l10n_gr_prov_settle_journal_2_id = fields.Many2one(
+        'account.journal', string='2 - Λογαριασμός Πληρωμών Αλλοδαπής',
+        domain="[('type', 'in', ('bank', 'cash'))]")
+    l10n_gr_prov_settle_journal_3_id = fields.Many2one(
+        'account.journal', string='3 - Μετρητά',
+        domain="[('type', 'in', ('bank', 'cash'))]")
+    l10n_gr_prov_settle_journal_4_id = fields.Many2one(
+        'account.journal', string='4 - Επιταγή',
+        domain="[('type', 'in', ('bank', 'cash'))]")
+    l10n_gr_prov_settle_journal_6_id = fields.Many2one(
+        'account.journal', string='6 - Web Banking',
+        domain="[('type', 'in', ('bank', 'cash'))]")
+    l10n_gr_prov_settle_journal_8_id = fields.Many2one(
+        'account.journal', string='8 - IRIS',
+        domain="[('type', 'in', ('bank', 'cash'))]")
+
+    def _l10n_gr_prov_settle_journal(self, payment_type):
+        """The journal that settles a declared payment method, or empty."""
+        self.ensure_one()
+        field = f'l10n_gr_prov_settle_journal_{payment_type}_id'
+        return self[field] if field in self._fields else self.env['account.journal']
+
     l10n_gr_prov_guard_tax = fields.Boolean(
         string='Έλεγχος Φόρων στην Καταχώριση',
         default=True,

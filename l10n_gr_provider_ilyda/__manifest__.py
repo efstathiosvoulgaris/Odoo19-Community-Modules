@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Greece - E-Invoicing Provider: ILYDA',
-    'version': '2.11',
+    'version': '2.12',
     'category': 'Accounting/Localizations',
     'summary': 'ILYDA (vs.gr) driver for the Greek e-invoicing provider base',
     'description': (
@@ -15,6 +15,9 @@
         '\n'
         'Changelog\n'
         '---------\n'
+        '2.12 — Άρνηση της κλήσης (π.χ. λάθος κωδικός) δείχνει τον κωδικό\n'
+        'και την αιτία της ILYDA αντί για «No marking returned».\n'
+        '\n'
         '2.11 — Review P0 #17/#18. Read timeout στην αποστολή = κανονικό\n'
         'σφάλμα, όχι «πάροχος εκτός» με offline QR (το έγγραφο ίσως εκδόθηκε·\n'
         'η επανάληψη ψάχνει πρώτα). Απάντηση 401/403/5xx χωρίς κωδικό ILYDA\n'

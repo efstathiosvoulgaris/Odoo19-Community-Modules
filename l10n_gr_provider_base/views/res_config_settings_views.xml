@@ -77,6 +77,51 @@
                         </setting>
                     </block>
 
+                    <block title="Αυτόματη Εξόφληση" name="l10n_gr_prov_settle_block">
+                        <setting string="Ημερολόγια Εξόφλησης" name="l10n_gr_prov_settle_setting"
+                                 help="Όταν παραστατικό του backend πάρει ΜΑΡΚ, κάθε τρόπος πληρωμής του που έχει ημερολόγιο εδώ καταχωρείται ως είσπραξη και το εξοφλεί (σε πιστωτικό: πληρωμή προς τον πελάτη). Κενό = εξόφληση με το χέρι. Επί Πιστώσει δεν εξοφλείται ποτέ· οι κάρτες καταχωρούνται από το ημερολόγιο του τερματικού· το POS καταχωρεί τις δικές του πληρωμές.">
+                            <field name="company_id" invisible="1"/>
+                            <div class="content-group">
+                                <div class="row mt8">
+                                    <label for="l10n_gr_prov_settle_journal_3_id" class="col-lg-5 o_light_label"/>
+                                    <field name="l10n_gr_prov_settle_journal_3_id" class="col-lg-7"
+                                           domain="[('type', 'in', ('bank', 'cash')), ('company_id', '=', company_id)]"
+                                           options="{'no_create': True}"/>
+                                </div>
+                                <div class="row">
+                                    <label for="l10n_gr_prov_settle_journal_8_id" class="col-lg-5 o_light_label"/>
+                                    <field name="l10n_gr_prov_settle_journal_8_id" class="col-lg-7"
+                                           domain="[('type', 'in', ('bank', 'cash')), ('company_id', '=', company_id)]"
+                                           options="{'no_create': True}"/>
+                                </div>
+                                <div class="row">
+                                    <label for="l10n_gr_prov_settle_journal_1_id" class="col-lg-5 o_light_label"/>
+                                    <field name="l10n_gr_prov_settle_journal_1_id" class="col-lg-7"
+                                           domain="[('type', 'in', ('bank', 'cash')), ('company_id', '=', company_id)]"
+                                           options="{'no_create': True}"/>
+                                </div>
+                                <div class="row">
+                                    <label for="l10n_gr_prov_settle_journal_2_id" class="col-lg-5 o_light_label"/>
+                                    <field name="l10n_gr_prov_settle_journal_2_id" class="col-lg-7"
+                                           domain="[('type', 'in', ('bank', 'cash')), ('company_id', '=', company_id)]"
+                                           options="{'no_create': True}"/>
+                                </div>
+                                <div class="row">
+                                    <label for="l10n_gr_prov_settle_journal_4_id" class="col-lg-5 o_light_label"/>
+                                    <field name="l10n_gr_prov_settle_journal_4_id" class="col-lg-7"
+                                           domain="[('type', 'in', ('bank', 'cash')), ('company_id', '=', company_id)]"
+                                           options="{'no_create': True}"/>
+                                </div>
+                                <div class="row">
+                                    <label for="l10n_gr_prov_settle_journal_6_id" class="col-lg-5 o_light_label"/>
+                                    <field name="l10n_gr_prov_settle_journal_6_id" class="col-lg-7"
+                                           domain="[('type', 'in', ('bank', 'cash')), ('company_id', '=', company_id)]"
+                                           options="{'no_create': True}"/>
+                                </div>
+                            </div>
+                        </setting>
+                    </block>
+
                     <block title="Πίνακες" name="l10n_gr_prov_tables_block">
                         <setting string="Προεπιλογές Χαρακτηρισμού" name="l10n_gr_prov_cls_default_setting"
                                  help="Ο χαρακτηρισμός εσόδων/εξόδων myDATA που παίρνει αυτόματα κάθε γραμμή, ανά είδος παραστατικού.">

@@ -13,6 +13,18 @@ class ResConfigSettings(models.TransientModel):
         related='company_id.l10n_gr_prov_test_env', readonly=False)
     l10n_gr_prov_auto_send = fields.Boolean(
         related='company_id.l10n_gr_prov_auto_send', readonly=False)
+    l10n_gr_prov_settle_journal_1_id = fields.Many2one(
+        related='company_id.l10n_gr_prov_settle_journal_1_id', readonly=False)
+    l10n_gr_prov_settle_journal_2_id = fields.Many2one(
+        related='company_id.l10n_gr_prov_settle_journal_2_id', readonly=False)
+    l10n_gr_prov_settle_journal_3_id = fields.Many2one(
+        related='company_id.l10n_gr_prov_settle_journal_3_id', readonly=False)
+    l10n_gr_prov_settle_journal_4_id = fields.Many2one(
+        related='company_id.l10n_gr_prov_settle_journal_4_id', readonly=False)
+    l10n_gr_prov_settle_journal_6_id = fields.Many2one(
+        related='company_id.l10n_gr_prov_settle_journal_6_id', readonly=False)
+    l10n_gr_prov_settle_journal_8_id = fields.Many2one(
+        related='company_id.l10n_gr_prov_settle_journal_8_id', readonly=False)
     l10n_gr_prov_guard_tax = fields.Boolean(
         related='company_id.l10n_gr_prov_guard_tax', readonly=False)
     l10n_gr_prov_guard_island = fields.Boolean(

@@ -1543,6 +1543,16 @@ class AccountMove(models.Model):
         non_fatal = [e for e in errors if not e.get('fatal')]
         codes = {e.get('code') for e in errors}
 
+        if not marking.get('mark') and not errors and data.get('code'):
+            # A refusal of the call itself, not of the document: ILYDA puts
+            # it at the top level ({'code': 'UNAUTH_OR_WRONG_CREDENTIALS',
+            # 'reason': ...} on a wrong password). Without this it read «No
+            # marking returned», which sends the user looking at the invoice.
+            raise UserError(_(
+                'ILYDA refused the request (%(code)s): %(reason)s',
+                code=data['code'],
+                reason=data.get('reason') or data.get('message') or ''))
+
         if non_fatal:
             self.message_post(body=_(
                 'ILYDA non-fatal warnings: %s',

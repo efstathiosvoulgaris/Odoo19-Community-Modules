@@ -105,6 +105,15 @@ class EftTerminal(models.Model):
         'res.company', string='Εταιρεία', required=True,
         default=lambda self: self.env.company)
     active = fields.Boolean(default=True)
+    payment_journal_id = fields.Many2one(
+        'account.journal', string='Ημερολόγιο Πληρωμών',
+        domain="[('type', 'in', ('bank', 'cash')), ('company_id', '=', company_id)]",
+        help='Εγκεκριμένη χρέωση κάρτας σε παραστατικό του backend καταχωρείται '
+             'εδώ ως είσπραξη και εξοφλεί το παραστατικό· μια επιστροφή ως '
+             'πληρωμή προς τον πελάτη. Συνήθως ενδιάμεσο ημερολόγιο «Κάρτες» '
+             'που συμφωνείται με την εκκαθάριση της τράπεζας. Κενό = καμία '
+             'λογιστική πληρωμή. Οι χρεώσεις του POS καταχωρούνται από το '
+             'ταμείο και δεν επηρεάζονται.')
 
     # ── MegEftPos driver (Α.1155 automatic charging) ─────────────────────────
     # nsp_protocol above is ILYDA's signature hint; pos_protocol is the driver's
@@ -461,6 +470,10 @@ class EftPayment(models.Model):
         help='Η χρέωση κάρτας που επιστρέφεται. Σε πιστωτικό συμπληρώνεται '
              'από το αρχικό παραστατικό — ο driver χρειάζεται τους κωδικούς '
              'της για να εκτελέσει Refund.')
+    account_payment_id = fields.Many2one(
+        'account.payment', string='Λογιστική Πληρωμή', readonly=True, copy=False,
+        help='Η είσπραξη (ή πληρωμή, σε επιστροφή) που καταχωρήθηκε για την '
+             'εγκεκριμένη χρέωση στο Ημερολόγιο Πληρωμών του τερματικού.')
     payment_method_mark = fields.Char(
         string='MARK Πληρωμής', readonly=True, copy=False,
         help='Το paymentMethodMark της ΑΑΔΕ (ετεροχρονισμένη διαβίβαση).')
@@ -907,7 +920,65 @@ class EftPayment(models.Model):
             amount=f'{self.amount:.2f}', auth=self.bank_auth_code or '—',
             nsp=self.nsp_reference or '—'))
         self._commit()
+        self._register_account_payment()
         return self._submit()
+
+    # ── Accounting ────────────────────────────────────────────────────────────
+
+    def _register_account_payment(self):
+        """Book the approved charge as the document's payment.
+
+        Backend documents only: a POS charge has no document yet and its
+        order books its own payments. Needs the terminal's Ημερολόγιο
+        Πληρωμών; without one nothing is booked, as before. The money has
+        moved whatever happens here, so a failure is logged, never raised —
+        a raise would roll back nothing useful and hide the charge.
+        """
+        self.ensure_one()
+        move = self.move_id
+        journal = self.terminal_id.payment_journal_id
+        if (not journal or not move or move.state != 'posted'
+                or self.account_payment_id or move.currency_id.is_zero(
+                    move.amount_residual)):
+            return
+        amount = min(self.amount, move.amount_residual)
+        try:
+            with self.env.cr.savepoint():
+                payments = self.env['account.payment.register'].with_context(
+                    active_model='account.move', active_ids=move.ids,
+                ).create({
+                    'journal_id': journal.id,
+                    'amount': amount,
+                    'payment_date': fields.Date.context_today(self),
+                    'communication': self.transaction_id or move.name,
+                })._create_payments()
+                self.account_payment_id = payments[:1]
+        except Exception as e:
+            _logger.exception('Α.1155: no account payment for %s', self.display_name)
+            self._log(body=_(
+                'Α.1155: η χρέωση %(amount)s δεν καταχωρήθηκε λογιστικά '
+                '(%(error)s) — καταχωρίστε την πληρωμή με το χέρι στο '
+                'ημερολόγιο %(journal)s.', amount=f'{amount:.2f}', error=e,
+                journal=journal.display_name))
+        self._commit()
+
+    def _cancel_account_payment(self):
+        """The charge was voided on the terminal: the money is back, so its
+        booking goes too. Draft first — that also undoes the reconciliation."""
+        self.ensure_one()
+        payment = self.account_payment_id
+        if not payment or payment.state == 'canceled':
+            return
+        try:
+            with self.env.cr.savepoint():
+                payment.action_draft()
+                payment.action_cancel()
+        except Exception as e:
+            _logger.exception('Α.1155: payment %s not cancelled', payment.display_name)
+            self._log(body=_(
+                'Α.1155: η χρέωση ακυρώθηκε στο τερματικό αλλά η λογιστική '
+                'πληρωμή %(payment)s δεν ακυρώθηκε (%(error)s) — ακυρώστε την '
+                'με το χέρι.', payment=payment.display_name, error=e))
 
     def _charge_outcome_unknown(self, reason):
         """No definite answer: the card may have been charged. Stay in
@@ -1319,6 +1390,7 @@ class EftPayment(models.Model):
             self._void_terminal()
             self.voided_at = fields.Datetime.now()
             self._commit()
+            self._cancel_account_payment()
         if cancel_signature:
             data = self._client().cancel_signature({
                 'signature': self.signature,

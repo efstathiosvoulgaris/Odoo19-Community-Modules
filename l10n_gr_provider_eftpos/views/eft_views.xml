@@ -38,6 +38,8 @@
                             <field name="code"/>
                             <field name="nsp_protocol"/>
                             <field name="company_id" groups="base.group_multi_company"/>
+                            <field name="payment_journal_id"
+                                   options="{'no_create': True}"/>
                             <field name="active" widget="boolean_toggle"/>
                         </group>
                         <group string="MegEftPos Driver">
@@ -198,6 +200,8 @@
                                readonly="driver_enabled or state not in ('signed',)"/>
                         <field name="payment_method_mark"
                                invisible="not payment_method_mark"/>
+                        <field name="account_payment_id"
+                               invisible="not account_payment_id"/>
                         <field name="signature_expiry" invisible="state == 'draft'"/>
                         <field name="signature_amount" invisible="state == 'draft'"/>
                     </group>
