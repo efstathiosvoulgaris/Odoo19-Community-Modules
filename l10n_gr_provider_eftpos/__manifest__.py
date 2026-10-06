@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Greece - E-Invoicing Provider (EFT/POS Α.1155)',
-    'version': '1.21',
+    'version': '1.22',
     'category': 'Accounting/Localizations',
     'summary': 'Card-terminal payment signatures per Α.1155/2023 through the e-invoicing provider',
     'description': (
@@ -28,6 +28,12 @@
         '\n'
         'Changelog\n'
         '---------\n'
+        '1.22 — Η χρέωση παίρνει τη θέση της γραμμής πληρωμής που βάζει η\n'
+        'καταχώριση (ή του υπολοίπου της), αντί να προστίθεται δίπλα της: το\n'
+        'παραστατικό δήλωνε το ποσό δύο φορές και η διαβίβαση απέτυχε.\n'
+        'Επιστροφή χωρίς παραστατικό ακόμα (POS) αναγνωρίζεται από την Αρχική\n'
+        'Χρέωση και πηγαίνει στο /refund του driver.\n'
+        '\n'
         '1.21 — Driver, άδεια και σύνδεσμος στα Τερματικά σε δική τους\n'
         'ενότητα στη σελίδα «Πάροχος myDATA».\n'
         '\n'

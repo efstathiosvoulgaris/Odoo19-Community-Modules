@@ -164,6 +164,14 @@ patch(OrderPaymentValidation.prototype, {
         // is just as much a credit document. `_l10n_gr_prov_pos_journal()`
         // picks the credit series the same way.
         const isRefund = order.priceIncl < 0;
+        // The order a Refund action is giving back — the server looks up its
+        // card charge to refund through the driver. Lines from two orders, or
+        // a return typed in by hand, send none and stay manual.
+        const refundedOrderIds = new Set(
+            order.lines.map((l) => l.refunded_orderline_id?.order_id?.id).filter(Boolean)
+        );
+        const refundedOrderId =
+            isRefund && refundedOrderIds.size === 1 ? [...refundedOrderIds][0] : false;
         const abs = (n) => Math.abs(n);
         const cardLines = order.payment_ids.filter(
             (l) => this._grIsCardLine(l) && l.getAmount() !== 0 && !l.l10n_gr_prov_eft_signature
@@ -231,6 +239,7 @@ patch(OrderPaymentValidation.prototype, {
                                 vat_rate: this._grVatRate(order),
                                 is_timologio: Boolean(order.to_invoice),
                                 is_refund: isRefund,
+                                refunded_order_id: refundedOrderId,
                                 installments: installments,
                             },
                         ]
@@ -283,15 +292,17 @@ patch(OrderPaymentValidation.prototype, {
             }
 
             // 3. The transaction id. With the MegEftPos Driver the card was
-            // already charged server-side; a standalone terminal (and any
-            // return) is charged by hand.
+            // already charged (or refunded) server-side; a standalone
+            // terminal, and a return with no card charge to reverse, is
+            // charged by hand.
             let txId = result.transaction_id;
             if (result.status === "signed") {
                 if (this.pos.config.l10n_gr_prov_eft_require_signature && !isRefund) {
                     // This till may not take a card without the terminal having
                     // answered for it — a typed transaction id is a promise, not
-                    // a proof. Returns are exempt: they are always keyed in by
-                    // hand, so the rule would make card refunds impossible.
+                    // a proof. Returns are exempt: one without a card charge
+                    // to reverse is keyed in by hand, and the rule would make
+                    // it impossible.
                     await this._grRelease(order, line);
                     this._grAlert(
                         _t("Το τερματικό δεν απάντησε"),

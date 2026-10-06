@@ -129,8 +129,9 @@ class L10nGrProvEftTerminal(models.Model):
 
         `vals`: config_id, client_key (uuid of this attempt), terminal_id (the
         cashier's pick; the till's default when absent), amount, net, vat,
-        gross, vat_rate, is_timologio, is_refund, installments — amounts always
-        positive, like the document.
+        gross, vat_rate, is_timologio, is_refund, refunded_order_id (the
+        order a return gives back), installments — amounts always positive,
+        like the document.
 
         Idempotent on client_key: calling it again for an attempt that already
         exists never signs or charges twice, it reports that attempt. So a till
@@ -209,16 +210,19 @@ class L10nGrProvEftTerminal(models.Model):
         # The provider holds this signature now; losing the record would leave
         # it to become an «Ανοιχτό Παραστατικό».
         payment._commit()
-        if vals.get('is_refund') or not terminal._l10n_gr_prov_driver_enabled():
-            # Standalone terminal: the cashier charges it and types the id.
-            # ponytail: refunds are always charged by hand, even on a driver
-            # terminal. A driver Refund must quote the original Sale's
-            # ecr/nsp/bankAuth/receipt references, and the payment screen has
-            # no reliable handle on the refunded order's payments — the
-            # backend flow asks the user to pick the «Αρχική Χρέωση» for
-            # exactly this reason. Α.1155 only requires the signature, which
-            # this path issues; wire driver.refund here if tills start doing
-            # enough card returns for the manual step to hurt.
+        driver = terminal._l10n_gr_prov_driver_enabled()
+        if driver and vals.get('is_refund'):
+            # A driver Refund must quote the original sale's ecr/nsp/bankAuth/
+            # receipt references. The till sends the order being returned;
+            # its card charge is found here, never taken from the browser.
+            payment.origin_payment_id = self._l10n_gr_prov_pos_refund_origin(
+                terminal, vals)
+        if not driver or (vals.get('is_refund') and not payment.origin_payment_id):
+            # Standalone terminal — or a return whose sale has no single card
+            # charge on this terminal to reverse (cash sale, split cards,
+            # another terminal, a return typed in by hand): the cashier
+            # charges it and types the id. Α.1155 only requires the signature,
+            # which this path issues.
             return payment._l10n_gr_prov_pos_result()
         try:
             payment.action_charge_terminal()
@@ -292,6 +296,30 @@ class L10nGrProvEftTerminal(models.Model):
         return {'ok': True, 'voided': bool(payment.voided_at)}
 
     # ── Helpers ───────────────────────────────────────────────────────────────
+
+    def _l10n_gr_prov_pos_refund_origin(self, terminal, vals):
+        """The card charge a POS return gives back, or an empty recordset.
+
+        Only an unambiguous one: the returned order's single approved card
+        charge, made on this very terminal, covering at least the amount
+        going back. Anything else — no charge, two cards, another terminal —
+        is left to the manual path rather than refunding against a guess.
+        """
+        Payment = self.env['l10n.gr.prov.eft.payment']
+        order = self.env['pos.order'].sudo().browse(
+            int(vals.get('refunded_order_id') or 0)).exists()
+        if not order.account_move or order.company_id != terminal.company_id:
+            return Payment
+        charges = Payment.sudo().search([
+            ('move_id', '=', order.account_move.id),
+            ('driver_response_code', '=', 'APPROVED'),
+            ('nsp_reference', '!=', False),
+            ('voided_at', '=', False),
+        ])
+        if len(charges) != 1 or charges.terminal_id != terminal \
+                or _r2(charges.amount) < _r2(vals.get('amount') or 0):
+            return Payment
+        return charges
 
     def _l10n_gr_prov_pos_sign_journal(self, config, vals):
         """The series the signature is issued against.

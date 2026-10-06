@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Greece - E-Invoicing Provider (Base)',
-    'version': '2.16',
+    'version': '2.17',
     'category': 'Accounting/Localizations',
     'summary': 'Issue invoices through a licensed Greek e-invoicing provider (Y.PA.H.E.S.)',
     'description': (
@@ -17,6 +17,10 @@
         '\n'
         'Changelog\n'
         '---------\n'
+        '2.17 — Το «Πιστωτικό Τιμολόγιο» σε ΑΛΠ (11.1/11.2) προτείνει το\n'
+        'ημερολόγιο ΠΛΠ (11.4) αντί για το ίδιο το ΑΛΠ, όπου έφευγε ως 5.1\n'
+        'και ζητούσε ΑΦΜ πελάτη. Όπως κάνει ήδη το POS.\n'
+        '\n'
         '2.16 — Review P0 #15. Η μετάβαση από δοκιμαστικό σε παραγωγή\n'
         'σταματά όσο υπάρχουν παραστατικά χωρίς ΜΑΡΚ σε to_send/error/offline/\n'
         'queued — θα έπαιρναν πραγματικό ΜΑΡΚ. Κάθε κλειδί offline QR θυμάται\n'

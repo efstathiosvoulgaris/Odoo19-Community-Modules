@@ -511,6 +511,15 @@ class EftPayment(models.Model):
         """True for a charge made at a POS till (extended by the POS bridge)."""
         return False
 
+    def _is_refund_charge(self):
+        """Money back to the card rather than a sale. A credit note says so;
+        a POS return has no document yet when it is charged, only the sale it
+        reverses (origin_payment_id) — sales never carry one."""
+        self.ensure_one()
+        if self.move_id:
+            return self.move_id.move_type == 'out_refund'
+        return bool(self.origin_payment_id)
+
     def _log(self, body):
         """Chatter entry on the document, or on the payment itself while it
         has none (a POS charge before its order is saved)."""
@@ -848,7 +857,7 @@ class EftPayment(models.Model):
             raise UserError(_(
                 'Το τερματικό %s δεν είναι συνδεδεμένο με τον MegEftPos Driver.',
                 self.terminal_id.display_name))
-        is_refund = self.move_id.move_type == 'out_refund'
+        is_refund = self._is_refund_charge()
         request = dict(self._driver_amounts(), **self._driver_signature_block())
         request['cashier'] = self.env.user.name
         if is_refund:
@@ -893,7 +902,7 @@ class EftPayment(models.Model):
         self._log(body=_(
             'Α.1155: %(kind)s %(amount)s εγκρίθηκε — έγκριση τράπεζας '
             '%(auth)s, NSP ref %(nsp)s.',
-            kind=(_('επιστροφή') if self.move_id.move_type == 'out_refund'
+            kind=(_('επιστροφή') if self._is_refund_charge()
                   else _('χρέωση κάρτας')),
             amount=f'{self.amount:.2f}', auth=self.bank_auth_code or '—',
             nsp=self.nsp_reference or '—'))
@@ -1243,14 +1252,33 @@ class EftPayment(models.Model):
         # its own unsigned card line, for another charge or another method.
         orphan = move.l10n_gr_prov_payment_ids.filtered(
             lambda p: p.payment_type == '7' and not p.eft_payment_id)[:1]
-        if not orphan:
-            move.l10n_gr_prov_payment_ids = [(0, 0, vals)]
+        if orphan:
+            rest = _r2(orphan.amount - self.amount)
+            orphan.write(vals)
+            if rest > 0:
+                move.l10n_gr_prov_payment_ids = [(0, 0, {
+                    'payment_type': '7', 'amount': rest})]
             return
-        rest = _r2(orphan.amount - self.amount)
-        orphan.write(vals)
-        if rest > 0:
-            move.l10n_gr_prov_payment_ids = [(0, 0, {
-                'payment_type': '7', 'amount': rest})]
+        # No card line yet: the charge takes the place of the one unassigned
+        # line — the line posting seeds with the default method (type 1 on a
+        # retail receipt), or what is left of it after an earlier charge.
+        # Appending beside it declared the amount twice (0.20 on a 0.10
+        # ΑΛΠ, 2026-10-06). What the card did not cover stays on that line,
+        # with its own method. Several unassigned lines are a split the user
+        # made; which one the card replaces is not ours to guess. A document
+        # already marked keeps the lines it was transmitted with.
+        unassigned = move.l10n_gr_prov_payment_ids.filtered(
+            lambda p: not p.eft_payment_id)
+        if (not move.l10n_gr_prov_mark and len(unassigned) == 1
+                and _r2(unassigned.amount) >= _r2(self.amount)):
+            method = unassigned.payment_type
+            rest = _r2(unassigned.amount - self.amount)
+            unassigned.write(vals)
+            if rest > 0:
+                move.l10n_gr_prov_payment_ids = [(0, 0, {
+                    'payment_type': method, 'amount': rest})]
+            return
+        move.l10n_gr_prov_payment_ids = [(0, 0, vals)]
 
     def action_cancel(self):
         """Cancel the provider signature (customer paid cash, terminal failed,
