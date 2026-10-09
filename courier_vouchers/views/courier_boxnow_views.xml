@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Account: BOX NOW credentials + locker sync -->
+    <record id="courier_account_view_form_boxnow" model="ir.ui.view">
+        <field name="name">courier.account.form.boxnow</field>
+        <field name="model">courier.account</field>
+        <field name="inherit_id" ref="courier_account_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <button name="action_boxnow_sync_lockers" type="object" string="Ενημέρωση Lockers"
+                        invisible="courier != 'boxnow' or not id"/>
+            </xpath>
+            <xpath expr="//page[@name='credentials']" position="inside">
+                <group invisible="courier != 'boxnow'" groups="base.group_system">
+                    <field name="boxnow_sandbox"/>
+                    <field name="boxnow_api_url" placeholder="https://..."/>
+                    <field name="boxnow_client_id"/>
+                    <field name="boxnow_client_secret" password="True"/>
+                </group>
+            </xpath>
+            <xpath expr="//page[@name='defaults']" position="inside">
+                <group invisible="courier != 'boxnow'">
+                    <group>
+                        <field name="boxnow_default_compartment_size" widget="radio"/>
+                        <field name="default_weight"/>
+                    </group>
+                    <div class="text-muted" colspan="2">
+                        Τα δέματα αφήνονται από εσάς σε οποιοδήποτε locker (AnyAPM).
+                        Το τηλέφωνο και το email της εταιρείας στέλνονται ως στοιχεία αποστολέα.
+                    </div>
+                </group>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Voucher: locker, compartment size -->
+    <record id="courier_voucher_view_form_boxnow" model="ir.ui.view">
+        <field name="name">courier.voucher.form.boxnow</field>
+        <field name="model">courier.voucher</field>
+        <field name="inherit_id" ref="courier_voucher_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet/group" position="after">
+                <group string="BOX NOW" invisible="courier != 'boxnow'">
+                    <group>
+                        <label for="boxnow_locker_id"/>
+                        <div class="o_row">
+                            <field name="boxnow_locker_id" readonly="state != 'draft'"
+                                   options="{'no_create': True}"/>
+                            <button name="action_boxnow_nearest_locker" type="object"
+                                    string="Κοντινότερο" class="btn-link" icon="fa-crosshairs"
+                                    invisible="state != 'draft'"/>
+                        </div>
+                        <field name="boxnow_locker_note" invisible="not boxnow_locker_note"/>
+                        <field name="boxnow_compartment_size" widget="radio"
+                               options="{'horizontal': true}" readonly="state != 'draft'"/>
+                    </group>
+                    <group>
+                        <field name="boxnow_parcel_ids" invisible="not boxnow_parcel_ids"/>
+                        <field name="boxnow_order_number" invisible="not boxnow_order_number"/>
+                    </group>
+                </group>
+            </xpath>
+            <!-- A locker parcel has no pickup date or sender/recipient charge. -->
+            <xpath expr="//field[@name='pickup_date']" position="attributes">
+                <attribute name="invisible">courier == 'boxnow'</attribute>
+            </xpath>
+            <xpath expr="//field[@name='charge_type']" position="attributes">
+                <attribute name="invisible">courier == 'boxnow'</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Lockers -->
+    <record id="courier_boxnow_locker_view_list" model="ir.ui.view">
+        <field name="name">courier.boxnow.locker.list</field>
+        <field name="model">courier.boxnow.locker</field>
+        <field name="arch" type="xml">
+            <list create="false">
+                <field name="zip"/>
+                <field name="name"/>
+                <field name="street"/>
+                <field name="city"/>
+                <field name="note" optional="hide"/>
+                <field name="boxnow_id" optional="show"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="courier_boxnow_locker_view_search" model="ir.ui.view">
+        <field name="name">courier.boxnow.locker.search</field>
+        <field name="model">courier.boxnow.locker</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="zip"/>
+                <field name="name"/>
+                <field name="city"/>
+                <field name="street"/>
+                <filter name="inactive" string="Ανενεργά" domain="[('active', '=', False)]"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_courier_boxnow_locker" model="ir.actions.act_window">
+        <field name="name">Lockers BOX NOW</field>
+        <field name="res_model">courier.boxnow.locker</field>
+        <field name="view_mode">list</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Δεν υπάρχουν lockers ακόμα</p>
+            <p>Πατήστε «Ενημέρωση Lockers» στον λογαριασμό BOX NOW.</p>
+        </field>
+    </record>
+
+    <menuitem id="menu_courier_boxnow_locker" name="Lockers BOX NOW" parent="menu_courier_config"
+              action="action_courier_boxnow_locker" sequence="20"/>
+</odoo>

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="courier_account_view_form_acs" model="ir.ui.view">
+        <field name="name">courier.account.form.acs</field>
+        <field name="model">courier.account</field>
+        <field name="inherit_id" ref="courier_account_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='credentials']" position="inside">
+                <group invisible="courier != 'acs'" groups="base.group_system">
+                    <field name="acs_api_key" password="True"/>
+                    <field name="acs_company_id"/>
+                    <field name="acs_company_password" password="True"/>
+                    <field name="acs_user_id"/>
+                    <field name="acs_user_password" password="True"/>
+                    <field name="acs_billing_code"/>
+                </group>
+            </xpath>
+            <xpath expr="//page[@name='defaults']" position="inside">
+                <group invisible="courier != 'acs'">
+                    <group>
+                        <field name="default_weight"/>
+                        <field name="default_charge_type" widget="radio"/>
+                    </group>
+                    <group>
+                        <field name="pickup_list_attachment_id"/>
+                    </group>
+                </group>
+            </xpath>
+        </field>
+    </record>
+</odoo>

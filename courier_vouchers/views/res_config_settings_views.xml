@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- «Courier»: the module's options on a settings page of its own,
+         opened from Courier → Διαμόρφωση → Ρυθμίσεις. -->
+    <record id="res_config_settings_view_form_courier" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.courier.vouchers</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="base.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form" position="inside">
+                <app string="Courier" name="courier_vouchers"
+                     logo="/courier_vouchers/static/description/icon.svg">
+                    <block title="Λογαριασμοί" name="courier_accounts_block">
+                        <setting string="Προεπιλεγμένος Λογαριασμός" name="courier_default_account_setting"
+                                 help="Ο λογαριασμός courier που προτείνεται σε κάθε νέο voucher.">
+                            <field name="company_id" invisible="1"/>
+                            <field name="courier_default_account_id"
+                                   domain="[('company_id', '=', company_id)]"
+                                   options="{'no_create': True}"/>
+                        </setting>
+                        <setting string="Λογαριασμοί Courier" name="courier_accounts_setting"
+                                 help="Τα στοιχεία σύνδεσης κάθε courier, ο αποστολέας και οι προεπιλογές αποστολής.">
+                            <button name="%(action_courier_account)d" type="action"
+                                    string="Λογαριασμοί Courier" class="btn-link" icon="oi-arrow-right"/>
+                        </setting>
+                    </block>
+                </app>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="action_courier_settings" model="ir.actions.act_window">
+        <field name="name">Ρυθμίσεις Courier</field>
+        <field name="res_model">res.config.settings</field>
+        <field name="view_mode">form</field>
+        <field name="target">current</field>
+        <field name="context">{'module': 'courier_vouchers', 'bin_size': False}</field>
+    </record>
+
+</odoo>

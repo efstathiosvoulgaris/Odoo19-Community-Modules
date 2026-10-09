@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="courier_account_view_list" model="ir.ui.view">
+        <field name="name">courier.account.list</field>
+        <field name="model">courier.account</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="courier"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="courier_account_view_form" model="ir.ui.view">
+        <field name="name">courier.account.form</field>
+        <field name="model">courier.account</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_test_connection" type="object" string="Έλεγχος Σύνδεσης"
+                            class="oe_highlight" invisible="not id"/>
+                    <field name="courier_has_pickup_list" invisible="1"/>
+                    <button name="action_close_day" type="object" string="Λίστα Παραλαβής Ημέρας"
+                            invisible="not courier_has_pickup_list"
+                            confirm="Τα σημερινά vouchers οριστικοποιούνται και δεν ακυρώνονται πλέον. Συνέχεια;"/>
+                </header>
+                <sheet>
+                    <!-- Only what every courier shares. Each courier's own view
+                         (courier_acs_views, courier_boxnow_views, …) fills the
+                         two pages with its fields, visible for its type only. -->
+                    <group name="main">
+                        <group>
+                            <field name="name"/>
+                            <field name="courier"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                            <field name="active" invisible="1"/>
+                        </group>
+                        <group>
+                            <field name="sender_name"/>
+                        </group>
+                    </group>
+                    <notebook invisible="not courier">
+                        <page string="Σύνδεση" name="credentials"/>
+                        <page string="Προεπιλογές Αποστολής" name="defaults"/>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_courier_account" model="ir.actions.act_window">
+        <field name="name">Λογαριασμοί Courier</field>
+        <field name="res_model">courier.account</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>

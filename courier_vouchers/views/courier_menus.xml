@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- «Courier»: an app of its own, like Επισκευές and Πάροχος myDATA. -->
+    <menuitem id="menu_courier_root" name="Courier"
+              web_icon="courier_vouchers,static/description/icon.svg"
+              groups="stock.group_stock_user" sequence="110"/>
+
+    <menuitem id="menu_courier_voucher" name="Vouchers" parent="menu_courier_root"
+              action="action_courier_voucher" sequence="10"/>
+
+    <menuitem id="menu_courier_config" name="Διαμόρφωση" parent="menu_courier_root"
+              groups="stock.group_stock_manager" sequence="100"/>
+    <menuitem id="menu_courier_settings" name="Ρυθμίσεις" parent="menu_courier_config"
+              action="action_courier_settings" groups="base.group_system" sequence="1"/>
+    <menuitem id="menu_courier_account" name="Λογαριασμοί Courier" parent="menu_courier_config"
+              action="action_courier_account" sequence="10"/>
+</odoo>

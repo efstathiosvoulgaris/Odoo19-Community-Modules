@@ -1,0 +1,7 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_courier_account_user,courier.account user,model_courier_account,stock.group_stock_user,1,0,0,0
+access_courier_account_manager,courier.account manager,model_courier_account,stock.group_stock_manager,1,1,1,1
+access_courier_voucher_user,courier.voucher user,model_courier_voucher,stock.group_stock_user,1,1,1,0
+access_courier_voucher_manager,courier.voucher manager,model_courier_voucher,stock.group_stock_manager,1,1,1,1
+access_courier_boxnow_locker_user,courier.boxnow.locker user,model_courier_boxnow_locker,stock.group_stock_user,1,0,0,0
+access_courier_boxnow_locker_manager,courier.boxnow.locker manager,model_courier_boxnow_locker,stock.group_stock_manager,1,1,1,1
