@@ -127,9 +127,14 @@ patch(OrderPaymentValidation.prototype, {
      * signature is spent on the charge that follows it, so nothing may sit
      * between the two that the cashier can abandon.
      */
-    async _grAskInstallments() {
+    async _grAskInstallments(terminalId) {
         const max = this.pos.config.l10n_gr_prov_eft_max_installments || 0;
         if (max < 2) {
+            return 0;
+        }
+        // Some terminals refuse δόσεις started from the till (ePay A80).
+        const terminals = this.pos.config.l10n_gr_prov_eft_terminal_choices || [];
+        if (terminals.find((t) => t.id === terminalId)?.installments === false) {
             return 0;
         }
         const answer = await makeAwaitable(this.pos.dialog, NumberPopup, {
@@ -217,7 +222,7 @@ patch(OrderPaymentValidation.prototype, {
                 if (terminalId === null) {
                     return false;
                 }
-                const installments = isRefund ? 0 : await this._grAskInstallments();
+                const installments = isRefund ? 0 : await this._grAskInstallments(terminalId);
                 if (installments === null) {
                     return false;
                 }

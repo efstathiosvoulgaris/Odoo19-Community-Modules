@@ -41,7 +41,8 @@ class PosConfig(models.Model):
     def _compute_l10n_gr_prov_eft_terminal_choices(self):
         for config in self:
             config.l10n_gr_prov_eft_terminal_choices = [
-                {'id': t.id, 'name': t.name}
+                {'id': t.id, 'name': t.name,
+                 'installments': t.supports_installments}
                 for t in config.sudo()._l10n_gr_prov_eft_terminals()]
 
 

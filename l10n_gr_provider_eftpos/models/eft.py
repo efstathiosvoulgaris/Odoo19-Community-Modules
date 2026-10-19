@@ -22,7 +22,7 @@ from odoo.addons.l10n_gr_provider_ilyda.models.account_move import (
 from .eft_driver import (
     MegEftPosDriver, POS_PROTOCOLS, RESPONSE_CODES, PAYMENT_METHODS,
     PROTOCOLS_NEED_HOST, PROTOCOLS_NEED_API_KEY, PROTOCOLS_NEED_CLIENT,
-    DriverNoAnswer, DriverRejected, as_user_error, check_driver_url,
+    PROTOCOLS_NO_INSTALLMENTS, PROTOCOLS_SINGLE_USE_SIGNATURE, DriverNoAnswer, DriverRejected, as_user_error, check_driver_url,
     check_driver_url_rights,
 )
 
@@ -153,6 +153,8 @@ class EftTerminal(models.Model):
     needs_host = fields.Boolean(compute='_compute_protocol_needs')
     needs_api_key = fields.Boolean(compute='_compute_protocol_needs')
     needs_client = fields.Boolean(compute='_compute_protocol_needs')
+    supports_installments = fields.Boolean(compute='_compute_protocol_needs')
+    single_use_signature = fields.Boolean(compute='_compute_protocol_needs')
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -178,6 +180,8 @@ class EftTerminal(models.Model):
             terminal.needs_host = protocol in PROTOCOLS_NEED_HOST
             terminal.needs_api_key = protocol in PROTOCOLS_NEED_API_KEY
             terminal.needs_client = protocol in PROTOCOLS_NEED_CLIENT
+            terminal.supports_installments = protocol not in PROTOCOLS_NO_INSTALLMENTS
+            terminal.single_use_signature = protocol in PROTOCOLS_SINGLE_USE_SIGNATURE
 
     # ── Driver health ────────────────────────────────────────────────────────
 
@@ -465,6 +469,13 @@ class EftPayment(models.Model):
     driver_enabled = fields.Boolean(
         compute='_compute_driver_enabled',
         help='Το τερματικό μπορεί να χρεωθεί αυτόματα από τον driver.')
+    terminal_supports_installments = fields.Boolean(
+        related='terminal_id.supports_installments')
+    terminal_single_use_signature = fields.Boolean(
+        related='terminal_id.single_use_signature')
+    # Set when a charge or preload leaves for the terminal and never cleared:
+    # on a single-use-signature NSP the signature is spent from that moment.
+    charge_attempted = fields.Boolean(readonly=True, copy=False)
     origin_payment_id = fields.Many2one(
         'l10n.gr.prov.eft.payment', string='Αρχική Χρέωση', copy=False,
         help='Η χρέωση κάρτας που επιστρέφεται. Σε πιστωτικό συμπληρώνεται '
@@ -587,6 +598,12 @@ class EftPayment(models.Model):
         if move.state != 'posted':
             raise UserError(_('Το παραστατικό πρέπει πρώτα να καταχωριστεί.'))
         terminal = self.terminal_id
+        # Before signing: the terminal would refuse, and on these NSPs the
+        # refusal spends the signature.
+        if self.installments > 1 and not terminal.supports_installments:
+            raise UserError(_(
+                'Το τερματικό %s δεν δέχεται δόσεις από το ταμείο — αφήστε '
+                'τις Δόσεις 0.', terminal.display_name))
         body = {
             'amount': _r2(self.amount),
             'terminalId': terminal.code,
@@ -663,6 +680,18 @@ class EftPayment(models.Model):
             return '—'
         return format_datetime(self.env, self.signature_expiry,
                                dt_format='dd/MM/yyyy HH:mm')
+
+    def _check_signature_unspent(self):
+        """A single-use-signature NSP (ePay) refuses a second attempt with the
+        same signature as DUPLICATE SIGNATURE — after a failed charge the
+        cashier needs a new one, not a retry."""
+        self.ensure_one()
+        if self.charge_attempted and self.terminal_id.single_use_signature:
+            raise UserError(_(
+                'Ο πάροχος του τερματικού %s δέχεται κάθε υπογραφή μία φορά, '
+                'και αυτή χρησιμοποιήθηκε ήδη. Πατήστε «Ακύρωση Υπογραφής» '
+                '(αιτία: Η συναλλαγή απέτυχε) και μετά «Send to Provider» για '
+                'νέα υπογραφή.', self.terminal_id.display_name))
 
     def _check_signature_usable(self):
         """Α.1155 §5.3, checked before the signature leaves for the terminal.
@@ -870,6 +899,7 @@ class EftPayment(models.Model):
             raise UserError(_(
                 'Το τερματικό %s δεν είναι συνδεδεμένο με τον MegEftPos Driver.',
                 self.terminal_id.display_name))
+        self._check_signature_unspent()
         is_refund = self._is_refund_charge()
         request = dict(self._driver_amounts(), **self._driver_signature_block())
         request['cashier'] = self.env.user.name
@@ -881,7 +911,7 @@ class EftPayment(models.Model):
         # a worker killed mid-call leaves «charging», not «signed» — which
         # would offer a second charge.
         self.write({'state': 'charging', 'driver_response_code': False,
-                    'driver_message': False})
+                    'driver_message': False, 'charge_attempted': True})
         self._commit()
         try:
             data = (driver.refund if is_refund else driver.sale)(device, request)
@@ -1009,6 +1039,7 @@ class EftPayment(models.Model):
             raise UserError(_(
                 'Το τερματικό %s δεν είναι συνδεδεμένο με τον MegEftPos Driver.',
                 self.terminal_id.display_name))
+        self._check_signature_unspent()
         move = self.move_id
         request = dict(self._driver_amounts(), **self._driver_signature_block())
         request['cashier'] = self.env.user.name
@@ -1017,6 +1048,9 @@ class EftPayment(models.Model):
         issue_date = move.invoice_date or fields.Date.context_today(self)
         request['receiptTimestamp'] = int(datetime.combine(
             issue_date, datetime.min.time(), tzinfo=timezone.utc).timestamp())
+        # Committed before the call: a refusal below raises and would roll it back.
+        self.charge_attempted = True
+        self._commit()
         with as_user_error():
             data = MegEftPosDriver(self.company_id, self.terminal_id).preload(
                 self.terminal_id._l10n_gr_prov_pos_device(), request)

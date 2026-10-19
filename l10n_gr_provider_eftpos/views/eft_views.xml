@@ -101,11 +101,13 @@
                     <button name="action_charge_terminal" type="object"
                             string="Χρέωση Τερματικού" class="btn-primary"
                             invisible="not move_id or state != 'signed' or not driver_enabled
-                                       or preloaded_at"/>
+                                       or preloaded_at
+                                       or (charge_attempted and terminal_single_use_signature)"/>
                     <button name="action_preload_terminal" type="object"
                             string="Προφόρτωση στο Τερματικό"
                             invisible="not move_id or state != 'signed' or not driver_enabled
-                                       or preloaded_at or driver_response_code"/>
+                                       or preloaded_at or driver_response_code
+                                       or (charge_attempted and terminal_single_use_signature)"/>
                     <!-- charging = unknown outcome; after a preload there is no
                          response code yet, so recovery stands on preloaded_at -->
                     <button name="action_recover_pending" type="object"
@@ -138,6 +140,9 @@
                 <field name="company_id" invisible="1"/>
                 <field name="driver_enabled" invisible="1"/>
                 <field name="preloaded_at" invisible="1"/>
+                <field name="charge_attempted" invisible="1"/>
+                <field name="terminal_single_use_signature" invisible="1"/>
+                <field name="terminal_supports_installments" invisible="1"/>
                 <widget name="web_ribbon" title="Ληγμένη" bg_color="text-bg-danger"
                         invisible="not signature_expired"/>
                 <div class="alert alert-info" role="alert"
@@ -163,9 +168,19 @@
                 </div>
                 <div class="alert alert-danger" role="alert"
                      invisible="state != 'signed' or not driver_response_code
-                                or driver_response_code == 'APPROVED'">
+                                or driver_response_code == 'APPROVED'
+                                or terminal_single_use_signature">
                     Η συναλλαγή στο τερματικό δεν εγκρίθηκε — η κάρτα δεν
                     χρεώθηκε. Δοκιμάστε ξανά τη χρέωση.
+                </div>
+                <div class="alert alert-danger" role="alert"
+                     invisible="state != 'signed' or not charge_attempted
+                                or driver_response_code == 'APPROVED'
+                                or not terminal_single_use_signature">
+                    Η συναλλαγή στο τερματικό δεν ολοκληρώθηκε — η κάρτα δεν
+                    χρεώθηκε. Ο πάροχος δέχεται κάθε υπογραφή μία φορά: πατήστε
+                    «Ακύρωση Υπογραφής» (αιτία: Η συναλλαγή απέτυχε) και μετά
+                    «Send to Provider» για νέα υπογραφή.
                 </div>
                 <div class="alert alert-warning" role="alert"
                      invisible="state != 'paid' or not submit_error">
@@ -189,7 +204,8 @@
                                readonly="state != 'draft'"/>
                         <field name="tip_amount" invisible="state == 'draft'"
                                readonly="state not in ('draft', 'signed')"/>
-                        <field name="installments" readonly="state != 'draft'"/>
+                        <field name="installments" readonly="state != 'draft'"
+                               invisible="terminal_id and not terminal_supports_installments"/>
                         <field name="move_type" invisible="1"/>
                         <field name="origin_payment_id" readonly="state != 'draft'"
                                invisible="move_type != 'out_refund'"

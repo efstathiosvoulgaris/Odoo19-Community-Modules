@@ -157,6 +157,10 @@ class L10nGrProvEftTerminal(models.Model):
             if not terminal:
                 return {'status': 'error', 'error': _(
                     'Το τερματικό δεν είναι ρυθμισμένο για αυτό το ταμείο.')}
+        if int(vals.get('installments') or 0) > 1 and not terminal.supports_installments:
+            return {'status': 'error', 'error': _(
+                'Το τερματικό %s δεν δέχεται δόσεις από το ταμείο.',
+                terminal.display_name)}
         company = terminal.company_id
         journal = self._l10n_gr_prov_pos_sign_journal(config, vals)
         if not journal:

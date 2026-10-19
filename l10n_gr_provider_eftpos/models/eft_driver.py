@@ -140,6 +140,12 @@ PROTOCOLS_NEED_API_KEY = ('MELLON_WEB_ECR', 'EPAY_WEB_ECR', 'NEXI_WEB_ECR',
                           'NEXI_SOFT_POS_WEB_ECR', 'ATTICA_WEB_ECR',
                           'WORLDLINE_WEB_ECR', 'EDPS_WEB_ECR')
 PROTOCOLS_NEED_CLIENT = ('VIVA_CLOUD',)
+# Learned on ePay UAT (A80, 2026-10-19): the terminal refuses δόσεις started
+# from the till («ΑΑΔΕ 1098»), and the NSP spends a signature on its first
+# charge attempt whatever the outcome — a second charge with it is refused
+# as DUPLICATE SIGNATURE. Mellon accepts both.
+PROTOCOLS_NO_INSTALLMENTS = ('EPAY_WEB_ECR',)
+PROTOCOLS_SINGLE_USE_SIGNATURE = ('EPAY_WEB_ECR',)
 
 # Παράρτημα Α — PAYMENT_METHOD. NONE_PAYMENT_METHOD is what an NSP answers
 # when it cannot tell the ERP what the customer picked, so it is a valid
