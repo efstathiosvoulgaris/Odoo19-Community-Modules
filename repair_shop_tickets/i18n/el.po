@@ -278,10 +278,14 @@ msgstr "Αναζήτηση Δελτίων Σέρβις"
 #. module: repair_shop_tickets
 #: model:ir.ui.view,arch_db:repair_shop_tickets.view_service_ticket_tree
 #: model:ir.actions.act_window,name:repair_shop_tickets.action_service_ticket
-#: model:ir.ui.menu,name:repair_shop_tickets.menu_service_ticket_root
 #: model:res.groups.privilege,name:repair_shop_tickets.res_groups_privilege_service
 msgid "Service Tickets"
 msgstr "Δελτία Σέρβις"
+
+#. module: repair_shop_tickets
+#: model:ir.ui.menu,name:repair_shop_tickets.menu_service_ticket_root
+msgid "Service"
+msgstr "Service"
 
 #. module: repair_shop_tickets
 #: model:ir.ui.view,arch_db:repair_shop_tickets.view_service_brand_tree

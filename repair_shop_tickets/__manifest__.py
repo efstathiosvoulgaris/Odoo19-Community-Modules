@@ -1,7 +1,7 @@
 {
     'name': 'Repair Shop Tickets',
-    'version': '1.4',
-    'description': 'A module to manage repair shop tickets, including job details, parts used, and invoicing.\n\nChangelog\n---------\n* 1.4 — Parts really leave stock: the delivery is completed (it only reserved before); when stock or a serial number is missing it stays open with a note on the ticket. Undoing a repair returns the parts and completes the return. Only a Manager deletes tickets, and nobody deletes one with an invoice or consumed parts. Labour line in Greek («Εργασία»). The invoice opens on the myDATA journal the repair calls for (ΑΛΠ/ΑΠΥ for individuals, ΤΠ/ΤΠΥ for businesses). New «Επισκευές» settings page (Configuration → Ρυθμίσεις): default labour service product, per-job-type labour product that fills the labour price, parts location, when parts leave stock (resolve/invoice), journals for individuals/businesses, intake-slip terms, reminder for repaired devices not picked up (daily cron, activity on the technician). Ticket intake: serial/IMEI, accessories, condition on intake. Estimate and customer approval: new stage «Αναμονή Έγκρισης»; with an estimate, work starts only once approved. The printout is now a «Δελτίο Παραλαβής Συσκευής» marked «ΔΕΝ ΑΠΟΤΕΛΕΙ ΦΟΡΟΛΟΓΙΚΟ ΣΤΟΙΧΕΙΟ».\n* 1.2 — Record that the customer was notified the device is ready: who, when, through which channel, plus a "To Notify" worklist.\n* 1.1 — A ticket can carry several job types. Labour VAT/account now follow the company default and the customer fiscal position.\n* 1.0 — Initial public release.',
+    'version': '1.9',
+    'description': 'A module to manage repair shop tickets, including job details, parts used, and invoicing.\n\nChangelog\n---------\n* 1.9 — «Δεν Επισκευάστηκε»: a ticket in progress can be closed as not repaired (reason and inspection fee); it follows the same road to pickup, no part is charged or leaves stock, own Viber text. Pickup signature: with a signing device set (Configuration → Συσκευές Υπογραφής, Settings → Υπογραφή Παραλαβής), «Παραλήφθηκε» sends a request to the Android phone at the till and the ticket is picked up only when the customer signs; the signature is kept on the ticket and in the chatter. Then no other way leads to «Παραλήφθηκε» except «Χωρίς Υπογραφή» by a Service Manager with a reason. Without a device, pickup works as before.\n* 1.8 — Top menu is «Service»; tickets are numbered SRV/0001 (was TKT-0001). The sequence record is noupdate, so existing databases were switched by hand.\n* 1.7 — Estimate and customer approval removed (stage «Αναμονή Έγκρισης», its buttons, the Viber approval message and setting); tickets left in that stage go back to «Νέο».\n* 1.6 — Prices on the ticket include VAT by default (setting «Τιμές Δελτίου με ΦΠΑ»); the total, the intake slip and the invoice follow it, VAT per line instead of one rate. Invoice only for a resolved/picked-up ticket; cancelling a ticket cancels its draft invoice and is refused with a posted one. Customer mobile («Κινητό») instead of phone, Viber to the mobile only. Serial/IMEI and accessories removed. Only managers delete brands and job types. Form header: one highlighted next step per stage, short labels, invoice as a smart button.\n* 1.5 — Viber buttons «Viber: Έτοιμη Συσκευή» and «Viber: Αναμονή Έγκρισης»: open the customer chat with a ready message (texts in Settings), the employee sends it; the message is logged in the chatter and «ready» records the notification as Viber.\n* 1.4 —Parts really leave stock: the delivery is completed (it only reserved before); when stock or a serial number is missing it stays open with a note on the ticket. Undoing a repair returns the parts and completes the return. Only a Manager deletes tickets, and nobody deletes one with an invoice or consumed parts. Labour line in Greek («Εργασία»). The invoice opens on the myDATA journal the repair calls for (ΑΛΠ/ΑΠΥ for individuals, ΤΠ/ΤΠΥ for businesses). New «Επισκευές» settings page (Configuration → Ρυθμίσεις): default labour service product, per-job-type labour product that fills the labour price, parts location, when parts leave stock (resolve/invoice), journals for individuals/businesses, intake-slip terms, reminder for repaired devices not picked up (daily cron, activity on the technician). Ticket intake: serial/IMEI, accessories, condition on intake. Estimate and customer approval: new stage «Αναμονή Έγκρισης»; with an estimate, work starts only once approved. The printout is now a «Δελτίο Παραλαβής Συσκευής» marked «ΔΕΝ ΑΠΟΤΕΛΕΙ ΦΟΡΟΛΟΓΙΚΟ ΣΤΟΙΧΕΙΟ».\n* 1.2 — Record that the customer was notified the device is ready: who, when, through which channel, plus a "To Notify" worklist.\n* 1.1 — A ticket can carry several job types. Labour VAT/account now follow the company default and the customer fiscal position.\n* 1.0 — Initial public release.',
     'category': 'Services/Field Service',
     'summary': 'Manage repair jobs, parts, invoices & receipts',
     'author': 'Efstathios Voulgaris',
@@ -9,7 +9,7 @@
     'website': '',
     'support': 'efstathiosvoulgaris@gmail.com',
     'license': 'LGPL-3',
-    'depends': ['base', 'product', 'account', 'mail', 'stock', 'hr'],
+    'depends': ['base', 'product', 'account', 'mail', 'stock', 'hr', 'l10n_gr_partner'],
     'data': [
         'security/security.xml',
         'security/ir.model.access.csv',
@@ -17,9 +17,19 @@
         'data/ir_cron.xml',
         'report/service_ticket_receipt.xml',
         'views/service_ticket_views.xml',
+        'wizard/not_repaired_wizard_views.xml',
+        'wizard/pickup_unsigned_wizard_views.xml',
+        'views/signature_device_views.xml',
         'views/res_config_settings_views.xml',
         'views/service_ticket_menus.xml',
     ],
+    'assets': {
+        'web.assets_backend': [
+            'repair_shop_tickets/static/src/open_viber.js',
+            'repair_shop_tickets/static/src/signature_wait.js',
+            'repair_shop_tickets/static/src/signature_wait.xml',
+        ],
+    },
     'images': ['static/description/icon.png', 'static/description/banner.png'],
     'installable': True,
     'application': True,

@@ -7,13 +7,12 @@
         <field name="arch" type="xml">
             <list string="Service Tickets"
                   decoration-info="state == 'new'"
-                  decoration-warning="state in ('waiting_approval', 'in_progress', 'waiting_for_parts')"
+                  decoration-warning="state in ('in_progress', 'waiting_for_parts')"
                   decoration-success="state in ('resolved', 'picked_up')"
                   decoration-muted="state == 'cancelled'">
                 <field name="name"/>
                 <field name="partner_id"/>
-                <field name="phone"/>
-                <field name="serial_number" optional="hide"/>
+                <field name="mobile"/>
                 <field name="job_type_ids" widget="many2many_tags" optional="show"/>
                 <field name="employee_id" optional="show"/>
                 <field name="brand_id" optional="show"/>
@@ -21,9 +20,12 @@
                 <field name="total_price" optional="show"/>
                 <field name="notified" optional="hide"/>
                 <field name="invoice_id" optional="show"/>
+                <field name="repair_result" optional="show" widget="badge"
+                       decoration-success="repair_result == 'repaired'"
+                       decoration-warning="repair_result == 'not_repaired'"/>
                 <field name="state" widget="badge"
                        decoration-info="state == 'new'"
-                       decoration-warning="state in ('waiting_approval', 'in_progress', 'waiting_for_parts')"
+                       decoration-warning="state in ('in_progress', 'waiting_for_parts')"
                        decoration-success="state in ('resolved', 'picked_up')"
                        decoration-muted="state == 'cancelled'"/>
                 <field name="create_date" optional="show"/>
@@ -38,44 +40,63 @@
         <field name="arch" type="xml">
             <form string="Service Ticket">
                 <header>
-                    <button name="action_request_approval" string="Αποστολή για Έγκριση" type="object"
-                            class="oe_highlight" invisible="state != 'new' or not estimate_amount"/>
-                    <button name="action_customer_approved" string="Έγκριση Πελάτη" type="object"
-                            class="oe_highlight" invisible="state != 'waiting_approval'"/>
-                    <button name="action_in_progress" string="Ορισμός σε Εξέλιξη" type="object"
-                            class="oe_highlight" invisible="state != 'new' or estimate_amount"/>
+                    <!-- Ένα κύριο κουμπί ανά στάδιο (το επόμενο βήμα), πρώτο από αριστερά· τα
+                         δευτερεύοντα δίπλα του· «Ακύρωση» πάντα τελευταίο. -->
+                    <!-- Νέο -->
+                    <button name="action_in_progress" string="Έναρξη Εργασίας" type="object"
+                            class="oe_highlight" invisible="state != 'new'"/>
+                    <!-- Σε Εξέλιξη / Αναμονή Ανταλλακτικών -->
+                    <button name="action_resolved" string="Επίλυση" type="object"
+                            class="oe_highlight" invisible="state != 'in_progress'"/>
                     <button name="action_waiting_for_parts" string="Αναμονή Ανταλλακτικών" type="object"
                             invisible="state != 'in_progress'"/>
-                    <button name="action_in_progress" string="Επιστροφή σε Εξέλιξη" type="object"
-                            invisible="state != 'waiting_for_parts'"/>
-                    <button name="action_resolved" string="Επίλυση" type="object"
-                            class="oe_highlight" invisible="state not in ('in_progress', 'waiting_for_parts')"/>
-                    <button name="action_notify_customer" string="Ειδοποίηση Πελάτη" type="object"
+                    <button name="action_not_repaired" string="Δεν Επισκευάστηκε" type="object"
+                            invisible="state not in ('in_progress', 'waiting_for_parts')"/>
+                    <button name="action_in_progress" string="Ήρθαν τα Ανταλλακτικά" type="object"
+                            class="oe_highlight" invisible="state != 'waiting_for_parts'"/>
+                    <!-- Επιλύθηκε: ειδοποίηση → τιμολόγιο → παραλαβή. Κύριο είναι μόνο το επόμενο. -->
+                    <button name="action_viber_ready" string="Viber" type="object" icon="fa-commenting"
                             class="oe_highlight" invisible="state != 'resolved' or notified"/>
+                    <button name="action_viber_ready" string="Viber" type="object" icon="fa-commenting"
+                            invisible="state != 'resolved' or not notified"/>
+                    <button name="action_notify_customer" string="Ενημερώθηκε" type="object"
+                            invisible="state != 'resolved' or notified"/>
+                    <button name="action_create_invoice" string="Τιμολόγηση" type="object"
+                            class="oe_highlight"
+                            invisible="invoice_id or state not in ('resolved', 'picked_up') or (state == 'resolved' and not notified)"/>
+                    <button name="action_create_invoice" string="Τιμολόγηση" type="object"
+                            invisible="invoice_id or state != 'resolved' or notified"/>
                     <button name="action_picked_up" string="Παραλήφθηκε" type="object"
-                            class="oe_highlight" invisible="state != 'resolved'"/>
-                    <button name="action_reset_to_in_progress" string="Επαναφορά (Αποτυχία Επισκευής)" type="object"
-                            invisible="state != 'resolved'"/>
-                    <button name="action_create_invoice" string="Δημιουργία Τιμολογίου" type="object"
-                            class="oe_highlight" invisible="invoice_id != False"/>
-                    <button name="action_view_invoice" string="Προβολή Τιμολογίου" type="object"
-                            invisible="invoice_id == False"/>
-                    <button name="action_print_receipt" string="Εκτύπωση Δελτίου Παραλαβής" type="object"/>
-                    <button name="action_cancelled" string="Ακύρωση Δελτίου" type="object"
-                            class="btn-danger" style="margin-left: 32px;"
-                            confirm="Είστε σίγουροι ότι θέλετε να ακυρώσετε αυτό το δελτίο; Αυτή η ενέργεια δεν μπορεί να αναιρεθεί."
-                            invisible="state == 'cancelled'"/>
+                            class="oe_highlight" invisible="state != 'resolved' or not invoice_id"/>
+                    <button name="action_picked_up" string="Παραλήφθηκε" type="object"
+                            invisible="state != 'resolved' or invoice_id"/>
+                    <button name="action_pickup_unsigned" string="Χωρίς Υπογραφή" type="object"
+                            groups="repair_shop_tickets.group_service_ticket_manager"
+                            invisible="state != 'resolved'"
+                            help="Μόνο όταν το κινητό υπογραφών δεν είναι διαθέσιμο."/>
+                    <button name="action_reset_to_in_progress" string="Επαναφορά" type="object"
+                            invisible="state != 'resolved'"
+                            help="Η επισκευή δεν πέτυχε: το δελτίο γυρίζει σε «Σε Εξέλιξη» και τα ανταλλακτικά επιστρέφουν."/>
+                    <!-- Πάντα -->
+                    <button name="action_print_receipt" string="Δελτίο Παραλαβής" type="object" icon="fa-print"/>
+                    <button name="action_cancelled" string="Ακύρωση" type="object" class="btn-secondary text-danger"
+                            confirm="Να ακυρωθεί το δελτίο; Αν έχει πρόχειρο τιμολόγιο, ακυρώνεται κι αυτό."
+                            invisible="state in ('cancelled', 'picked_up')"/>
                     <field name="state" widget="statusbar"
-                           statusbar_visible="new,waiting_approval,in_progress,waiting_for_parts,resolved,picked_up"/>
+                           statusbar_visible="new,in_progress,waiting_for_parts,resolved,picked_up"/>
                 </header>
                 <sheet>
                     <div class="oe_button_box" name="button_box">
+                        <button name="action_view_invoice" type="object" class="oe_stat_button"
+                                icon="fa-file-text-o" string="Τιμολόγιο" invisible="not invoice_id"/>
                         <button name="action_view_stock_moves" type="object"
                                 class="oe_stat_button" icon="fa-cubes"
                                 invisible="stock_move_count == 0">
                             <field name="stock_move_count" widget="statinfo" string="Stock Moves"/>
                         </button>
                     </div>
+                    <widget name="web_ribbon" title="Δεν Επισκευάστηκε" bg_color="text-bg-warning"
+                            invisible="repair_result != 'not_repaired'"/>
                     <div class="oe_title">
                         <h1>
                             <field name="name" readonly="1"/>
@@ -85,7 +106,7 @@
                     <group>
                         <group>
                             <field name="partner_id"/>
-                            <field name="phone"/>
+                            <field name="mobile"/>
                         </group>
                         <group>
                             <field name="brand_id"/>
@@ -101,29 +122,30 @@
                         </group>
                     </group>
 
-                    <group string="Παραλαβή Συσκευής">
+                    <group invisible="repair_result != 'not_repaired'">
+                        <field name="repair_result" invisible="1"/>
+                        <field name="not_repaired_reason"/>
+                    </group>
+
+                    <group string="Παράδοση στον Πελάτη"
+                           invisible="not pickup_signed_at and not pickup_unsigned_reason">
                         <group>
-                            <field name="serial_number"/>
-                            <field name="accessories" placeholder="π.χ. φορτιστής, θήκη, κάρτα SIM"/>
+                            <field name="pickup_signature" widget="image" readonly="1"
+                                   invisible="not pickup_signature"
+                                   options="{'size': [0, 120]}"/>
+                            <field name="pickup_unsigned_reason" invisible="not pickup_unsigned_reason"/>
                         </group>
                         <group>
-                            <field name="intake_condition" rows="3"
-                                   placeholder="π.χ. γρατζουνιές πίσω, ραγισμένη γωνία οθόνης"/>
+                            <field name="pickup_signed_at" invisible="not pickup_signed_at"/>
+                            <field name="pickup_requested_by" invisible="not pickup_requested_by"/>
                         </group>
                     </group>
 
-                    <group string="Εκτίμηση και Έγκριση">
-                        <group>
-                            <field name="estimate_amount"/>
-                            <field name="approval_note" invisible="not estimate_amount"
-                                   placeholder="π.χ. τηλεφωνικά, ο ίδιος"/>
-                        </group>
-                        <group invisible="not approved">
-                            <field name="approved"/>
-                            <field name="approved_date"/>
-                            <field name="approved_uid"/>
-                        </group>
+                    <group string="Παραλαβή Συσκευής">
+                        <field name="intake_condition" rows="3"
+                               placeholder="π.χ. γρατζουνιές πίσω, ραγισμένη γωνία οθόνης"/>
                     </group>
+
 
                     <separator/>
 
@@ -149,7 +171,7 @@
                             <field name="labor_price"/>
                         </group>
                         <group>
-                            <field name="total_price" readonly="1"/>
+                            <field name="total_price" readonly="1" string="Σύνολο (με ΦΠΑ)"/>
                         </group>
                     </group>
 
@@ -181,10 +203,13 @@
                 <field name="brand_id"/>
                 <field name="product_model_id"/>
                 <field name="state"/>
+                <field name="repair_result"/>
                 <templates>
                     <t t-name="card">
                         <main>
                             <strong><field name="name"/></strong>
+                            <span t-if="record.repair_result.raw_value == 'not_repaired'"
+                                  class="badge text-bg-warning">Δεν Επισκευάστηκε</span>
                             <field t-if="record.partner_id.raw_value" name="partner_id"/>
                             <field t-if="record.brand_id.raw_value" name="brand_id"/>
                             <field t-if="record.product_model_id.raw_value" name="product_model_id"/>
@@ -203,7 +228,6 @@
             <search string="Search Service Tickets">
                 <field name="name"/>
                 <field name="partner_id"/>
-                <field name="serial_number"/>
                 <field name="job_type_ids"/>
                 <field name="brand_id"/>
                 <field name="product_model_id"/>
@@ -211,12 +235,14 @@
                 <field name="employee_id"/>
                 <separator/>
                 <filter string="New" name="state_new" domain="[('state', '=', 'new')]"/>
-                <filter string="Αναμονή Έγκρισης" name="state_waiting_approval" domain="[('state', '=', 'waiting_approval')]"/>
                 <filter string="In Progress" name="state_in_progress" domain="[('state', '=', 'in_progress')]"/>
                 <filter string="Waiting for Parts" name="state_waiting" domain="[('state', '=', 'waiting_for_parts')]"/>
                 <filter string="Resolved" name="state_resolved" domain="[('state', '=', 'resolved')]"/>
                 <filter string="Picked Up" name="state_picked_up" domain="[('state', '=', 'picked_up')]"/>
                 <filter string="Invoiced" name="invoiced" domain="[('invoice_id', '!=', False)]"/>
+                <separator/>
+                <filter string="Επισκευάστηκε" name="repaired" domain="[('repair_result', '=', 'repaired')]"/>
+                <filter string="Δεν Επισκευάστηκε" name="not_repaired" domain="[('repair_result', '=', 'not_repaired')]"/>
                 <separator/>
                 <filter string="To Notify" name="to_notify"
                         domain="[('state', '=', 'resolved'), ('notified', '=', False)]"/>

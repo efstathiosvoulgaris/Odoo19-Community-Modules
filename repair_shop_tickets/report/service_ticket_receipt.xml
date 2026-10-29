@@ -30,9 +30,9 @@
         <t t-call="web.html_container">
             <t t-foreach="docs" t-as="o">
                 <t t-set="parts_total" t-value="sum(o.line_ids.mapped('price_subtotal'))"/>
-                <t t-set="grand_total" t-value="parts_total + o.labor_price"/>
+                <t t-set="amounts" t-value="o._repair_amounts()"/>
+                <t t-set="prices_gross" t-value="o._repair_prices_gross()"/>
                 <t t-set="is_greek" t-value="o.partner_id.lang == 'el_GR'"/>
-                <t t-set="vat_rate" t-value="o._get_receipt_vat_rate()"/>
                 <!-- class="article" is mandatory: without it ir.actions.report._prepare_html
                      finds no body, skips web.minimal_layout, and hands wkhtmltopdf a bare
                      fragment with no <meta charset> — which then renders Greek as mojibake. -->
@@ -98,11 +98,11 @@
                             <t t-else="">CUSTOMER</t>
                         </div>
                         <div><t t-esc="o.partner_id.name if o.partner_id else '-'"/></div>
-                        <t t-if="o.phone">
+                        <t t-if="o.mobile">
                             <div>
-                                <t t-if="is_greek">Τηλ.:</t>
-                                <t t-else="">Tel.:</t>
-                                <t t-esc="o.phone"/>
+                                <t t-if="is_greek">Κιν.:</t>
+                                <t t-else="">Mobile:</t>
+                                <t t-esc="o.mobile"/>
                             </div>
                         </t>
                         <t t-if="o.partner_id and o.partner_id.email">
@@ -130,20 +130,6 @@
                                 <t t-esc="o.product_model_id.name"/>
                             </div>
                         </t>
-                        <t t-if="o.serial_number">
-                            <div>
-                                <t t-if="is_greek">Σειριακός / IMEI:</t>
-                                <t t-else="">Serial / IMEI:</t>
-                                <t t-esc="o.serial_number"/>
-                            </div>
-                        </t>
-                        <t t-if="o.accessories">
-                            <div>
-                                <t t-if="is_greek">Παρελκόμενα:</t>
-                                <t t-else="">Accessories:</t>
-                                <t t-esc="o.accessories"/>
-                            </div>
-                        </t>
                         <t t-if="o.intake_condition">
                             <div>
                                 <t t-if="is_greek">Κατάσταση:</t>
@@ -152,19 +138,6 @@
                             </div>
                         </t>
                     </div>
-
-                    <!-- ===== ESTIMATE ===== -->
-                    <t t-if="o.estimate_amount">
-                        <div style="margin-bottom: 4mm;">
-                            <t t-if="is_greek">Εκτίμηση κόστους:</t>
-                            <t t-else="">Estimated cost:</t>
-                            <b>&#8364;<t t-esc="'%.2f' % o.estimate_amount"/></b>
-                            <t t-if="o.approved">
-                                (<t t-if="is_greek">εγκρίθηκε</t><t t-else="">approved</t>
-                                <t t-esc="o.approved_date.strftime('%d/%m/%Y')"/>)
-                            </t>
-                        </div>
-                    </t>
 
                     <!-- ===== JOB TYPE ===== -->
                     <t t-if="o.job_type_ids">
@@ -248,14 +221,24 @@
                                 </tr>
                             </t>
                         </table>
+                        <table t-if="not prices_gross" style="width: 100%; font-size: 9pt; border-top: 1px dashed #000; margin-top: 1mm; padding-top: 1mm;">
+                            <tr>
+                                <td><t t-if="is_greek">Καθαρή αξία</t><t t-else="">Net</t></td>
+                                <td style="text-align: right;">&#8364;<t t-esc="'%.2f' % amounts['net']"/></td>
+                            </tr>
+                            <tr>
+                                <td><t t-if="is_greek">ΦΠΑ</t><t t-else="">VAT</t></td>
+                                <td style="text-align: right;">&#8364;<t t-esc="'%.2f' % amounts['vat']"/></td>
+                            </tr>
+                        </table>
                         <table style="width: 100%; font-size: 11pt; font-weight: bold; border-top: 1px dashed #000; margin-top: 1mm; padding-top: 1mm;">
                             <tr>
                                 <td>
-                                    <t t-if="is_greek">ΣΥΝΟΛΟ Συμπ. ΦΠΑ <t t-esc="vat_rate"/>%</t>
-                                    <t t-else="">TOTAL Incl. VAT <t t-esc="vat_rate"/>%</t>
+                                    <t t-if="is_greek">ΣΥΝΟΛΟ (με ΦΠΑ)</t>
+                                    <t t-else="">TOTAL (incl. VAT)</t>
                                 </td>
                                 <td style="text-align: right;">
-                                    &#8364;<t t-esc="'%.2f' % grand_total"/>
+                                    &#8364;<t t-esc="'%.2f' % amounts['gross']"/>
                                 </td>
                             </tr>
                         </table>

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="repair_shop_tickets.SignatureWaitDialog">
+        <Dialog title="'Υπογραφή Παραλαβής'" size="'md'">
+            <div class="d-flex align-items-center gap-3 py-3">
+                <i class="fa fa-spinner fa-spin fa-2x text-primary" aria-hidden="true"/>
+                <div>
+                    <div class="fs-5">Αναμονή υπογραφής πελάτη…</div>
+                    <div class="text-muted">
+                        <t t-esc="props.ticket"/>: ο πελάτης υπογράφει στο κινητό του ταμείου.
+                    </div>
+                </div>
+            </div>
+            <t t-set-slot="footer">
+                <button class="btn btn-secondary" t-att-disabled="state.cancelling" t-on-click="cancel">
+                    Ακύρωση αιτήματος
+                </button>
+            </t>
+        </Dialog>
+    </t>
+</templates>

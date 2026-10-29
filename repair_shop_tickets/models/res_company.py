@@ -4,6 +4,11 @@ from odoo import fields, models
 class ResCompany(models.Model):
     _inherit = 'res.company'
 
+    repair_prices_include_tax = fields.Boolean(
+        string='Τιμές Δελτίου με ΦΠΑ', default=True,
+        help='Ναι: οι τιμές ανταλλακτικών και εργασίας στο δελτίο είναι τελικές (με ΦΠΑ), όπως '
+             'στο ταμείο. Όχι: είναι καθαρές και ο ΦΠΑ προστίθεται.')
+
     repair_labor_product_id = fields.Many2one(
         'product.product', string='Προεπιλεγμένη Εργασία',
         domain="[('type', '=', 'service'), ('sale_ok', '=', True)]",
@@ -38,3 +43,25 @@ class ResCompany(models.Model):
         help='Μετά από τόσες ημέρες σε «Επιλύθηκε» χωρίς παραλαβή, μπαίνει '
              'δραστηριότητα στον τεχνικό να ξαναειδοποιήσει τον πελάτη. '
              '0 = καμία υπενθύμιση.')
+
+    # ── Viber messages (the employee sends them; nothing leaves by itself) ──
+    repair_viber_ready_text = fields.Text(
+        string='Viber: Έτοιμη Συσκευή',
+        default='Καλησπέρα σας. Η συσκευή σας {device} (δελτίο {ticket}) είναι '
+                'έτοιμη για παραλαβή. {company}',
+        help='Πεδία: {customer} {device} {ticket} {amount} {company}')
+    # ── Pickup signature on the phone at the till ───────────────────────────
+    repair_signature_device_id = fields.Many2one(
+        'service.signature.device', string='Συσκευή Υπογραφής',
+        help='Το κινητό όπου υπογράφει ο πελάτης στην παραλαβή.')
+    repair_sign_text_repaired = fields.Char(
+        string='Φράση Υπογραφής: Επισκευάστηκε', default='Παρέλαβα τη συσκευή μου.')
+    repair_sign_text_not_repaired = fields.Char(
+        string='Φράση Υπογραφής: Δεν Επισκευάστηκε',
+        default='Παρέλαβα τη συσκευή μου χωρίς επισκευή.')
+
+    repair_viber_not_repaired_text = fields.Text(
+        string='Viber: Δεν Επισκευάστηκε',
+        default='Καλησπέρα σας. Η συσκευή σας {device} (δελτίο {ticket}) είναι '
+                'διαθέσιμη για παραλαβή. {company}',
+        help='Πεδία: {customer} {device} {ticket} {amount} {company}')

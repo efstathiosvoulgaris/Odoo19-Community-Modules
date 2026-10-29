@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_not_repaired_wizard_form" model="ir.ui.view">
+        <field name="name">service.ticket.not.repaired.wizard.form</field>
+        <field name="model">service.ticket.not.repaired.wizard</field>
+        <field name="arch" type="xml">
+            <form>
+                <p>Η συσκευή επιστρέφεται χωρίς επισκευή. Κανένα ανταλλακτικό δεν χρεώνεται
+                    ούτε βγαίνει από την αποθήκη· όσα είχαν βγει επιστρέφουν.</p>
+                <group>
+                    <field name="ticket_id" invisible="1"/>
+                    <field name="reason" rows="3"/>
+                    <field name="fee"/>
+                </group>
+                <footer>
+                    <button name="action_confirm" string="Δεν Επισκευάστηκε" type="object" class="btn-primary"/>
+                    <button string="Άκυρο" special="cancel" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>

@@ -18,7 +18,7 @@
 
     <!-- Top Menu Item -->
     <menuitem id="menu_service_ticket_root"
-              name="Service Tickets"
+              name="Service"
               web_icon="repair_shop_tickets,static/description/icon.png"
               sequence="100"/>
 
@@ -51,6 +51,13 @@
               parent="menu_service_ticket_config"
               action="action_service_job_type"
               sequence="20"/>
+
+    <menuitem id="menu_service_signature_devices"
+              name="Συσκευές Υπογραφής"
+              parent="menu_service_ticket_config"
+              action="action_service_signature_device"
+              groups="group_service_ticket_manager"
+              sequence="30"/>
 
     <menuitem id="menu_repair_settings"
               name="Ρυθμίσεις"

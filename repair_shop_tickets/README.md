@@ -1,6 +1,6 @@
 # Repair Shop Tickets
 
-**Version:** 1.3 | **Odoo:** 19 | **License:** LGPL-3
+**Version:** 1.8 | **Odoo:** 19 | **License:** LGPL-3
 
 An Odoo 19 module for managing repair jobs in a repair/service shop.
 
@@ -8,6 +8,7 @@ An Odoo 19 module for managing repair jobs in a repair/service shop.
 
 - **Ticket workflow**: New → In Progress → Waiting for Parts → Resolved → Picked Up
 - **Parts & Labor**: Add parts from your product catalog with automatic price lookup, plus a separate labor charge
+- **Prices with VAT** (default, setting «Τιμές Δελτίου με ΦΠΑ»): parts and labour on the ticket are final prices, as at the till; the total, the intake slip and the invoice follow the setting, with each line's own VAT rate.
 - **Assigned Technician**: Assign an existing employee to each ticket; technician name prints on the receipt
 - **Stock consumption**: Resolving a ticket automatically deducts parts from warehouse stock; cancelling or reopening reverses the consumption
 - **Customer & Technician Notes**: Two separate note fields — customer-facing notes on the left, internal technician notes on the right; neither prints on the receipt
@@ -16,6 +17,7 @@ An Odoo 19 module for managing repair jobs in a repair/service shop.
 - **Brands & Models**: Maintain a device catalog; filter and group tickets by brand or model
 - **Job Types**: Categorize repairs for reporting and filtering
 - **Chatter**: Log notes, send messages, and schedule activities on every ticket
+- **Viber message**: «Viber» (on Resolved) opens the customer's Viber chat with the ready text from Settings → Μηνύματα Viber; the employee presses Send. Uses the «Κινητό» (`kinito`) only. The text is also copied to the clipboard, because not every Viber app fills the `draft`.
 - **Kanban & List views**: Visual overview of all open jobs grouped by status
 - **Greek translation**: Full `el` locale included for all menus, fields, buttons, and receipts
 

@@ -36,7 +36,7 @@ class ServiceTicket(models.Model):
                        index=True, default=lambda self: _('New'))
 
     partner_id = fields.Many2one('res.partner', string='Customer')
-    phone = fields.Char(related='partner_id.phone', string='Phone', readonly=True)
+    mobile = fields.Char(related='partner_id.kinito', string='Κινητό', readonly=True)
 
     brand_id = fields.Many2one('service.brand', string='Brand')
     product_model_id = fields.Many2one('service.product.model', string='Model',
@@ -80,32 +80,32 @@ class ServiceTicket(models.Model):
 
     # ── Intake: what came in, and in what state — settles «it wasn't like
     # this when I brought it» ───────────────────────────────────────────────
-    serial_number = fields.Char(string='Σειριακός / IMEI', tracking=True)
-    accessories = fields.Char(
-        string='Παρελκόμενα',
-        help='Ό,τι άφησε ο πελάτης μαζί με τη συσκευή: φορτιστής, θήκη, κάρτα '
-             'SIM, κάρτα μνήμης…')
     intake_condition = fields.Text(
         string='Κατάσταση Παραλαβής',
         help='Εμφανής κατάσταση κατά την παραλαβή: γρατζουνιές, ραγισμένη '
              'οθόνη, λείπουν βίδες…')
 
-    # ── Estimate and customer approval ─────────────────────────────────────
-    estimate_amount = fields.Float(
-        string='Εκτίμηση Κόστους', tracking=True,
-        help='Με εκτίμηση, η εργασία ξεκινά μόνο αφού την εγκρίνει ο πελάτης.')
-    approved = fields.Boolean(string='Εγκρίθηκε', readonly=True, copy=False, tracking=True)
-    approved_date = fields.Datetime(string='Εγκρίθηκε Στις', readonly=True, copy=False)
-    approved_uid = fields.Many2one('res.users', string='Καταγράφηκε Από', readonly=True, copy=False)
-    approval_note = fields.Char(
-        string='Σημείωση Έγκρισης', copy=False,
-        help='Π.χ. «τηλεφωνικά, ο ίδιος», «με email».')
-
     resolved_date = fields.Datetime(string='Επιλύθηκε Στις', readonly=True, copy=False)
+    # Repaired or not, a resolved ticket takes the same road to pickup; this
+    # says which. Set by «Επίλυση» / «Δεν Επισκευάστηκε», cleared by «Επαναφορά».
+    repair_result = fields.Selection([
+        ('repaired', 'Επισκευάστηκε'),
+        ('not_repaired', 'Δεν Επισκευάστηκε'),
+    ], string='Αποτέλεσμα', readonly=True, copy=False, tracking=True)
+    not_repaired_reason = fields.Text(string='Αιτία Μη Επισκευής', readonly=True, copy=False)
+
+    # ── Pickup: the customer signs on the phone at the till ────────────────
+    pickup_signature = fields.Binary(string='Υπογραφή Πελάτη', attachment=True,
+                                     readonly=True, copy=False)
+    pickup_signed_at = fields.Datetime(string='Υπογράφηκε Στις', readonly=True, copy=False)
+    pickup_request_id = fields.Many2one('service.signature.request', readonly=True, copy=False)
+    pickup_requested_by = fields.Many2one(related='pickup_request_id.requested_by',
+                                          string='Αίτημα Υπογραφής από')
+    pickup_unsigned_reason = fields.Text(string='Παραλαβή χωρίς Υπογραφή', readonly=True,
+                                         copy=False)
 
     state = fields.Selection([
         ('new', 'New'),
-        ('waiting_approval', 'Αναμονή Έγκρισης'),
         ('in_progress', 'In Progress'),
         ('waiting_for_parts', 'Waiting for Parts'),
         ('resolved', 'Resolved'),
@@ -113,18 +113,101 @@ class ServiceTicket(models.Model):
         ('cancelled', 'Cancelled'),
     ], string='Status', default='new', group_expand='_read_group_state')
 
-    @api.depends('line_ids.price_subtotal', 'labor_price')
+    @api.depends('line_ids.price_subtotal', 'line_ids.product_id', 'labor_price',
+                 'job_type_ids', 'partner_id', 'repair_result')
     def _compute_total(self):
+        """Πάντα το ποσό που πληρώνει ο πελάτης (με ΦΠΑ), όποια κι αν είναι η ρύθμιση τιμών."""
         for rec in self:
-            rec.total_price = sum(rec.line_ids.mapped('price_subtotal')) + rec.labor_price
+            rec.total_price = rec._repair_amounts()['gross']
+
+    # ── Τιμές και ΦΠΑ ─────────────────────────────────────────────────────────
+    # Ρύθμιση «Τιμές με ΦΠΑ» (προεπιλογή: ναι): οι τιμές που γράφονται στο δελτίο (ανταλλακτικά
+    # από την τιμή πώλησης του προϊόντος, εργασία) είναι τελικές. Αλλιώς είναι καθαρές.
+
+    def _repair_prices_gross(self):
+        return self.env.company.repair_prices_include_tax
+
+    def _repair_line_taxes(self, product):
+        """Οι φόροι πώλησης μιας γραμμής, μετά τη φορολογική θέση του πελάτη (π.χ. νησιά)."""
+        self.ensure_one()
+        company = self.env.company
+        if product:
+            taxes = product.taxes_id.filtered(lambda t: t.company_id in (company, company.root_id))
+        else:
+            taxes = company.account_sale_tax_id
+        fpos = self.env['account.fiscal.position']._get_fiscal_position(self.partner_id) \
+            if self.partner_id else False
+        return fpos.map_tax(taxes) if fpos else taxes
+
+    @staticmethod
+    def _repair_rate(taxes):
+        return sum(t.amount for t in taxes if t.amount_type == 'percent') / 100.0
+
+    def _repair_split(self, amount, taxes):
+        """(καθαρό, ΦΠΑ) ενός ποσού του δελτίου, σύμφωνα με τη ρύθμιση τιμών."""
+        rate = self._repair_rate(taxes)
+        if self._repair_prices_gross():
+            net = amount / (1 + rate) if rate else amount
+            return net, amount - net
+        return amount, amount * rate
+
+    def _repair_labour_product(self):
+        self.ensure_one()
+        return self.job_type_ids.product_id[:1] or self.env.company.repair_labor_product_id
+
+    def _repair_charged_lines(self):
+        """Parts the customer pays for: none when the device was not repaired."""
+        self.ensure_one()
+        return self.line_ids if self.repair_result != 'not_repaired' else self.line_ids.browse()
+
+    def _repair_amounts(self):
+        """Καθαρό, ΦΠΑ και σύνολο του δελτίου, με τον φόρο κάθε γραμμής."""
+        self.ensure_one()
+        net = vat = 0.0
+        for line in self._repair_charged_lines():
+            n, v = self._repair_split(line.price_subtotal, self._repair_line_taxes(line.product_id))
+            net, vat = net + n, vat + v
+        if self.labor_price:
+            n, v = self._repair_split(self.labor_price,
+                                      self._repair_line_taxes(self._repair_labour_product()))
+            net, vat = net + n, vat + v
+        cur = self.env.company.currency_id
+        net, vat = cur.round(net), cur.round(vat)
+        return {'net': net, 'vat': vat, 'gross': cur.round(net + vat)}
+
+    def _repair_invoice_price(self, amount, taxes):
+        """Η τιμή μονάδας για το τιμολόγιο: το Odoo την ερμηνεύει με ή χωρίς ΦΠΑ ανάλογα με
+        τον φόρο, οπότε μετατρέπεται μόνο όταν η ρύθμιση του δελτίου διαφέρει από τον φόρο."""
+        rate = self._repair_rate(taxes)
+        tax_included = any(t.price_include for t in taxes)
+        if not rate or tax_included == self._repair_prices_gross():
+            return amount
+        return amount / (1 + rate) if self._repair_prices_gross() else amount * (1 + rate)
 
     @api.model_create_multi
     def create(self, vals_list):
         new_placeholder = _('New')
         for vals in vals_list:
+            self._check_pickup_signed(vals)
             if vals.get('name', new_placeholder) == new_placeholder:
                 vals['name'] = self.env['ir.sequence'].next_by_code('service.ticket') or new_placeholder
         return super().create(vals_list)
+
+    def _check_pickup_signed(self, vals):
+        """With a signing device set, «Παραλήφθηκε» only through a signature or
+        the manager's fallback (_mark_picked_up) — not a kanban drag, a list
+        edit, an import or an RPC, for admin neither. Without one the shop
+        works as before 1.9."""
+        if vals.get('state') == 'picked_up' and self.env.company.sudo().repair_signature_device_id:
+            raise UserError(_('Η παραλαβή ολοκληρώνεται μόνο με υπογραφή πελάτη.'))
+
+    def write(self, vals):
+        self._check_pickup_signed(vals)
+        return super().write(vals)
+
+    def _mark_picked_up(self, **vals):
+        # Past the guard on purpose: the two legitimate ways in.
+        return super(ServiceTicket, self).write(dict(vals, state='picked_up'))
 
     @api.ondelete(at_uninstall=False)
     def _unlink_except_invoiced_or_consumed(self):
@@ -151,27 +234,7 @@ class ServiceTicket(models.Model):
         elif not self.labor_price and self.env.company.repair_labor_product_id:
             self.labor_price = self.env.company.repair_labor_product_id.lst_price
 
-    def action_request_approval(self):
-        for rec in self:
-            if not rec.estimate_amount:
-                raise UserError(_('Συμπληρώστε πρώτα την Εκτίμηση Κόστους.'))
-        self.write({'state': 'waiting_approval'})
-
-    def action_customer_approved(self):
-        self.write({
-            'approved': True,
-            'approved_date': fields.Datetime.now(),
-            'approved_uid': self.env.user.id,
-            'state': 'in_progress',
-        })
-
     def action_in_progress(self):
-        pending = self.filtered(lambda t: t.estimate_amount and not t.approved)
-        if pending:
-            raise UserError(_(
-                'Το δελτίο %s έχει εκτίμηση κόστους που δεν έχει εγκρίνει ο '
-                'πελάτης. Πατήστε «Έγκριση Πελάτη» όταν συμφωνήσει.',
-                ', '.join(pending.mapped('name'))))
         self.write({'state': 'in_progress'})
 
     def action_waiting_for_parts(self):
@@ -282,13 +345,54 @@ class ServiceTicket(models.Model):
         self.stock_consumed = False
 
     def action_resolved(self):
-        self.write({'state': 'resolved', 'resolved_date': fields.Datetime.now()})
+        self.write({'state': 'resolved', 'resolved_date': fields.Datetime.now(),
+                    'repair_result': 'repaired'})
         if self.env.company.repair_consume_on == 'resolve':
             for rec in self:
                 rec._consume_stock()
 
     def action_picked_up(self):
-        self.write({'state': 'picked_up'})
+        """Ask the customer to sign on the phone; the ticket becomes
+        «Παραλήφθηκε» when the signature arrives (service.signature.request)."""
+        self.ensure_one()
+        if self.state != 'resolved':
+            raise UserError(_('Παραλαβή γίνεται μόνο για δελτίο σε «Επιλύθηκε».'))
+        device = self.env.company.sudo().repair_signature_device_id
+        if not device:
+            # No phone configured (yet): pickup without a signature, as before 1.9.
+            return self._mark_picked_up()
+        if not device.paired:
+            raise UserError(_('Η συσκευή υπογραφής «%s» δεν είναι συνδεδεμένη.', device.name))
+        device.last_request_at = fields.Datetime.now()
+        Request = self.env['service.signature.request'].sudo()
+        Request._expire_stale()
+        pending = Request.search([('device_id', '=', device.id), ('state', '=', 'pending')],
+                                 limit=1)
+        if pending and pending.ticket_id != self:
+            raise UserError(_('Η συσκευή υπογραφής περιμένει υπογραφή για το %s.',
+                              pending.ticket_id.name))
+        request = pending or Request.create({
+            'ticket_id': self.id,
+            'device_id': device.id,
+            'kind': self.repair_result or 'repaired',
+            'requested_by': self.env.user.id,
+        })
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'repair_shop_tickets.signature_wait',
+            'params': {'request_id': request.id, 'ticket': self.name},
+        }
+
+    def action_pickup_unsigned(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Παραλήφθηκε χωρίς υπογραφή'),
+            'res_model': 'service.ticket.pickup.unsigned.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {'default_ticket_id': self.id},
+        }
 
     def action_notify_customer(self):
         """Record that a human told the customer the device is ready. The chatter
@@ -302,11 +406,54 @@ class ServiceTicket(models.Model):
     def action_reset_to_in_progress(self):
         if self.stock_consumed:
             self._reverse_stock()
-        self.write({'state': 'in_progress'})
+        self.write({'state': 'in_progress', 'repair_result': False, 'not_repaired_reason': False})
 
-    def action_cancelled(self):
+    def action_not_repaired(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Δεν Επισκευάστηκε'),
+            'res_model': 'service.ticket.not.repaired.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {'default_ticket_id': self.id},
+        }
+
+    def _set_not_repaired(self, reason, fee):
+        """The device goes back unrepaired: no part is charged or leaves stock
+        (any that already left come back), the labour price becomes the
+        inspection fee."""
+        self.ensure_one()
+        if self.state not in ('in_progress', 'waiting_for_parts'):
+            raise UserError(_('«Δεν Επισκευάστηκε» μόνο για δελτίο σε εξέλιξη.'))
+        invoice = self.invoice_id
+        if invoice.state == 'posted':
+            raise UserError(_(
+                'Το δελτίο %(t)s έχει εκδοθέν παραστατικό (%(i)s) που χρεώνει την επισκευή. '
+                'Εκδώστε πρώτα πιστωτικό.', t=self.name, i=invoice.name))
+        if invoice.state == 'draft':
+            invoice.button_cancel()  # it bills parts; a labour-only one can be made again
         if self.stock_consumed:
             self._reverse_stock()
+        self.write({
+            'state': 'resolved',
+            'resolved_date': fields.Datetime.now(),
+            'repair_result': 'not_repaired',
+            'not_repaired_reason': reason,
+            'labor_price': fee,
+        })
+
+    def action_cancelled(self):
+        for rec in self:
+            invoice = rec.invoice_id
+            if invoice.state == 'posted':
+                raise UserError(_(
+                    'Το δελτίο %(t)s έχει εκδοθέν παραστατικό (%(i)s). Εκδώστε πρώτα πιστωτικό '
+                    'από το παραστατικό και μετά ακυρώστε το δελτίο.', t=rec.name, i=invoice.name))
+            if invoice.state == 'draft':
+                invoice.button_cancel()  # το πρόχειρο τιμολόγιο ακολουθεί το δελτίο
+            if rec.stock_consumed:
+                rec._reverse_stock()
         self.write({'state': 'cancelled'})
 
     def action_view_stock_moves(self):
@@ -318,18 +465,24 @@ class ServiceTicket(models.Model):
             'name': _('Stock Moves'),
         }
 
+    INVOICE_STATES = ('resolved', 'picked_up')
+
     def action_create_invoice(self):
-        if self.invoice_id:
+        self.ensure_one()
+        if self.invoice_id and self.invoice_id.state != 'cancel':
             return self.action_view_invoice()
+        if self.state not in self.INVOICE_STATES:
+            raise UserError(_('Τιμολόγιο φτιάχνεται μόνο για επισκευή που έχει επιλυθεί.'))
 
         invoice_line_vals = []
 
-        for line in self.line_ids:
+        for line in self._repair_charged_lines():
             invoice_line_vals.append((0, 0, {
                 'product_id': line.product_id.id,
                 'name': line.name or line.product_id.display_name,
                 'quantity': line.quantity,
-                'price_unit': line.price_unit,
+                'price_unit': self._repair_invoice_price(
+                    line.price_unit, self._repair_line_taxes(line.product_id)),
             }))
 
         if self.labor_price:
@@ -338,13 +491,13 @@ class ServiceTicket(models.Model):
                 'name': _('Εργασία: %s', ', '.join(self.job_type_ids.mapped('name'))
                           or self.fixes_needed or _('Επισκευή')),
                 'quantity': 1,
-                'price_unit': self.labor_price,
+                'price_unit': self._repair_invoice_price(
+                    self.labor_price, self._repair_line_taxes(self._repair_labour_product())),
             }
             # A service product carries tax, income account and myDATA
             # classification; Odoo maps its tax through the customer's fiscal
             # position by itself. The job type's own product first.
-            product = (self.job_type_ids.product_id[:1]
-                       or self.env.company.repair_labor_product_id)
+            product = self._repair_labour_product()
             if product:
                 labour['product_id'] = product.id
             else:
@@ -369,7 +522,7 @@ class ServiceTicket(models.Model):
         invoice = self.env['account.move'].create(invoice_vals)
         self.invoice_id = invoice.id
 
-        if self.line_ids and self.env.company.repair_consume_on == 'invoice':
+        if self._repair_charged_lines() and self.env.company.repair_consume_on == 'invoice':
             self._consume_stock()
 
         return self.action_view_invoice()
@@ -392,7 +545,7 @@ class ServiceTicket(models.Model):
             return chosen
         if 'l10n_gr_edi_inv_type_default' not in Journal._fields:
             return Journal
-        goods = any(l.product_id.type != 'service' for l in self.line_ids)
+        goods = any(l.product_id.type != 'service' for l in self._repair_charged_lines())
         inv_type = {
             (True, True): '1.1', (True, False): '2.1',
             (False, True): '11.1', (False, False): '11.2',
@@ -415,22 +568,6 @@ class ServiceTicket(models.Model):
             'target': 'current',
         }
 
-    def _get_receipt_vat_rate(self):
-        if self.invoice_id:
-            tax = self.invoice_id.invoice_line_ids.tax_ids.filtered(
-                lambda t: t.type_tax_use == 'sale' and t.amount_type == 'percent' and t.active
-            )[:1]
-        else:
-            tax = self.env['account.tax'].search([
-                ('type_tax_use', '=', 'sale'),
-                ('amount_type', '=', 'percent'),
-                ('active', '=', True),
-                ('company_id', '=', self.env.company.id),
-            ], order='amount desc', limit=1)
-        if not tax:
-            return 0
-        rate = tax.amount
-        return int(rate) if rate == int(rate) else rate
 
     PICKUP_REMINDER_SUMMARY = 'Η συσκευή δεν έχει παραληφθεί'
 

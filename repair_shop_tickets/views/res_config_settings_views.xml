@@ -13,6 +13,10 @@
                      logo="/repair_shop_tickets/static/description/icon.png">
 
                     <block title="Τιμολόγηση" name="repair_invoicing_block">
+                        <setting string="Τιμές Δελτίου με ΦΠΑ" name="repair_prices_tax_setting"
+                                 help="Ναι (προεπιλογή): οι τιμές ανταλλακτικών και εργασίας στο δελτίο είναι τελικές, όπως στο ταμείο. Όχι: είναι καθαρές και ο ΦΠΑ προστίθεται στο σύνολο, στο δελτίο παραλαβής και στο τιμολόγιο. Το σύνολο του δελτίου δείχνει πάντα το ποσό με ΦΠΑ.">
+                            <field name="repair_prices_include_tax"/>
+                        </setting>
                         <setting string="Προεπιλεγμένη Εργασία" name="repair_labor_product_setting"
                                  help="Η υπηρεσία που μπαίνει στη γραμμή εργασίας του τιμολογίου — από αυτήν παίρνει ΦΠΑ, λογαριασμό εσόδων και χαρακτηρισμό myDATA. Ένας τύπος εργασίας με δικό του είδος έχει προτεραιότητα, και η τιμή του συμπληρώνει την τιμή εργασίας του δελτίου.">
                             <field name="repair_labor_product_id"
@@ -55,6 +59,32 @@
                         <setting string="Όροι στο Δελτίο Παραλαβής" name="repair_terms_setting"
                                  help="Τυπώνονται στο δελτίο παραλαβής της συσκευής. Κενό = οι προεπιλεγμένοι όροι (backup, χρέωση ελέγχου, εγγύηση, εγκατάλειψη μετά από 90 ημέρες…).">
                             <field name="repair_receipt_terms"/>
+                        </setting>
+                    </block>
+
+                    <block title="Υπογραφή Παραλαβής" name="repair_signature_block">
+                        <setting string="Συσκευή Υπογραφής" name="repair_signature_device_setting"
+                                 help="Το κινητό όπου υπογράφει ο πελάτης όταν παραλαμβάνει τη συσκευή. Χωρίς συσκευή το «Παραλήφθηκε» γίνεται χωρίς υπογραφή, όπως πριν.">
+                            <field name="repair_signature_device_id"/>
+                        </setting>
+                        <setting string="Φράσεις πάνω από την υπογραφή" name="repair_sign_text_setting">
+                            <div class="content-group">
+                                <div><label for="repair_sign_text_repaired" string="Επισκευάστηκε"/>
+                                    <field name="repair_sign_text_repaired" class="w-100"/></div>
+                                <div><label for="repair_sign_text_not_repaired" string="Δεν Επισκευάστηκε"/>
+                                    <field name="repair_sign_text_not_repaired" class="w-100"/></div>
+                            </div>
+                        </setting>
+                    </block>
+
+                    <block title="Μηνύματα Viber" name="repair_viber_block">
+                        <setting string="Έτοιμη Συσκευή" name="repair_viber_ready_setting"
+                                 help="Το κείμενο του κουμπιού «Viber: Έτοιμη Συσκευή». Ανοίγει το Viber στη συνομιλία με τον πελάτη και το στέλνει ο υπάλληλος. Πεδία: {customer} {device} {ticket} {amount} {company}">
+                            <field name="repair_viber_ready_text" class="w-100"/>
+                        </setting>
+                        <setting string="Δεν Επισκευάστηκε" name="repair_viber_not_repaired_setting"
+                                 help="Το ίδιο κουμπί Viber, όταν η συσκευή επιστρέφεται χωρίς επισκευή. Πεδία: {customer} {device} {ticket} {amount} {company}">
+                            <field name="repair_viber_not_repaired_text" class="w-100"/>
                         </setting>
                     </block>
 
