@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_view_form_call_intake" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.call.intake</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="base.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form" position="inside">
+                <app string="Αιτήματα" name="call_intake"
+                     logo="/call_intake/static/description/icon.svg">
+                    <block title="Τηλεφωνήματα" name="call_intake_block">
+                        <setting string="Έργο Αιτημάτων" name="call_intake_project_setting"
+                                 help="Πού καταχωρίζεται κάθε «Νέο Τηλεφώνημα». Κενό = «Αιτήματα Πελατών».">
+                            <field name="call_intake_project_id" options="{'no_create': True}"/>
+                        </setting>
+                    </block>
+                </app>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="action_call_intake_settings" model="ir.actions.act_window">
+        <field name="name">Ρυθμίσεις Αιτημάτων</field>
+        <field name="res_model">res.config.settings</field>
+        <field name="view_mode">form</field>
+        <field name="target">current</field>
+        <field name="context">{'module': 'call_intake', 'bin_size': False}</field>
+    </record>
+</odoo>

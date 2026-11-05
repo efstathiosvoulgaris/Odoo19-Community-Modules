@@ -1,0 +1,4 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_ql_device_system,shop.ql.device system,model_shop_ql_device,base.group_system,1,1,1,0
+access_ql_log_system,shop.ql.log system,model_shop_ql_log,base.group_system,1,0,0,0
+access_ql_pin_wizard_system,shop.ql.pin.wizard system,model_shop_ql_pin_wizard,base.group_system,1,1,1,1

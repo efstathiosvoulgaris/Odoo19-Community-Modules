@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- noupdate: price, taxes and account are set by the user in the product
+         form and must survive upgrades. Taxes default to the company's sale
+         tax, as for any new product. -->
+    <data noupdate="1">
+        <record id="product_contract" model="product.product">
+            <field name="name">Συμβόλαιο Συντήρησης</field>
+            <field name="type">service</field>
+            <field name="sale_ok" eval="True"/>
+            <field name="purchase_ok" eval="False"/>
+        </record>
+    </data>
+
+    <record id="ir_cron_contract_reminders" model="ir.cron">
+        <field name="name">Συμβόλαια: ειδοποιήσεις λήξης</field>
+        <field name="model_id" ref="model_service_contract"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_contract_reminders()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+        <field name="nextcall" eval="(DateTime.now() + timedelta(days=1)).strftime('%Y-%m-%d 05:00:00')"/>
+        <field name="active" eval="True"/>
+    </record>
+</odoo>

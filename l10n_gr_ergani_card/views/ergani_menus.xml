@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Employee sees: Κάρτες (his own, by record rule) · Κατάσταση κινήσεων (his own).
+         Manager sees: Σήμερα · Εργαζόμενοι · Κάρτες (all) · Κατάσταση κινήσεων · Διαμόρφωση. -->
+    <menuitem id="menu_ergani_root" name="ΕΡΓΑΝΗ"
+              web_icon="l10n_gr_ergani_card,static/description/icon.svg"
+              sequence="47" groups="base.group_user"/>
+    <menuitem id="menu_ergani_today" name="Σήμερα" parent="menu_ergani_root"
+              action="action_ergani_today" sequence="1"
+              groups="hr.group_hr_manager,base.group_system"/>
+    <menuitem id="menu_ergani_employees" name="Εργαζόμενοι" parent="menu_ergani_root"
+              action="action_ergani_employees" sequence="2"
+              groups="hr.group_hr_manager,base.group_system"/>
+    <menuitem id="menu_ergani_schedule" name="Ωράριο" parent="menu_ergani_root" sequence="3"
+              groups="hr.group_hr_manager,base.group_system"/>
+    <menuitem id="menu_ergani_wto_new" name="Νέα αλλαγή ωραρίου" parent="menu_ergani_schedule"
+              action="action_ergani_wto_wizard" sequence="1"/>
+    <menuitem id="menu_ergani_wto_extend" name="Παράταση σήμερα" parent="menu_ergani_schedule"
+              action="action_ergani_wto_extend" sequence="2"/>
+    <menuitem id="menu_ergani_wto" name="Δηλώσεις" parent="menu_ergani_schedule"
+              action="action_ergani_wto" sequence="3"/>
+    <menuitem id="menu_ergani_wto_calendar" name="Ημερολόγιο αλλαγών" parent="menu_ergani_schedule"
+              action="action_ergani_wto_calendar" sequence="4"/>
+    <menuitem id="menu_ergani_cards" name="Κάρτες" parent="menu_ergani_root"
+              action="action_ergani_card" sequence="3"/>
+    <menuitem id="menu_ergani_status" name="Κατάσταση κινήσεων" parent="menu_ergani_root"
+              action="action_ergani_status_wizard" sequence="4"/>
+    <menuitem id="menu_ergani_config" name="Διαμόρφωση" parent="menu_ergani_root"
+              sequence="90" groups="hr.group_hr_manager,base.group_system"/>
+    <menuitem id="menu_ergani_settings" name="Ρυθμίσεις" parent="menu_ergani_config"
+              action="action_ergani_settings" sequence="1" groups="base.group_system"/>
+    <menuitem id="menu_ergani_branches" name="Παραρτήματα" parent="menu_ergani_config"
+              action="action_ergani_branches" sequence="2"/>
+    <menuitem id="menu_ergani_submissions" name="Αρχείο υποβολών" parent="menu_ergani_config"
+              action="action_ergani_submission" sequence="3"/>
+    <menuitem id="menu_ergani_reasons" name="Αιτιολογίες εκπρόθεσμης" parent="menu_ergani_config"
+              action="action_ergani_delay_reasons" sequence="4"/>
+    <menuitem id="menu_ergani_worktime_types" name="Τύποι ωραρίου / αδειών" parent="menu_ergani_config"
+              action="action_ergani_worktime_types" sequence="5"/>
+    <menuitem id="menu_ergani_services" name="Υπηρεσίες ΕΡΓΑΝΗ" parent="menu_ergani_config"
+              action="action_ergani_services" sequence="6"/>
+</odoo>

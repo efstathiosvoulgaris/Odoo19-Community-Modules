@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="ergani_card_view_list" model="ir.ui.view">
+        <field name="name">ergani.card.list</field>
+        <field name="model">ergani.card</field>
+        <field name="arch" type="xml">
+            <list create="false" delete="false"
+                  decoration-danger="state in ('error', 'unknown')"
+                  decoration-warning="late and state != 'sent'"
+                  decoration-muted="state == 'simulated'">
+                <field name="event_datetime"/>
+                <field name="employee_id"/>
+                <field name="card_type"/>
+                <field name="reference_date" optional="hide"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'sent'"
+                       decoration-info="state in ('pending', 'sending')"
+                       decoration-danger="state in ('error', 'unknown')"/>
+                <field name="late" optional="show"/>
+                <field name="deadline" optional="hide"/>
+                <field name="protocol" optional="show"/>
+                <field name="environment" optional="hide"/>
+                <field name="last_error" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="ergani_card_view_form" model="ir.ui.view">
+        <field name="name">ergani.card.form</field>
+        <field name="model">ergani.card</field>
+        <field name="arch" type="xml">
+            <form create="false" delete="false" edit="false">
+                <header>
+                    <button name="action_ergani_found" type="object" string="Βρέθηκε στο ΕΡΓΑΝΗ"
+                            class="btn-primary" groups="base.group_system"
+                            invisible="state != 'unknown'"/>
+                    <button name="action_ergani_resend" type="object" string="Δεν βρέθηκε — επαναποστολή"
+                            groups="base.group_system" invisible="state not in ('unknown', 'error')"
+                            confirm="Ελέγξατε στο ΕΡΓΑΝΗ ότι η κάρτα ΔΕΝ καταχωρίστηκε; Αλλιώς θα υπάρξει διπλή κίνηση."/>
+                    <button name="action_ergani_ignore" type="object" string="Αγνόησε"
+                            groups="base.group_system" invisible="state not in ('unknown', 'error')"/>
+                    <button name="action_ergani_set_reason" type="object" string="Ορισμός αιτιολογίας"
+                            groups="base.group_system"
+                            invisible="state != 'pending' or not late or aitiologia"/>
+                    <button name="action_view_payload" type="object" string="Προβολή payload"
+                            groups="base.group_system"/>
+                    <button name="action_ergani_receipt" type="object" string="Αποδεικτικό ΕΡΓΑΝΗ"
+                            icon="fa-file-pdf-o"
+                            invisible="not receipt_available and not receipt_attachment_id"/>
+                    <field name="state" widget="statusbar" statusbar_visible="pending,sent"/>
+                </header>
+                <sheet>
+                    <widget name="web_ribbon" title="Προσομοίωση" bg_color="text-bg-secondary"
+                            invisible="state != 'simulated'"/>
+                    <widget name="web_ribbon" title="Εκπρόθεσμη" bg_color="text-bg-warning"
+                            invisible="not late or state == 'simulated'"/>
+                    <group>
+                        <group>
+                            <field name="employee_id"/>
+                            <field name="card_type"/>
+                            <field name="event_datetime"/>
+                            <field name="deadline"/>
+                            <field name="reference_date"/>
+                            <field name="in_card_id" invisible="not in_card_id"/>
+                        </group>
+                        <group>
+                            <field name="environment"/>
+                            <field name="protocol"/>
+                            <field name="submit_date_raw" invisible="not submit_date_raw"/>
+                            <field name="aitiologia" invisible="not aitiologia"/>
+                            <field name="attempts"/>
+                            <field name="resolved_by_id" invisible="not resolved_by_id"/>
+                            <field name="late" invisible="1"/>
+                            <field name="receipt_available" invisible="1"/>
+                            <field name="receipt_attachment_id" invisible="not receipt_attachment_id"/>
+                            <field name="receipt_error" invisible="not receipt_error"/>
+                        </group>
+                    </group>
+                    <group string="Σφάλμα" invisible="not last_error">
+                        <field name="last_error" nolabel="1" colspan="2"/>
+                    </group>
+                    <group string="Τεχνικά" groups="base.group_system">
+                        <field name="client_ip"/>
+                        <field name="user_agent"/>
+                        <field name="row_hash"/>
+                        <field name="prev_hash"/>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="ergani_card_view_search" model="ir.ui.view">
+        <field name="name">ergani.card.search</field>
+        <field name="model">ergani.card</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="employee_id"/>
+                <field name="protocol"/>
+                <filter name="today" string="Σήμερα"
+                        domain="[('reference_date', '=', context_today().strftime('%Y-%m-%d'))]"/>
+                <filter name="problems" string="Προβλήματα"
+                        domain="['|', ('state', 'in', ('error', 'unknown')), '&amp;', ('late', '=', True), ('state', '=', 'pending')]"/>
+                <filter name="sent" string="Στάλθηκαν" domain="[('state', '=', 'sent')]"/>
+                <filter name="simulated" string="Προσομοίωση" domain="[('state', '=', 'simulated')]"/>
+                <group>
+                    <filter name="group_employee" string="Εργαζόμενος" context="{'group_by': 'employee_id'}"/>
+                    <filter name="group_date" string="Ημέρα" context="{'group_by': 'reference_date:day'}"/>
+                    <filter name="group_state" string="Κατάσταση" context="{'group_by': 'state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_ergani_card" model="ir.actions.act_window">
+        <field name="name">Κάρτες ΕΡΓΑΝΗ</field>
+        <field name="res_model">ergani.card</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_empty_folder">Καμία κάρτα ακόμα</p>
+            <p>Οι κάρτες δημιουργούνται μόνο από τους ίδιους τους εργαζόμενους, στη σελίδα χτυπήματος μετά το login.</p>
+        </field>
+    </record>
+
+    <record id="action_ergani_my_cards" model="ir.actions.act_window">
+        <field name="name">Οι κάρτες μου</field>
+        <field name="res_model">ergani.card</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('employee_id.user_id', '=', uid)]</field>
+    </record>
+
+    <record id="ergani_card_resolve_view_form" model="ir.ui.view">
+        <field name="name">ergani.card.resolve.form</field>
+        <field name="model">ergani.card.resolve</field>
+        <field name="arch" type="xml">
+            <form>
+                <field name="action" invisible="1"/>
+                <field name="card_id" invisible="1"/>
+                <group>
+                    <field name="protocol" invisible="action != 'found'"
+                           placeholder="Ο αριθμός πρωτοκόλλου από το eservices του ΕΡΓΑΝΗ"/>
+                    <field name="reason_id" invisible="action != 'reason'" options="{'no_create': True}"/>
+                    <div colspan="2" class="text-muted" invisible="action != 'reason'">
+                        Μόνο τεχνική αδυναμία (συστήματα εργοδότη, ηλεκτροδότηση/τηλεπικοινωνίες, σύνδεση ΕΡΓΑΝΗ).
+                        Ειδοποιήστε την Επιθεώρηση Εργασίας όταν άρχισε και όταν έληξε η αδυναμία.
+                    </div>
+                </group>
+                <footer>
+                    <button name="action_confirm" type="object" string="Επιβεβαίωση" class="btn-primary"/>
+                    <button string="Άκυρο" special="cancel" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>

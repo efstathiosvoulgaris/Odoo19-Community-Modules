@@ -25,6 +25,8 @@
                 <header>
                     <button name="action_check_driver" type="object"
                             string="Έλεγχος Driver" invisible="not pos_protocol"/>
+                    <button name="action_pending_transactions" type="object"
+                            string="Εκκρεμείς Συναλλαγές" invisible="not pos_protocol"/>
                 </header>
                 <sheet>
                     <field name="needs_host" invisible="1"/>
@@ -180,7 +182,7 @@
                     Η συναλλαγή στο τερματικό δεν ολοκληρώθηκε — η κάρτα δεν
                     χρεώθηκε. Ο πάροχος δέχεται κάθε υπογραφή μία φορά: πατήστε
                     «Ακύρωση Υπογραφής» (αιτία: Η συναλλαγή απέτυχε) και μετά
-                    «Send to Provider» για νέα υπογραφή.
+                    «Πληρωμή με Κάρτα &amp; Διαβίβαση» για νέα υπογραφή.
                 </div>
                 <div class="alert alert-warning" role="alert"
                      invisible="state != 'paid' or not submit_error">
@@ -206,10 +208,12 @@
                                readonly="state not in ('draft', 'signed')"/>
                         <field name="installments" readonly="state != 'draft'"
                                invisible="terminal_id and not terminal_supports_installments"/>
+                        <field name="preload" readonly="state != 'draft'"
+                               invisible="not driver_enabled or move_type == 'out_refund'"/>
                         <field name="move_type" invisible="1"/>
                         <field name="origin_payment_id" readonly="state != 'draft'"
                                invisible="move_type != 'out_refund'"
-                               help="Κενό επιτρέπεται μόνο σε Viva Cloud (ελεύθερο refund)."/>
+                               help="Κενό = επιστροφή χωρίς αρχική χρέωση (Viva Cloud και WebECR: Mellon, Nexi, Attica, Worldline, ePay)."/>
                     </group>
                     <group>
                         <field name="transaction_id" invisible="state == 'draft'"
@@ -321,5 +325,24 @@
               parent="l10n_gr_provider_base.menu_l10n_gr_prov_config"
               action="action_eft_terminal"
               sequence="25"/>
+
+    <!-- Invoice form: with a card payment due the send button opens the card
+         dialog — say so. -->
+    <record id="view_move_form_l10n_gr_prov_eft" model="ir.ui.view">
+        <field name="name">account.move.form.l10n.gr.prov.eft</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="l10n_gr_provider_base.view_move_form_l10n_gr_prov"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header/button[@name='action_l10n_gr_prov_send']" position="attributes">
+                <attribute name="invisible">not l10n_gr_prov_applicable or state != 'posted' or l10n_gr_prov_mark or l10n_gr_prov_state == 'queued' or l10n_gr_prov_eft_card_due</attribute>
+            </xpath>
+            <xpath expr="//header/button[@name='action_l10n_gr_prov_send']" position="after">
+                <field name="l10n_gr_prov_eft_card_due" invisible="1"/>
+                <button name="action_l10n_gr_prov_send" type="object"
+                        string="Πληρωμή με Κάρτα &amp; Διαβίβαση" class="btn-primary"
+                        invisible="not l10n_gr_prov_applicable or state != 'posted' or l10n_gr_prov_mark or l10n_gr_prov_state == 'queued' or not l10n_gr_prov_eft_card_due"/>
+            </xpath>
+        </field>
+    </record>
 
 </odoo>

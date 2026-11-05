@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="menu_dias_root" name="ΔΙΑΣ RF" sequence="56"
+              groups="account.group_account_invoice"
+              web_icon="l10n_gr_dias_rf,static/description/icon.png"/>
+    <menuitem id="menu_dias_payments" name="Πληρωμές" parent="menu_dias_root"
+              action="action_dias_payment" sequence="10"/>
+    <menuitem id="menu_dias_codes" name="Κωδικοί RF τιμολογίων" parent="menu_dias_root"
+              action="action_dias_rf_code" sequence="20"/>
+    <menuitem id="menu_dias_files" name="Αρχεία πληρωμών" parent="menu_dias_root"
+              action="action_dias_file" sequence="30"/>
+    <menuitem id="menu_dias_import" name="Εισαγωγή αρχείου" parent="menu_dias_root"
+              action="action_dias_import_wizard" sequence="40"
+              groups="account.group_account_manager"/>
+    <menuitem id="menu_dias_settings" name="Ρυθμίσεις" parent="menu_dias_root"
+              action="action_dias_settings" sequence="90" groups="base.group_system"/>
+</odoo>

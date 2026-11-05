@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from odoo import fields, models, _
+from odoo import api, fields, models, _
 from odoo.exceptions import UserError
 
 
@@ -9,6 +9,21 @@ class AccountMove(models.Model):
     l10n_gr_prov_eft_payment_ids = fields.One2many(
         'l10n.gr.prov.eft.payment', 'move_id',
         string='Πληρωμές EFT/POS', copy=False)
+    # The send button opens the card dialog in this case (below); the form
+    # labels it «Πληρωμή με Κάρτα & Διαβίβαση» so the cashier can find it.
+    l10n_gr_prov_eft_card_due = fields.Boolean(
+        compute='_compute_l10n_gr_prov_eft_card_due')
+
+    @api.depends('l10n_gr_prov_payment_ids.payment_type',
+                 'l10n_gr_prov_payment_ids.eft_payment_id',
+                 'l10n_gr_prov_eft_payment_ids.state')
+    def _compute_l10n_gr_prov_eft_card_due(self):
+        for move in self:
+            move.l10n_gr_prov_eft_card_due = bool(
+                move.l10n_gr_prov_eft_payment_ids.filtered(
+                    lambda p: p.state in ('draft', 'signed', 'charging'))
+                or move.l10n_gr_prov_payment_ids.filtered(
+                    lambda p: p.payment_type == '7' and not p.eft_payment_id))
 
     def action_l10n_gr_prov_send(self):
         """Α.1155 interception: a card (type-7) payment line needs a provider
@@ -66,8 +81,8 @@ class AccountMove(models.Model):
         if unsigned and self.env['l10n.gr.prov.eft.terminal'].search_count(
                 [('company_id', '=', self.company_id.id)], limit=1):
             return _(
-                'Η πληρωμή με κάρτα δεν έχει υπογραφή Α.1155 — πατήστε «Send to '
-                'Provider» για να ολοκληρωθεί η πληρωμή στο τερματικό.')
+                'Η πληρωμή με κάρτα δεν έχει υπογραφή Α.1155 — πατήστε «Πληρωμή με '
+                'Κάρτα & Διαβίβαση» για να ολοκληρωθεί η πληρωμή στο τερματικό.')
         return False
 
     def _l10n_gr_prov_try_send(self, raise_on_error=False):

@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="paperformat_ergani_card" model="report.paperformat">
+        <field name="name">Κάρτα QR εργαζομένου</field>
+        <field name="format">A4</field>
+        <field name="orientation">Portrait</field>
+        <field name="margin_top">15</field>
+        <field name="margin_bottom">15</field>
+        <field name="margin_left">15</field>
+        <field name="margin_right">15</field>
+        <field name="header_spacing">0</field>
+        <field name="dpi">96</field>
+    </record>
+
+    <record id="action_report_ergani_card" model="ir.actions.report">
+        <field name="name">Κάρτα QR εργαζομένου</field>
+        <field name="model">hr.employee</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">l10n_gr_ergani_card.report_ergani_card</field>
+        <field name="paperformat_id" ref="paperformat_ergani_card"/>
+        <field name="binding_type">report</field>
+        <field name="binding_model_id" eval="False"/>
+    </record>
+
+    <!-- Μέγεθος πιστωτικής (85,6 × 54 mm), για κόψιμο και πλαστικοποίηση. Το ίδιο QR
+         (Badge ID) δέχεται και η γρήγορη σύνδεση. -->
+    <template id="report_ergani_card">
+        <t t-call="web.basic_layout">
+            <div class="page">
+                <t t-foreach="cards" t-as="card">
+                    <div style="width: 85.6mm; height: 54mm; border: 1px dashed #999; padding: 3mm; margin-bottom: 6mm; box-sizing: border-box; font-family: sans-serif; page-break-inside: avoid;">
+                        <table style="width: 100%; height: 100%;">
+                            <tr>
+                                <td style="vertical-align: top;">
+                                    <div style="font-size: 9pt; color: #555;" t-out="card['company']"/>
+                                    <div style="font-size: 13pt; font-weight: bold; margin-top: 3mm;" t-out="card['name']"/>
+                                    <div style="font-size: 8pt; margin-top: 4mm;">Κάρτα εργαζομένου</div>
+                                    <div style="font-size: 7pt; color: #c00; margin-top: 3mm;">Προσωπική. Μην τη δανείζετε.<br/>Σε απώλεια ενημερώστε αμέσως.</div>
+                                </td>
+                                <td style="width: 40mm; text-align: right; vertical-align: middle;">
+                                    <img t-att-src="card['qr_src']" style="width: 38mm; height: 38mm;"/>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </t>
+            </div>
+        </t>
+    </template>
+</odoo>

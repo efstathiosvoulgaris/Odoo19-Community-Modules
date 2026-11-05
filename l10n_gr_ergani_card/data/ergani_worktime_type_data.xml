@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <!-- The four codes of «Ανάλυση Απασχόλησης Ημέρας» (οδηγός ΕΡΓΑΝΗ ΙΙ §4). Not verified:
+         Διαμόρφωση → Τύποι ωραρίου → «Από ΕΡΓΑΝΗ» replaces them with what ΕΡΓΑΝΗ returns. -->
+    <record id="wtype_erg" model="ergani.worktime.type">
+        <field name="code">ΕΡΓ</field><field name="name">Εργασία</field><field name="category">work</field>
+    </record>
+    <record id="wtype_til" model="ergani.worktime.type">
+        <field name="code">ΤΗΛ</field><field name="name">Τηλεργασία</field><field name="category">telework</field>
+    </record>
+    <record id="wtype_an" model="ergani.worktime.type">
+        <field name="code">ΑΝ</field><field name="name">Ανάπαυση / Ρεπό</field><field name="category">no_work</field>
+    </record>
+    <record id="wtype_me" model="ergani.worktime.type">
+        <field name="code">ΜΕ</field><field name="name">Μη εργασία</field><field name="category">no_work</field>
+    </record>
+</odoo>

@@ -146,6 +146,11 @@ PROTOCOLS_NEED_CLIENT = ('VIVA_CLOUD',)
 # as DUPLICATE SIGNATURE. Mellon accepts both.
 PROTOCOLS_NO_INSTALLMENTS = ('EPAY_WEB_ECR',)
 PROTOCOLS_SINGLE_USE_SIGNATURE = ('EPAY_WEB_ECR',)
+# A refund that quotes no earlier charge («ελεύθερο refund»): Viva since driver
+# v2.1.08; on WebECR InitialTransaction is optional (v2.5.13 §3.7.5), which
+# Mellon certification scenario 6 exercises and ePay confirmed (2026-10-20).
+PROTOCOLS_FREE_REFUND = ('VIVA_CLOUD', 'MELLON_WEB_ECR', 'NEXI_WEB_ECR', 'ATTICA_WEB_ECR',
+                         'WORLDLINE_WEB_ECR', 'EPAY_WEB_ECR')
 
 # Παράρτημα Α — PAYMENT_METHOD. NONE_PAYMENT_METHOD is what an NSP answers
 # when it cannot tell the ERP what the customer picked, so it is a valid

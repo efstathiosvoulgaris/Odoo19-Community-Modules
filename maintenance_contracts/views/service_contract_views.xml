@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="service_contract_view_list" model="ir.ui.view">
+        <field name="name">service.contract.list</field>
+        <field name="model">service.contract</field>
+        <field name="arch" type="xml">
+            <list decoration-warning="state == 'expiring'"
+                  decoration-danger="state == 'expired'"
+                  decoration-muted="state in ('renewed', 'not_renewed')">
+                <field name="name"/>
+                <field name="partner_id"/>
+                <field name="date_start"/>
+                <field name="date_end"/>
+                <field name="amount" sum="Σύνολο"/>
+                <field name="currency_id" column_invisible="1"/>
+                <field name="user_id" widget="many2one_avatar_user"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'active'"
+                       decoration-warning="state == 'expiring'"
+                       decoration-danger="state == 'expired'"/>
+                <field name="activity_ids" widget="list_activity" optional="show"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="service_contract_view_form" model="ir.ui.view">
+        <field name="name">service.contract.form</field>
+        <field name="model">service.contract</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <!-- the second button asks first when an invoice exists -->
+                    <button name="action_create_invoice" type="object"
+                            string="Δημιουργία Προτιμολογίου" class="btn-primary"
+                            invisible="invoice_count"/>
+                    <button name="action_create_invoice" type="object"
+                            string="Δημιουργία Προτιμολογίου"
+                            invisible="not invoice_count"
+                            confirm="Το συμβόλαιο έχει ήδη τιμολόγιο. Να δημιουργηθεί κι άλλο;"/>
+                    <button name="action_renew" type="object" string="Ανανέωση"
+                            invisible="state in ('renewed', 'not_renewed')"/>
+                    <button name="action_not_renewed" type="object" string="Δεν ανανεώνεται"
+                            invisible="state in ('renewed', 'not_renewed')"/>
+                    <button name="action_reopen" type="object" string="Επαναφορά"
+                            invisible="state != 'not_renewed'"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="active,expiring,expired"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_invoices" type="object"
+                                class="oe_stat_button" icon="fa-file-text-o"
+                                invisible="not invoice_count">
+                            <field name="invoice_count" widget="statinfo" string="Τιμολόγια"/>
+                        </button>
+                    </div>
+                    <widget name="web_ribbon" title="Ληγμένο" bg_color="text-bg-danger"
+                            invisible="state != 'expired'"/>
+                    <widget name="web_ribbon" title="Ανανεώθηκε" bg_color="text-bg-success"
+                            invisible="state != 'renewed'"/>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1><field name="name" placeholder="π.χ. Συντήρηση δικτύου 2026"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="partner_id"/>
+                            <field name="amount"/>
+                            <field name="currency_id" invisible="1"/>
+                            <field name="user_id" widget="many2one_avatar_user"/>
+                        </group>
+                        <group>
+                            <field name="date_start"/>
+                            <field name="date_end"/>
+                            <field name="notice_days"/>
+                            <field name="previous_contract_id" invisible="not previous_contract_id"/>
+                            <field name="next_contract_id" invisible="not next_contract_id"/>
+                            <field name="company_id" invisible="1"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Τι καλύπτει" name="notes">
+                            <field name="notes" placeholder="Εξοπλισμός, επισκέψεις, όροι… Το υπογεγραμμένο PDF επισυνάπτεται δεξιά/κάτω, στη συνομιλία."/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="service_contract_view_search" model="ir.ui.view">
+        <field name="name">service.contract.search</field>
+        <field name="model">service.contract</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="partner_id"/>
+                <field name="user_id"/>
+                <filter name="current" string="Σε ισχύ"
+                        domain="[('state', 'in', ('active', 'expiring'))]"/>
+                <filter name="expiring" string="Λήγουν σε 30 ημέρες"
+                        domain="[('state', 'in', ('active', 'expiring')),
+                                 ('date_end', '&lt;=', (context_today() + relativedelta(days=30)).strftime('%Y-%m-%d'))]"/>
+                <filter name="expired" string="Ληγμένα" domain="[('state', '=', 'expired')]"/>
+                <separator/>
+                <filter name="mine" string="Δικά μου" domain="[('user_id', '=', uid)]"/>
+                <group>
+                    <filter name="group_user" string="Υπεύθυνος" context="{'group_by': 'user_id'}"/>
+                    <filter name="group_state" string="Κατάσταση" context="{'group_by': 'state'}"/>
+                    <filter name="group_end" string="Μήνας λήξης" context="{'group_by': 'date_end:month'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_service_contract" model="ir.actions.act_window">
+        <field name="name">Συμβόλαια</field>
+        <field name="res_model">service.contract</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'search_default_current': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Νέο συμβόλαιο συντήρησης</p>
+            <p>Πριν λήξει, ο υπεύθυνος παίρνει ειδοποίηση στις δραστηριότητες.</p>
+        </field>
+    </record>
+</odoo>

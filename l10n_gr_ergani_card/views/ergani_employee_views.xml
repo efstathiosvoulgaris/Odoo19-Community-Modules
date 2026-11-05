@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ΕΡΓΑΝΗ → Εργαζόμενοι: the first screen of the app for the manager. -->
+    <record id="ergani_employee_view_list" model="ir.ui.view">
+        <field name="name">hr.employee.list.ergani</field>
+        <field name="model">hr.employee</field>
+        <field name="priority">100</field>
+        <field name="arch" type="xml">
+            <list string="Εργαζόμενοι ΕΡΓΑΝΗ" create="false" delete="false"
+                  decoration-muted="not ergani_enabled">
+                <header>
+                    <button name="action_ergani_sync_employees" type="object" display="always"
+                            string="Συγχρονισμός από ΕΡΓΑΝΗ" class="btn-primary" icon="fa-refresh"/>
+                    <button name="action_ergani_sync_branches" type="object" display="always"
+                            string="Παραρτήματα από ΕΡΓΑΝΗ" icon="fa-building"/>
+                    <button name="action_ergani_report" type="object"
+                            string="Κατάσταση κινήσεων" icon="fa-list"/>
+                </header>
+                <field name="name"/>
+                <field name="ergani_enabled" widget="boolean_toggle" string="Χτυπά κάρτα"/>
+                <field name="ergani_today_state" widget="badge"
+                       decoration-success="ergani_today_state == 'in'"
+                       decoration-info="ergani_today_state == 'out'"/>
+                <field name="ergani_afm"/>
+                <field name="ergani_amka" optional="show"/>
+                <field name="ergani_branch_id" optional="show"/>
+                <field name="ergani_hire_date" optional="show"/>
+                <field name="ergani_relation" optional="hide"/>
+                <field name="ergani_employment" optional="show"/>
+                <field name="ergani_weekly_hours" optional="show"/>
+                <field name="resource_calendar_id" string="Ωράριο Odoo" optional="show"/>
+                <field name="ergani_schedule_confirmed" optional="show"/>
+                <field name="ergani_flex_minutes" optional="hide"/>
+                <field name="ergani_has_card" optional="show"/>
+                <field name="ergani_in_ergani" optional="show"/>
+                <field name="ergani_last_sync" optional="hide"/>
+                <field name="ergani_exempt_reason" optional="hide"/>
+                <field name="user_id" optional="hide"/>
+                <button name="action_ergani_cards" type="object" string="Κάρτες" icon="fa-id-card-o"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="ergani_employee_view_search" model="ir.ui.view">
+        <field name="name">hr.employee.search.ergani</field>
+        <field name="model">hr.employee</field>
+        <field name="priority">100</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="ergani_afm"/>
+                <filter name="enabled" string="Χτυπούν κάρτα" domain="[('ergani_enabled', '=', True)]"/>
+                <filter name="not_enabled" string="Δεν χτυπούν" domain="[('ergani_enabled', '=', False)]"/>
+                <separator/>
+                <filter name="not_in_ergani" string="Όχι στο ΕΡΓΑΝΗ"
+                        domain="[('ergani_afm', '!=', False), ('ergani_in_ergani', '=', False)]"/>
+                <filter name="no_afm" string="Χωρίς ΑΦΜ" domain="[('ergani_afm', '=', False)]"/>
+                <filter name="unconfirmed" string="Ωράριο μη επιβεβαιωμένο"
+                        domain="[('ergani_schedule_confirmed', '=', False)]"/>
+                <group>
+                    <filter name="group_branch" string="Παράρτημα" context="{'group_by': 'ergani_branch_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_ergani_employees" model="ir.actions.act_window">
+        <field name="name">Εργαζόμενοι</field>
+        <field name="res_model">hr.employee</field>
+        <field name="view_mode">list,form</field>
+        <field name="view_id" ref="ergani_employee_view_list"/>
+        <field name="search_view_id" ref="ergani_employee_view_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Κανένας εργαζόμενος</p>
+            <p>Πατήστε «Συγχρονισμός από ΕΡΓΑΝΗ» για να φέρετε τους εργαζόμενους από τη μηνιαία κατάσταση του ΕΡΓΑΝΗ
+               (χρειάζεται κατάσταση trial ή παραγωγικό, με κωδικούς ΕΡΓΑΝΗ).</p>
+        </field>
+    </record>
+
+    <!-- Smart buttons and sync data on the employee form's ΕΡΓΑΝΗ tab. -->
+    <record id="hr_employee_view_form_ergani_data" model="ir.ui.view">
+        <field name="name">hr.employee.form.ergani.data</field>
+        <field name="model">hr.employee</field>
+        <field name="inherit_id" ref="l10n_gr_ergani_card.hr_employee_view_form_ergani"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='ergani']/group" position="before">
+                <div class="d-flex gap-2 mb-2">
+                    <button name="action_ergani_cards" type="object" class="btn btn-secondary btn-sm"
+                            icon="fa-id-card-o" groups="hr.group_hr_manager,base.group_system">
+                        Κάρτες (<field name="ergani_card_count" class="d-inline"/>)
+                    </button>
+                    <button name="action_ergani_report" type="object" class="btn btn-secondary btn-sm"
+                            icon="fa-list" string="Κατάσταση κινήσεων"
+                            groups="hr.group_hr_manager,base.group_system"/>
+                    <field name="ergani_today_state" widget="badge" invisible="ergani_today_state == 'none'"
+                           decoration-success="ergani_today_state == 'in'"/>
+                </div>
+            </xpath>
+            <xpath expr="//page[@name='ergani']/group" position="after">
+                <group string="Από το ΕΡΓΑΝΗ">
+                    <group>
+                        <field name="ergani_amka"/>
+                        <field name="ergani_hire_date"/>
+                        <field name="ergani_branch_id"/>
+                        <field name="ergani_specialty"/>
+                    </group>
+                    <group>
+                        <field name="ergani_relation"/>
+                        <field name="ergani_employment"/>
+                        <field name="ergani_weekly_hours"/>
+                        <field name="ergani_in_ergani"/>
+                        <field name="ergani_last_sync"/>
+                    </group>
+                </group>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="ergani_sync_employee_view_form" model="ir.ui.view">
+        <field name="name">ergani.sync.employee.form</field>
+        <field name="model">ergani.sync.employee</field>
+        <field name="arch" type="xml">
+            <form>
+                <p>
+                    Μηνιαία κατάσταση ΕΡΓΑΝΗ <strong><field name="period" class="d-inline"/></strong>.
+                    Αντιστοίχιση <strong>μόνο με ΑΦΜ</strong>. Τίποτα δεν αλλάζει πριν πατήσετε «Εφαρμογή».
+                    Αποδοχές και προσωπικά στοιχεία (γέννηση, οικογένεια, εκπαίδευση) δεν φέρνονται.
+                </p>
+                <field name="line_ids">
+                    <list editable="bottom" create="false" delete="false"
+                          decoration-info="status == 'new'" decoration-muted="status == 'missing'">
+                        <field name="status"/>
+                        <field name="action"/>
+                        <field name="employee_id" readonly="action not in ('link',)"
+                               required="action == 'link'" options="{'no_create': True}"/>
+                        <field name="afm"/>
+                        <field name="last_name"/>
+                        <field name="first_name"/>
+                        <field name="amka" optional="show"/>
+                        <field name="hire_date" optional="show"/>
+                        <field name="branch_aa" optional="show"/>
+                        <field name="employment" optional="show"/>
+                        <field name="weekly_hours" optional="show"/>
+                        <field name="relation" optional="hide"/>
+                        <field name="specialty" optional="hide"/>
+                    </list>
+                </field>
+                <footer>
+                    <button name="action_apply" type="object" string="Εφαρμογή" class="btn-primary"/>
+                    <button string="Άκυρο" special="cancel" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="ergani_branch_view_list" model="ir.ui.view">
+        <field name="name">ergani.branch.list</field>
+        <field name="model">ergani.branch</field>
+        <field name="arch" type="xml">
+            <list editable="bottom">
+                <field name="aa"/>
+                <field name="name"/>
+                <field name="address"/>
+                <field name="last_sync" readonly="1"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="ergani_delay_reason_view_list" model="ir.ui.view">
+        <field name="name">ergani.delay.reason.list</field>
+        <field name="model">ergani.delay.reason</field>
+        <field name="arch" type="xml">
+            <list create="false">
+                <field name="code"/>
+                <field name="name"/>
+                <field name="last_sync"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_ergani_delay_reasons" model="ir.actions.act_window">
+        <field name="name">Αιτιολογίες εκπρόθεσμης δήλωσης</field>
+        <field name="res_model">ergani.delay.reason</field>
+        <field name="view_mode">list</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Καμία αιτιολογία</p>
+            <p>Ρυθμίσεις ΕΡΓΑΝΗ → «Αιτιολογίες από ΕΡΓΑΝΗ» (χρειάζεται trial ή παραγωγικό με κωδικούς).</p>
+        </field>
+    </record>
+
+    <record id="action_ergani_branches" model="ir.actions.act_window">
+        <field name="name">Παραρτήματα ΕΡΓΑΝΗ</field>
+        <field name="res_model">ergani.branch</field>
+        <field name="view_mode">list</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Κανένα παράρτημα</p>
+            <p>«Παραρτήματα από ΕΡΓΑΝΗ» στη λίστα Εργαζομένων, ή προσθέστε με το χέρι (0 = έδρα).</p>
+        </field>
+    </record>
+</odoo>

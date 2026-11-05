@@ -17,6 +17,7 @@ from .gr_mydata import (
     TYPES_DISPATCH,
     TYPES_SELF_BILLED, TYPES_POS_ONLY,
     TYPES_NO_VAT, valid_cls_categories,
+    TYPES_CREDIT_JOURNAL, refund_journal_ok,
 )
 
 _logger = logging.getLogger(__name__)
@@ -65,7 +66,7 @@ PROVIDER_STATES = [
     ('error', 'Error'),
     # The issue date has passed: AADE refuses the document (ER-30, the issue
     # date must be the current day), so retrying can never succeed. The cron
-    # stops touching it; the manual «Send to Provider» button still works once
+    # stops touching it; the manual «Διαβίβαση στο myDATA» button still works once
     # the underlying problem is fixed.
     ('abandoned', 'Abandoned (issue date passed)'),
 ]
@@ -445,25 +446,111 @@ class AccountMove(models.Model):
                  'partner_id.is_company', 'partner_id.country_id', 'partner_id.vat')
     def _compute_suitable_journal_ids(self):
         super()._compute_suitable_journal_ids()
-        eu = self.env.ref('base.europe', raise_if_not_found=False)
-        eu_codes = set(eu.country_ids.mapped('code') if eu else []) - {'GR'}
         for move in self:
-            partner = move.partner_id
-            if (not partner
-                    or not move.is_sale_document(include_receipts=True)
+            if (not move.is_sale_document(include_receipts=True)
                     or not move.company_id._l10n_gr_prov_active()):
                 continue
-            cls = partner_class(
-                partner.is_company, partner.country_id.code,
-                eu_codes, bool(partner.vat),
-            )
-            valid = journal_types_for_class(cls)
-            if move.company_id.l10n_gr_prov_business_type != 'accommodation':
-                valid = valid - {'8.2'}
-            move.suitable_journal_ids = move.suitable_journal_ids.filtered(
-                lambda j: not j.l10n_gr_edi_inv_type_default
-                or j.l10n_gr_edi_inv_type_default in valid
-            )
+            # Sale vs credit note first: it needs no partner.
+            if move.move_type == 'out_refund':
+                ok = refund_journal_ok
+            else:
+                ok = lambda t: t not in TYPES_CREDIT_JOURNAL  # noqa: E731
+            # Journals without a myDATA type (ΠΩΛ: opening items from v13; the
+            # restaurant's «Μετρητά Εστίασης») never issue a document by hand.
+            journals = move.suitable_journal_ids.filtered(
+                lambda j: j.l10n_gr_edi_inv_type_default and ok(j.l10n_gr_edi_inv_type_default))
+            cls = move._l10n_gr_prov_partner_class()
+            if cls:
+                valid = journal_types_for_class(cls)
+                if move.company_id.l10n_gr_prov_business_type != 'accommodation':
+                    valid = valid - {'8.2'}
+                journals = journals.filtered(
+                    lambda j: not j.l10n_gr_edi_inv_type_default
+                    or j.l10n_gr_edi_inv_type_default in valid)
+            move.suitable_journal_ids = journals
+
+    def _l10n_gr_prov_partner_class(self):
+        """retail / b2b / eu / third for the customer, or False without one."""
+        self.ensure_one()
+        partner = self.partner_id
+        if not partner:
+            return False
+        eu = self.env.ref('base.europe', raise_if_not_found=False)
+        eu_codes = set(eu.country_ids.mapped('code') if eu else []) - {'GR'}
+        return partner_class(partner.is_company, partner.country_id.code,
+                             eu_codes, bool(partner.vat))
+
+    @api.onchange('partner_id', 'move_type')
+    def _onchange_l10n_gr_prov_journal_fit(self):
+        """The journal is picked before the customer (core hides the journal
+        once a partner is set), so a retail customer could keep a ΤΙΜ, or a
+        sale a credit journal. Move to the usual journal for this customer;
+        the post guard catches whatever is still wrong."""
+        for move in self:
+            if (move.state != 'draft' or not move.journal_id
+                    or not move.is_sale_document(include_receipts=True)
+                    or not move.company_id._l10n_gr_prov_active()
+                    or move.journal_id._origin in move.suitable_journal_ids._origin):
+                continue
+            cls = move._l10n_gr_prov_partner_class() or 'retail'
+            if move.move_type == 'out_refund':
+                wanted = ['11.4'] if cls == 'retail' else ['5.1', '5.2']
+            else:
+                wanted = {'retail': ['11.1', '11.2'], 'b2b': ['1.1', '2.1'],
+                          'eu': ['1.2', '2.2'], 'third': ['1.3', '2.3']}[cls]
+            for inv_type in wanted:
+                journal = move.suitable_journal_ids.filtered(
+                    lambda j: j.l10n_gr_edi_inv_type_default == inv_type)[:1]
+                if journal:
+                    # On a new record the x2many holds NewId copies; the real
+                    # journal is the origin (a NewId breaks the sequence query).
+                    move.journal_id = journal._origin
+                    break
+
+    def _l10n_gr_prov_effective_inv_type(self):
+        """The myDATA type this document is sent as — same rule as the ILYDA
+        payload: a credit note in an 11.4/8.5 journal keeps it, any other credit
+        note is 5.1 (with a reversed document) or 5.2."""
+        self.ensure_one()
+        journal_type = self.journal_id.l10n_gr_edi_inv_type_default
+        if self.move_type == 'out_refund' and journal_type not in ('11.4', '8.5'):
+            return '5.1' if self.reversed_entry_id else '5.2'
+        return journal_type or self.l10n_gr_edi_inv_type
+
+    def _l10n_gr_prov_check_doc_type(self):
+        """Block at post the documents AADE / the provider would refuse for
+        their type alone: a sale in a credit journal, a credit note in a
+        non-credit journal, a credit invoice or invoice for a customer without
+        ΑΦΜ. POS documents keep their own routing (l10n_gr_provider_pos)."""
+        for move in self:
+            journal_type = move.journal_id.l10n_gr_edi_inv_type_default
+            if (not journal_type or move.country_code != 'GR'
+                    or move.move_type not in ('out_invoice', 'out_refund')
+                    or not move.company_id._l10n_gr_prov_active()
+                    or ('pos_order_ids' in move._fields and move.pos_order_ids)):
+                continue
+            journal = move.journal_id.display_name
+            if move.move_type == 'out_invoice' and journal_type in TYPES_CREDIT_JOURNAL:
+                raise UserError(_(
+                    '%(name)s: το ημερολόγιο «%(journal)s» (τύπος %(type)s) είναι για '
+                    'πιστωτικά. Για επιστροφή φτιάξτε Πιστωτικό (Πελάτες → Πιστωτικά)· '
+                    'για πώληση διαλέξτε ημερολόγιο τιμολογίων ή αποδείξεων.',
+                    name=move.name or '', journal=journal, type=journal_type))
+            if move.move_type == 'out_refund' and not refund_journal_ok(journal_type):
+                raise UserError(_(
+                    '%(name)s: πιστωτικό στο ημερολόγιο «%(journal)s» (τύπος %(type)s). '
+                    'Διαλέξτε ημερολόγιο πιστωτικών: ΠΛΠ (11.4) για λιανική, '
+                    'πιστωτικό τιμολόγιο (5.1/5.2) για πελάτη με ΑΦΜ.',
+                    name=move.name or '', journal=journal, type=journal_type))
+            effective = move._l10n_gr_prov_effective_inv_type()
+            if ((move._l10n_gr_prov_partner_class() or 'retail') == 'retail'
+                    and effective not in journal_types_for_class('retail')):
+                raise UserError(_(
+                    '%(name)s: ο πελάτης «%(partner)s» δεν έχει ΑΦΜ, άρα είναι λιανικής, '
+                    'και το παραστατικό θα σταλεί ως %(type)s, που θέλει ΑΦΜ αντισυμβαλλομένου. '
+                    'Βάλτε ΑΦΜ στον πελάτη ή χρησιμοποιήστε ΑΛΠ / ΠΛΠ (λιανική).',
+                    name=move.name or '', partner=move.partner_id.display_name or '-',
+                    type=effective))
 
     # ── Journal-driven tax net ────────────────────────────────────────────────
     # Cross-border journals (1.2/2.2/1.3/2.3) → only their mapped 0% tax;
@@ -634,6 +721,7 @@ class AccountMove(models.Model):
 
     # ── Posting hook: queue, never call the network inside the posting tx ────
     def _post(self, soft=True):
+        self._l10n_gr_prov_check_doc_type()
         self._l10n_gr_prov_check_tax_guard()
         posted = super()._post(soft)
         queue = posted.filtered(

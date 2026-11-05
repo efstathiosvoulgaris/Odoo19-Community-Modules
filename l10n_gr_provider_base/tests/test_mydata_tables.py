@@ -41,9 +41,12 @@ class TestMydataTables(TransactionCase):
         self.assertNotIn('1.1', journal_types_for_class('retail'))
         self.assertIn('11.1', journal_types_for_class('retail'))
         self.assertNotIn('11.1', journal_types_for_class('eu'))
-        # credit notes are partner-class agnostic
-        for cls in ('b2b', 'retail', 'eu', 'third'):
+        # credit invoices need an ΑΦΜ; a retail credit is 11.4
+        for cls in ('b2b', 'eu', 'third'):
             self.assertIn('5.1', journal_types_for_class(cls))
+        self.assertNotIn('5.1', journal_types_for_class('retail'))
+        self.assertNotIn('5.2', journal_types_for_class('retail'))
+        self.assertIn('11.4', journal_types_for_class('retail'))
 
     # ── classification defaults ──────────────────────────────────────────────
     def test_retail_types_prefer_retail_e3(self):

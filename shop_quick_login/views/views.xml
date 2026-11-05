@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Υπολογιστές καταστήματος -->
+    <record id="ql_device_list" model="ir.ui.view">
+        <field name="name">shop.ql.device.list</field>
+        <field name="model">shop.ql.device</field>
+        <field name="arch" type="xml">
+            <list decoration-muted="state == 'revoked'" decoration-danger="state == 'blocked'">
+                <field name="name"/>
+                <field name="state" widget="badge"/>
+                <field name="no_idle_logout"/>
+                <field name="enrolled_at"/>
+                <field name="last_used"/>
+                <field name="expires_at"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="ql_device_form" model="ir.ui.view">
+        <field name="name">shop.ql.device.form</field>
+        <field name="model">shop.ql.device</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_enroll_this_pc" type="object" class="oe_highlight"
+                            string="Εγγραφή αυτού του υπολογιστή" invisible="state in ('active', 'blocked')"
+                            confirm="Ο υπολογιστής από τον οποίο πατάτε τώρα θα γίνει «υπολογιστής καταστήματος» με αυτό το όνομα. Συνέχεια;"/>
+                    <button name="action_unblock" type="object" string="Άνοιγμα ξανά"
+                            invisible="state != 'blocked'"/>
+                    <button name="action_revoke" type="object" string="Ακύρωση"
+                            invisible="state == 'revoked'"
+                            confirm="Ο υπολογιστής δεν θα έχει πια γρήγορη σύνδεση. Συνέχεια;"/>
+                    <field name="state" widget="statusbar" statusbar_visible="pending,active"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="no_idle_logout"/>
+                        </group>
+                        <group>
+                            <field name="enrolled_at"/>
+                            <field name="enrolled_by"/>
+                            <field name="expires_at"/>
+                            <field name="last_used"/>
+                            <field name="user_agent"/>
+                        </group>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_ql_device" model="ir.actions.act_window">
+        <field name="name">Υπολογιστές καταστήματος</field>
+        <field name="res_model">shop.ql.device</field>
+        <field name="view_mode">list,form</field>
+        <field name="path">ql-devices</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Νέος υπολογιστής καταστήματος</p>
+            <p>Δώστε όνομα (π.χ. «Ταμείο»), αποθηκεύστε και, <b>από αυτόν τον υπολογιστή</b>, πατήστε
+                «Εγγραφή αυτού του υπολογιστή».</p>
+        </field>
+    </record>
+
+    <record id="action_ql_revoke_all" model="ir.actions.server">
+        <field name="name">Ακύρωση όλων των υπολογιστών</field>
+        <field name="model_id" ref="model_shop_ql_device"/>
+        <field name="binding_model_id" ref="model_shop_ql_device"/>
+        <field name="state">code</field>
+        <field name="code">model.action_revoke_all()</field>
+        <field name="group_ids" eval="[(4, ref('base.group_system'))]"/>
+    </record>
+
+    <!-- Κάρτα QR και PIN: στον εργαζόμενο -->
+    <record id="ql_pin_wizard_form" model="ir.ui.view">
+        <field name="name">shop.ql.pin.wizard.form</field>
+        <field name="model">shop.ql.pin.wizard</field>
+        <field name="arch" type="xml">
+            <form>
+                <p>Ορίστε το PIN γρήγορης σύνδεσης και δώστε το στον εργαζόμενο. Αποθηκεύεται μόνο
+                    κρυπτογραφημένο· κανείς δεν μπορεί να το δει ξανά. Θα σας ζητηθεί ο κωδικός σας.</p>
+                <group>
+                    <field name="employee_id" options="{'no_create': True}"/>
+                    <field name="pin" password="True"/>
+                    <field name="pin2" password="True"/>
+                </group>
+                <footer>
+                    <button name="action_set" type="object" string="Ορισμός PIN" class="btn-primary"/>
+                    <button string="Άκυρο" special="cancel" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_ql_pin_wizard" model="ir.actions.act_window">
+        <field name="name">Ορισμός PIN</field>
+        <field name="res_model">shop.ql.pin.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <record id="hr_employee_view_form_ql" model="ir.ui.view">
+        <field name="name">hr.employee.form.ql</field>
+        <field name="model">hr.employee</field>
+        <field name="inherit_id" ref="hr.view_employee_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='hr_settings']" position="after">
+                <page name="quick_login" string="Γρήγορη σύνδεση" groups="base.group_system">
+                    <group>
+                        <group string="PIN">
+                            <field name="ql_has_pin"/>
+                            <button name="action_ql_set_pin" type="object" string="Ορισμός PIN"
+                                    class="btn-secondary" colspan="2"/>
+                        </group>
+                        <group string="Κάρτα QR">
+                            <div colspan="2">
+                                <button name="action_ql_print_card" type="object" string="Εκτύπωση κάρτας"
+                                        icon="fa-print" class="btn-secondary"/>
+                                <button name="action_ql_new_card" type="object" string="Νέα κάρτα"
+                                        class="btn-link" invisible="not barcode"
+                                        confirm="Η παλιά κάρτα θα πάψει να ισχύει παντού. Συνέχεια;"/>
+                            </div>
+                            <div colspan="2" class="text-muted">
+                                Το QR είναι το «Badge ID» (καρτέλα Ρυθμίσεις HR). Η κάρτα επιλέγει μόνο
+                                τον χρήστη· το PIN ζητείται πάντα.
+                            </div>
+                        </group>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Ιστορικό -->
+    <record id="ql_log_list" model="ir.ui.view">
+        <field name="name">shop.ql.log.list</field>
+        <field name="model">shop.ql.log</field>
+        <field name="arch" type="xml">
+            <list create="false" edit="false" delete="false" decoration-danger="not success">
+                <field name="create_date" string="Ώρα"/>
+                <field name="user_id"/>
+                <field name="device_id"/>
+                <field name="method"/>
+                <field name="success"/>
+                <field name="ip"/>
+                <field name="note"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="ql_log_search" model="ir.ui.view">
+        <field name="name">shop.ql.log.search</field>
+        <field name="model">shop.ql.log</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="user_id"/>
+                <field name="device_id"/>
+                <filter name="failed" string="Αποτυχίες" domain="[('success', '=', False)]"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_ql_log" model="ir.actions.act_window">
+        <field name="name">Ιστορικό γρήγορων συνδέσεων</field>
+        <field name="res_model">shop.ql.log</field>
+        <field name="view_mode">list</field>
+    </record>
+
+    <!-- Ρυθμίσεις -->
+    <record id="res_config_settings_view_form_ql" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.ql</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="base.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form" position="inside">
+                <app string="Γρήγορη σύνδεση" name="shop_quick_login">
+                    <block title="Αποσύνδεση λόγω αδράνειας" name="ql_idle_block">
+                        <setting string="Λεπτά αδράνειας" name="ql_idle_setting"
+                                 help="Μετά από τόσα λεπτά χωρίς ποντίκι/πληκτρολόγιο σε καμία καρτέλα του Odoo, γίνεται αποσύνδεση (προειδοποίηση 1 λεπτό πριν). 0 = ποτέ. Όχι όσο είναι ανοιχτό ταμείο στον browser ή σε υπολογιστή με «Χωρίς αποσύνδεση αδράνειας». Η αποσύνδεση αυτή ΔΕΝ είναι Αποχώρηση ΕΡΓΑΝΗ.">
+                            <field name="ql_idle_minutes"/>
+                        </setting>
+                    </block>
+                </app>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="action_ql_settings" model="ir.actions.act_window">
+        <field name="name">Ρυθμίσεις γρήγορης σύνδεσης</field>
+        <field name="res_model">res.config.settings</field>
+        <field name="view_mode">form</field>
+        <field name="target">current</field>
+        <field name="context">{'module': 'shop_quick_login', 'bin_size': False}</field>
+    </record>
+
+    <menuitem id="menu_ql_root" name="Γρήγορη σύνδεση" sequence="95" groups="base.group_system"
+              web_icon="shop_quick_login,static/description/icon.png"/>
+    <menuitem id="menu_ql_devices" name="Υπολογιστές καταστήματος" parent="menu_ql_root"
+              action="action_ql_device" sequence="10"/>
+    <menuitem id="menu_ql_pin" name="Ορισμός PIN" parent="menu_ql_root" action="action_ql_pin_wizard" sequence="20"/>
+    <menuitem id="menu_ql_log" name="Ιστορικό" parent="menu_ql_root" action="action_ql_log" sequence="30"/>
+    <menuitem id="menu_ql_settings" name="Ρυθμίσεις" parent="menu_ql_root" action="action_ql_settings" sequence="90"/>
+</odoo>

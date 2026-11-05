@@ -10,14 +10,14 @@ from odoo.http import request, route, Response, Controller
 
 _logger = logging.getLogger(__name__)
 
-# Built feeds, per worker: {(db, include_zero, availability): (built_at, xml)}.
+# Built feeds, per worker: {(db, include_zero, availabilities): (built_at, xml)}.
 # ~4600 products take seconds to render, and the URL is public — without this
 # a handful of requests at once ties up every worker.
 _FEED_CACHE = {}
 FEED_CACHE_SECONDS = 15 * 60
 
 
-def _build_product_element(product, default_avail):
+def _build_product_element(product, default_avail, in_stock_avail):
     """Build a <product> XML element for a product.template record."""
     p = Element('product')
 
@@ -37,9 +37,9 @@ def _build_product_element(product, default_avail):
     add('category', product.skroutz_category_path)
     add('price_with_vat', f"{product._get_skroutz_price_with_vat():.2f}")
     add('vat', f"{product._get_skroutz_vat_rate():.2f}")
-    add('availability', product._get_skroutz_availability(default_avail))
+    add('availability', product._get_skroutz_availability(default_avail, in_stock_avail))
 
-    manufacturer = product.brand_id.name if 'brand_id' in product._fields and product.brand_id else 'OEM'
+    manufacturer = product.brand_id.name if 'brand_id' in product._fields and product.brand_id else 'N/A'
     add('manufacturer', manufacturer)
     add('mpn', product.skroutz_mpn or '')
     if product.barcode:
@@ -67,7 +67,7 @@ def _build_product_element(product, default_avail):
     return p
 
 
-def _generate_xml(products, default_avail):
+def _generate_xml(products, default_avail, in_stock_avail):
     """Generate the full Skroutz XML feed string."""
     root = Element('mywebstore')
     created = SubElement(root, 'created_at')
@@ -76,7 +76,7 @@ def _generate_xml(products, default_avail):
 
     for product in products:
         try:
-            products_el.append(_build_product_element(product, default_avail))
+            products_el.append(_build_product_element(product, default_avail, in_stock_avail))
         except Exception as e:
             _logger.warning("Skroutz feed: skipping product %s (%s): %s",
                             product.id, product.name, e)
@@ -104,11 +104,12 @@ class SkroutzFeedController(Controller):
             domain.append(('qty_available', '>', 0))
 
         default_avail = config.get_param('skroutz.default_availability', 'Delivery 1 to 3 days')
-        key = (request.env.cr.dbname, include_zero, default_avail)
+        in_stock_avail = config.get_param('skroutz.in_stock_availability', 'In stock')
+        key = (request.env.cr.dbname, include_zero, default_avail, in_stock_avail)
         built_at, xml_content = _FEED_CACHE.get(key, (0, None))
         if xml_content is None or time.monotonic() - built_at > FEED_CACHE_SECONDS:
             products = request.env['product.template'].sudo().search(domain, order='id')
-            xml_content = _generate_xml(products, default_avail)
+            xml_content = _generate_xml(products, default_avail, in_stock_avail)
             _FEED_CACHE[key] = (time.monotonic(), xml_content)
 
         headers = {

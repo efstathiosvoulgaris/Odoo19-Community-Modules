@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_view_form_dias" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.dias</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="base.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form" position="inside">
+                <app string="ΔΙΑΣ RF" name="l10n_gr_dias_rf">
+
+                    <block title="Οργανισμός" name="dias_org_block">
+                        <setting string="Κωδικός Οργανισμού και περιβάλλον" name="dias_org_setting"
+                                 help="Ο 5ψήφιος κωδικός της ΔΙΑΣ (9nnnn) μπαίνει σε κάθε κωδικό RF. Περιβάλλον: η βάση δέχεται μηνύματα και αρχεία μόνο αυτού του περιβάλλοντος· σε «Δοκιμές» τα έντυπα γράφουν «ΔΟΚΙΜΗ – μη πληρώνετε».">
+                            <div class="row mt8">
+                                <label for="dias_org_code" class="col-lg-4 o_light_label"/>
+                                <field name="dias_org_code" placeholder="95057"/>
+                            </div>
+                            <div class="row">
+                                <label for="dias_env" class="col-lg-4 o_light_label"/>
+                                <field name="dias_env"/>
+                            </div>
+                        </setting>
+                        <setting string="Καταχώρηση πληρωμών" name="dias_booking_setting"
+                                 help="Οι πληρωμές μπαίνουν σε αυτό το ημερολόγιο τράπεζας και συμψηφίζονται με τα ανοιχτά τιμολόγια. Ο υπεύθυνος παίρνει δραστηριότητα για ό,τι θέλει χειρισμό. Η «Έναρξη ΔΙΑΣ» ξεχωρίζει τι ανήκει στο προηγούμενο σύστημα.">
+                            <div class="row mt8">
+                                <label for="dias_journal_id" class="col-lg-4 o_light_label"/>
+                                <field name="dias_journal_id" options="{'no_create': True}"/>
+                            </div>
+                            <div class="row">
+                                <label for="dias_manager_id" class="col-lg-4 o_light_label"/>
+                                <field name="dias_manager_id" options="{'no_create': True}"/>
+                            </div>
+                            <div class="row">
+                                <label for="dias_start" class="col-lg-4 o_light_label"/>
+                                <field name="dias_start"/>
+                            </div>
+                        </setting>
+                    </block>
+
+                    <block title="Υποδοχή online (ΔΙΑΣ → Odoo)" name="dias_online_block"
+                           groups="base.group_system">
+                        <setting string="Ασφάλεια υποδοχής" name="dias_online_setting"
+                                 help="Διεύθυνση προς δήλωση στο ΔΙΑΣ Portal (Online Admin): https://&lt;διακομιστής&gt;/dias/online/&lt;όνομα βάσης&gt;. Χωρίς χρήστη, κωδικό ΚΑΙ λίστα IP η υποδοχή απορρίπτει τα πάντα.">
+                            <div class="row mt8">
+                                <label for="dias_basic_user" class="col-lg-4 o_light_label"/>
+                                <field name="dias_basic_user"/>
+                            </div>
+                            <div class="row">
+                                <label for="dias_basic_password_new" class="col-lg-4 o_light_label"/>
+                                <field name="dias_basic_password_new" password="True"
+                                       placeholder="κενό = δεν αλλάζει"/>
+                            </div>
+                            <div class="row">
+                                <span class="col-lg-4 o_light_label">Κωδικός ορισμένος</span>
+                                <field name="dias_has_basic"/>
+                            </div>
+                            <div class="row">
+                                <label for="dias_allowed_ips" class="col-lg-4 o_light_label"/>
+                                <field name="dias_allowed_ips" placeholder="194.30.224.10"/>
+                            </div>
+                            <div class="row">
+                                <label for="dias_last_message_at" class="col-lg-4 o_light_label"/>
+                                <field name="dias_last_message_at"/>
+                            </div>
+                        </setting>
+                    </block>
+
+                    <block title="Αρχεία πληρωμών (File Transfer REST)" name="dias_files_block"
+                           groups="base.group_system">
+                        <setting string="Λήψη αρχείων" name="dias_rest_setting"
+                                 help="Χρήστης = OrgID (π.χ. SKARLASLAMBR) και ο κωδικός File Transfer του ΔΙΑΣ Portal. Η αυτόματη λήψη γίνεται από το προγραμματισμένο «ΔΙΑΣ: λήψη αρχείων πληρωμών (REST)», που ενεργοποιείται μόνο στη βάση που κατεβάζει τα αρχεία.">
+                            <div class="row mt8">
+                                <label for="dias_org_id" class="col-lg-4 o_light_label"/>
+                                <field name="dias_org_id"/>
+                            </div>
+                            <div class="row">
+                                <label for="dias_ftp_password" class="col-lg-4 o_light_label"/>
+                                <field name="dias_ftp_password" password="True"/>
+                            </div>
+                            <div class="row">
+                                <label for="dias_rest_url" class="col-lg-4 o_light_label"/>
+                                <field name="dias_rest_url"/>
+                            </div>
+                            <div class="row">
+                                <label for="dias_pno_cycles" class="col-lg-4 o_light_label"/>
+                                <field name="dias_pno_cycles"/>
+                            </div>
+                            <div class="row">
+                                <label for="dias_pno_ext" class="col-lg-4 o_light_label"/>
+                                <field name="dias_pno_ext"/>
+                            </div>
+                            <div class="row">
+                                <label for="dias_pno_lobid" class="col-lg-4 o_light_label"/>
+                                <field name="dias_pno_lobid"/>
+                            </div>
+                            <div class="row">
+                                <label for="dias_last_file_at" class="col-lg-4 o_light_label"/>
+                                <field name="dias_last_file_at"/>
+                            </div>
+                            <div class="row">
+                                <label for="dias_last_file_name" class="col-lg-4 o_light_label"/>
+                                <field name="dias_last_file_name"/>
+                            </div>
+                            <div class="row" invisible="not dias_last_error">
+                                <label for="dias_last_error" class="col-lg-4 o_light_label"/>
+                                <field name="dias_last_error" class="text-danger"/>
+                            </div>
+                            <div class="mt8">
+                                <button name="action_dias_fetch_now" type="object" string="Λήψη τώρα"
+                                        class="btn-link" icon="oi-arrow-right"/>
+                            </div>
+                        </setting>
+                    </block>
+
+                    <block title="Ηλεκτρονικό τιμολόγιο" name="dias_ilyda_block">
+                        <setting name="dias_ilyda_setting"
+                                 help="Στέλνει τον κωδικό RF στο ηλεκτρονικό τιμολόγιο της ΙΛΥΔΑ (paymentInstruction.remittanceInfo), μόνο σε περιβάλλον Παραγωγής. Δεν έχει δοκιμαστεί ακόμα στην ΙΛΥΔΑ.">
+                            <field name="dias_send_ilyda"/>
+                        </setting>
+                    </block>
+
+                </app>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="action_dias_settings" model="ir.actions.act_window">
+        <field name="name">Ρυθμίσεις ΔΙΑΣ RF</field>
+        <field name="res_model">res.config.settings</field>
+        <field name="view_mode">form</field>
+        <field name="target">current</field>
+        <field name="context">{'module': 'l10n_gr_dias_rf', 'bin_size': False}</field>
+    </record>
+</odoo>

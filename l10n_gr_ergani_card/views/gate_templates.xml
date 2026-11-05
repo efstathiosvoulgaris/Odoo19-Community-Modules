@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="gate_page" name="ΕΡΓΑΝΗ — Χτύπημα κάρτας">
+        &lt;!DOCTYPE html&gt;
+        <html lang="el">
+            <head>
+                <meta charset="utf-8"/>
+                <meta name="viewport" content="width=device-width, initial-scale=1"/>
+                <title>Χτύπημα κάρτας</title>
+                <link rel="stylesheet" href="/l10n_gr_ergani_card/static/src/gate/gate.css"/>
+            </head>
+            <body>
+                <main class="gate" t-att-data-mode="mode" t-att-data-has-card="'1' if has_card else '0'"
+                      t-att-data-redirect="redirect">
+                    <div class="card">
+                        <div class="brand">ΕΡΓΑΝΗ · Κάρτα Εργασίας</div>
+                        <h1 t-if="mode == 'in'">Προσέλευση</h1>
+                        <h1 t-else="">Αποχώρηση</h1>
+                        <p class="who" t-esc="employee"/>
+                        <p class="hint" t-if="mode == 'out'">Τέλος περιόδου εργασίας — όχι διάλειμμα.
+                            Μετά θα αποσυνδεθείτε από αυτόν τον υπολογιστή.</p>
+                        <p class="sim" t-if="simulation">Λειτουργία προσομοίωσης — τίποτα δεν στέλνεται στο ΕΡΓΑΝΗ.</p>
+
+                        <section id="no-card" hidden="">
+                            <p>Δεν σας έχει δοθεί κάρτα QR. Ζητήστε τη από τον υπεύθυνο.</p>
+                        </section>
+
+                        <section id="punch" hidden="">
+                            <p>Σκανάρετε την κάρτα σας με το σκάνερ ή με την κάμερα.</p>
+                            <!-- Το σκάνερ χειρός γράφει εδώ το QR και πατά Enter. -->
+                            <input id="code" type="password" autocomplete="off" placeholder="Κάρτα QR"
+                                   autofocus=""/>
+                            <button id="btn-camera" type="button">Σκανάρισμα με κάμερα</button>
+                            <video id="video" hidden="" playsinline="" muted=""></video>
+                            <button id="btn-camera-stop" type="button" class="secondary" hidden="">Κλείσιμο κάμερας</button>
+                        </section>
+
+                        <p id="msg" class="msg" role="status"/>
+                        <a class="logout" href="/web/session/logout">Αποσύνδεση</a>
+                        <a class="back" t-if="mode == 'out'" href="/odoo">Ακύρωση</a>
+                    </div>
+                </main>
+                <script src="/web/static/lib/zxing-library/zxing-library.js"/>
+                <script src="/l10n_gr_ergani_card/static/src/gate/gate.js"/>
+            </body>
+        </html>
+    </template>
+</odoo>

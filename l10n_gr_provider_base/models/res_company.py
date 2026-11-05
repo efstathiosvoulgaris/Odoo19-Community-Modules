@@ -27,7 +27,7 @@ class ResCompany(models.Model):
         string='Auto-send on Post',
         default=False,
         help='If enabled, posted invoices are queued and transmitted automatically '
-             'by the scheduled job. Otherwise use the "Send to Provider" button or '
+             'by the scheduled job. Otherwise use the «Διαβίβαση στο myDATA» button or '
              'the Send & Print flow.',
     )
 

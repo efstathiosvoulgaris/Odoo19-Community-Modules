@@ -1,13 +1,18 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Skroutz Connector',
-    'version': '1.9',
+    'version': '1.11',
     'category': 'eCommerce',
     'summary': 'Skroutz XML feed, order webhook and order management API',
     'description': (
         'Changelog\n'
         '---------\n'
-        '* 1.7 — Dispatch with no tracking codes no longer raises; dropped the\n'
+        '* 1.11 — Category is "parent > category" and a missing brand is "N/A",\n'
+        '        exactly as the v13 feed sent them, so Skroutz keeps its mappings.\n'
+        '* 1.10 — Feed price honours price-included taxes (was list_price x 1.24,\n'
+        '        every Skroutz price 24% too high). New parameter\n'
+        '        skroutz.in_stock_availability for items in stock (default "In stock").\n'
+        '* 1.7— Dispatch with no tracking codes no longer raises; dropped the\n'
         '        notify_by_email argument Odoo 19 removed, which made every\n'
         '        order notification raise instead of posting.\n'
         '* 1.6 — Skroutz menu moved from Website > eCommerce to Sales.\n'

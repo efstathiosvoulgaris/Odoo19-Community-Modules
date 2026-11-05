@@ -61,17 +61,120 @@
                 <attribute name="invisible">l10n_gr_prov_applicable or move_type not in ('in_invoice', 'in_refund', 'in_receipt')</attribute>
             </xpath>
 
-            <header position="inside">
+            <!-- Header, on documents we transmit: one blue button per stage, the
+                 next step first.  Πρόχειρο: Έκδοση · Ακύρωση Προσχεδίου.
+                 Χωρίς ΜΑΡΚ: Διαβίβαση · Ανάκτηση · (Εκτύπωση, Email, Είσπραξη
+                 grey) · Επαναφορά.  Με ΜΑΡΚ: Εκτύπωση · Email · Είσπραξη ·
+                 Πιστωτικό · Έλεγχος.  Core labels («Επιβεβαίωση», «Αποστολή»)
+                 read like the transmission itself, so on these documents the
+                 core button is hidden and a renamed copy takes its place;
+                 vendor bills and entries keep core as is. -->
+            <xpath expr="//header/button[@name='action_post'][2]" position="attributes">
+                <attribute name="invisible">hide_post_button or move_type == 'entry' or display_inactive_currency_warning or l10n_gr_prov_applicable</attribute>
+            </xpath>
+            <xpath expr="//header/button[@name='action_post'][2]" position="after">
+                <button name="action_post" string="Έκδοση" class="oe_highlight"
+                        type="object" groups="account.group_account_invoice" data-hotkey="q"
+                        context="{'validate_analytic': True, 'disable_abnormal_invoice_detection': False}"
+                        invisible="hide_post_button or display_inactive_currency_warning or not l10n_gr_prov_applicable"/>
                 <!-- Hidden while queued (TF-2): a re-send only answers MQ001;
-                     offline (TF-1) documents keep it — manual retry is legitimate. -->
+                     offline (TF-1) documents keep it — manual retry is legitimate.
+                     l10n_gr_provider_eftpos relabels it when a card payment is due. -->
                 <button name="action_l10n_gr_prov_send" type="object"
-                        string="Send to Provider" class="btn-primary"
+                        string="Διαβίβαση στο myDATA" class="btn-primary"
                         invisible="not l10n_gr_prov_applicable or state != 'posted' or l10n_gr_prov_mark or l10n_gr_prov_state == 'queued'"/>
-                <!-- Lookup by UID: recovers a lost MARK / polls the TF-2 queue;
-                     on marked documents it runs the UID self-check. -->
+                <!-- Lookup by UID: recovers a lost MARK / polls the TF-2 queue. -->
                 <button name="action_l10n_gr_prov_recover" type="object"
                         string="Ανάκτηση από Πάροχο"
-                        invisible="not l10n_gr_prov_applicable or state != 'posted' or not l10n_gr_prov_state"/>
+                        invisible="not l10n_gr_prov_applicable or state != 'posted' or not l10n_gr_prov_state or l10n_gr_prov_mark"/>
+            </xpath>
+
+            <!-- Print before Email; blue only once marked (a print without ΜΑΡΚ
+                 has no QR — kept, grey, for when the provider is down). -->
+            <xpath expr="//header/button[@name='action_invoice_sent'][1]" position="before">
+                <xpath expr="//header/button[@name='action_print_pdf'][1]" position="move"/>
+                <xpath expr="//header/button[@name='action_print_pdf'][2]" position="move"/>
+            </xpath>
+            <xpath expr="//header/button[@name='action_print_pdf'][1]" position="attributes">
+                <attribute name="invisible">state != 'posted' or move_type in ('entry', 'in_invoice','in_refund','in_receipt') or (l10n_gr_prov_applicable and not l10n_gr_prov_mark) or (not l10n_gr_prov_applicable and (is_being_sent or invoice_pdf_report_id))</attribute>
+            </xpath>
+            <xpath expr="//header/button[@name='action_print_pdf'][2]" position="attributes">
+                <attribute name="invisible">state != 'posted' or move_type in ('in_invoice','in_refund','in_receipt') or (l10n_gr_prov_applicable and l10n_gr_prov_mark) or (not l10n_gr_prov_applicable and not is_being_sent and not invoice_pdf_report_id)</attribute>
+            </xpath>
+            <xpath expr="//header/button[@name='action_invoice_sent'][1]" position="attributes">
+                <attribute name="invisible">not display_send_button or not highlight_send_button or l10n_gr_prov_applicable</attribute>
+            </xpath>
+            <xpath expr="//header/button[@name='action_invoice_sent'][2]" position="attributes">
+                <attribute name="invisible">not display_send_button or highlight_send_button or l10n_gr_prov_applicable</attribute>
+            </xpath>
+            <xpath expr="//header/button[@name='action_invoice_sent'][2]" position="after">
+                <button name="action_invoice_sent" type="object"
+                        string="Αποστολή με Email" data-hotkey="y"
+                        invisible="not display_send_button or not l10n_gr_prov_applicable"/>
+            </xpath>
+
+            <!-- Pay → «Καταχώριση Είσπραξης»; blue only with a balance and a ΜΑΡΚ. -->
+            <xpath expr="//header/button[@id='account_invoice_payment_btn']" position="attributes">
+                <attribute name="invisible">(
+                    state != 'posted'
+                    or payment_state not in ('not_paid', 'partial', 'in_payment')
+                    or move_type not in ('out_invoice', 'out_refund', 'in_invoice', 'in_refund', 'out_receipt', 'in_receipt')
+                    or invoice_has_outstanding
+                    or l10n_gr_prov_applicable
+                )</attribute>
+            </xpath>
+            <xpath expr="//header/button[@id='account_invoice_payment_secondary_btn']" position="attributes">
+                <attribute name="invisible">(
+                    state != 'posted'
+                    or payment_state not in ('not_paid', 'partial', 'in_payment')
+                    or move_type not in ('out_invoice', 'out_refund', 'in_invoice', 'in_refund', 'out_receipt', 'in_receipt')
+                    or not invoice_has_outstanding
+                    or l10n_gr_prov_applicable
+                )</attribute>
+            </xpath>
+            <xpath expr="//header/button[@id='account_invoice_payment_secondary_btn']" position="after">
+                <button name="action_register_payment" type="object" class="oe_highlight"
+                        context="{'dont_redirect_to_payments': True, 'display_account_trust': True}"
+                        string="Καταχώριση Είσπραξης" data-hotkey="g"
+                        groups="account.group_account_invoice"
+                        invisible="not l10n_gr_prov_applicable or state != 'posted' or not l10n_gr_prov_mark or payment_state not in ('not_paid', 'partial', 'in_payment')"/>
+                <button name="action_register_payment" type="object"
+                        context="{'dont_redirect_to_payments': True, 'display_account_trust': True}"
+                        string="Καταχώριση Είσπραξης" data-hotkey="g"
+                        groups="account.group_account_invoice"
+                        invisible="not l10n_gr_prov_applicable or state != 'posted' or l10n_gr_prov_mark or payment_state not in ('not_paid', 'partial', 'in_payment')"/>
+            </xpath>
+
+            <!-- Portal preview and «Reviewed» are noise here. -->
+            <xpath expr="//header/button[@name='preview_invoice']" position="attributes">
+                <attribute name="invisible">move_type not in ('out_invoice', 'out_refund') or state in ('draft', 'cancel') or l10n_gr_prov_applicable</attribute>
+            </xpath>
+            <xpath expr="//header/button[@name='button_set_checked']" position="attributes">
+                <attribute name="invisible">state != 'posted' or checked or l10n_gr_prov_applicable</attribute>
+            </xpath>
+
+            <!-- Credit note only for a document AADE knows; before the ΜΑΡΚ the
+                 way back is «Επαναφορά σε Προσχέδιο». The UID self-check sits
+                 next to it on marked documents. -->
+            <xpath expr="//header/button[@name='action_reverse']" position="attributes">
+                <attribute name="invisible">move_type not in ('out_invoice', 'in_invoice') or state != 'posted' or (l10n_gr_prov_applicable and not l10n_gr_prov_mark)</attribute>
+            </xpath>
+            <xpath expr="//header/button[@name='action_reverse']" position="after">
+                <button name="action_l10n_gr_prov_recover" type="object"
+                        string="Έλεγχος στον Πάροχο"
+                        invisible="not l10n_gr_prov_applicable or state != 'posted' or not l10n_gr_prov_mark"/>
+            </xpath>
+
+            <xpath expr="//header/button[@name='button_cancel'][2]" position="attributes">
+                <attribute name="invisible">not id or state != 'draft' or move_type == 'entry' or l10n_gr_prov_applicable</attribute>
+            </xpath>
+            <xpath expr="//header/button[@name='button_cancel'][2]" position="after">
+                <button name="button_cancel" string="Ακύρωση Προσχεδίου" type="object"
+                        groups="account.group_account_invoice" data-hotkey="x"
+                        invisible="not id or state != 'draft' or not l10n_gr_prov_applicable"/>
+            </xpath>
+
+            <header position="inside">
                 <!-- ΑΛΠ/ΤΠΥ → ΤΔΙ (8.2): fee document for the stay -->
                 <button name="action_l10n_gr_prov_create_fee_doc" type="object"
                         string="Ειδικό Στοιχείο (ΤΔΙ)"

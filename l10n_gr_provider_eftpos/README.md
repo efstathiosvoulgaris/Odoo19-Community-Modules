@@ -111,6 +111,13 @@ signature onto the terminal and stops. Nothing is charged. When the customer
 eventually pays, *Ανάκτηση Εκκρεμούς* fetches the outcome and completes the
 payment.
 
+A driver terminal charges straight after the signature, so the choice is made
+per transaction: tick **Πληρωμή αργότερα (προφόρτωση)** in the card dialog before
+*OK — Έκδοση Υπογραφής* and it preloads instead of charging (1.27; 1.25 had it as
+a terminal setting). Sales from the backend only; credit notes and the POS always
+charge at once (the POS signs before the document exists, and §4 preloads an
+issued one).
+
 Only `ecr_reference` and `preloaded_at` are stored at preload time —
 deliberately **not** the driver result fields, because an approved *preload*
 means "signature loaded", not "card charged", and recording it as a charge
@@ -127,7 +134,7 @@ transmitting.
 
 | Button | When | Does |
 |--------|------|------|
-| **OK — Έκδοση Υπογραφής** | draft | Requests the signature. With a driver terminal it charges immediately afterwards. |
+| **OK — Έκδοση Υπογραφής** | draft | Requests the signature. With a driver terminal it charges immediately afterwards — or preloads, if «Πληρωμή αργότερα (προφόρτωση)» is ticked. |
 | **Χρέωση Τερματικού** | signed, driver | Sale (or Refund on a credit note). |
 | **Προφόρτωση στο Τερματικό** | signed, driver | Preload for later payment. |
 | **Ανάκτηση Εκκρεμούς** | after a preload or a failed/interrupted charge | Asks the driver what became of the transaction. |

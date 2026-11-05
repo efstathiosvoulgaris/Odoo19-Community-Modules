@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="ir_cron_dias_process" model="ir.cron">
+        <field name="name">ΔΙΑΣ: καταχώρηση πληρωμών</field>
+        <field name="model_id" ref="model_dias_payment"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_dias_process()</field>
+        <field name="interval_number">15</field>
+        <field name="interval_type">minutes</field>
+        <field name="active" eval="True"/>
+    </record>
+    <!-- Ανενεργό ως προεπιλογή: ενεργοποιείται μόνο στη βάση που κατεβάζει τα αρχεία της ΔΙΑΣ. -->
+    <record id="ir_cron_dias_fetch" model="ir.cron">
+        <field name="name">ΔΙΑΣ: λήψη αρχείων πληρωμών (REST)</field>
+        <field name="model_id" ref="model_dias_file"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_dias_fetch()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">hours</field>
+        <field name="active" eval="False"/>
+    </record>
+</odoo>

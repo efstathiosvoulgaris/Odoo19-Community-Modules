@@ -1,0 +1,6 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_dias_payment_user,dias.payment user,model_dias_payment,account.group_account_invoice,1,0,0,0
+access_dias_payment_manager,dias.payment manager,model_dias_payment,account.group_account_manager,1,1,0,0
+access_dias_file_user,dias.file user,model_dias_file,account.group_account_invoice,1,0,0,0
+access_dias_rf_code_user,dias.rf.code user,model_dias_rf_code,account.group_account_invoice,1,0,0,0
+access_dias_import_wizard_manager,dias.import.wizard manager,model_dias_import_wizard,account.group_account_manager,1,1,1,1

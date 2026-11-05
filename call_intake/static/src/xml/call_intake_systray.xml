@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="call_intake.Systray">
+        <div class="o_nav_entry" role="button" title="Νέο Τηλεφώνημα"
+             aria-label="Νέο Τηλεφώνημα" t-on-click="openWizard">
+            <i class="fa fa-lg fa-phone"/>
+        </div>
+    </t>
+</templates>

@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_view_form_contracts" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.maintenance.contracts</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="base.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form" position="inside">
+                <app string="Συμβόλαια" name="maintenance_contracts"
+                     logo="/maintenance_contracts/static/description/icon.svg">
+                    <block title="Ειδοποιήσεις" name="contract_reminder_block">
+                        <setting string="Ημέρες πριν τη λήξη" name="contract_notice_setting"
+                                 help="Πόσες ημέρες πριν τη λήξη ο υπεύθυνος παίρνει «Ανανέωση συμβολαίου». Προτείνεται σε κάθε νέο συμβόλαιο και αλλάζει ανά συμβόλαιο.">
+                            <field name="contract_notice_days"/>
+                        </setting>
+                    </block>
+                    <block title="Προτιμολόγιο" name="contract_invoice_block">
+                        <setting string="Ημερολόγιο" name="contract_journal_setting"
+                                 help="Σε ποιο ημερολόγιο πωλήσεων δημιουργείται το πρόχειρο τιμολόγιο.">
+                            <field name="company_id" invisible="1"/>
+                            <field name="contract_journal_id"
+                                   domain="[('type', '=', 'sale'), ('company_id', '=', company_id)]"
+                                   options="{'no_create': True}"/>
+                        </setting>
+                        <setting string="Είδος" name="contract_product_setting"
+                                 help="Η γραμμή του τιμολογίου: από αυτό παίρνει ΦΠΑ και λογαριασμό εσόδων. Κενό = «Συμβόλαιο Συντήρησης».">
+                            <field name="contract_product_id" options="{'no_create': True}"/>
+                        </setting>
+                        <setting string="Όροι Πληρωμής" name="contract_payment_term_setting">
+                            <field name="contract_payment_term_id" options="{'no_create': True}"/>
+                        </setting>
+                    </block>
+                </app>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="action_contract_settings" model="ir.actions.act_window">
+        <field name="name">Ρυθμίσεις Συμβολαίων</field>
+        <field name="res_model">res.config.settings</field>
+        <field name="view_mode">form</field>
+        <field name="target">current</field>
+        <field name="context">{'module': 'maintenance_contracts', 'bin_size': False}</field>
+    </record>
+</odoo>

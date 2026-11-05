@@ -62,21 +62,22 @@ class ProductTemplate(models.Model):
             if not tmpl.categ_id:
                 tmpl.skroutz_category_path = ''
                 continue
-            parts = []
+            # Parent > category only, as the v13 feed sent it: Skroutz has mapped
+            # these strings, and a longer path would read as a new category.
             categ = tmpl.categ_id
-            while categ and categ.name != 'All':
-                parts.insert(0, categ.name)
-                categ = categ.parent_id
-            tmpl.skroutz_category_path = ' > '.join(parts) if parts else tmpl.categ_id.name
+            tmpl.skroutz_category_path = (f"{categ.parent_id.name} > {categ.name}"
+                                          if categ.parent_id else categ.name)
 
     def _get_skroutz_price_with_vat(self):
-        """Return list_price with VAT applied."""
+        """Return list_price with VAT, honouring price-included taxes.
+
+        skarlas taxes are price-included, so list_price already carries VAT;
+        multiplying by (1 + rate) put every Skroutz price 24% too high."""
         self.ensure_one()
-        price = self.list_price
-        tax = self.taxes_id[:1]
-        if tax and tax.amount_type == 'percent':
-            price = price * (1 + tax.amount / 100.0)
-        return round(price, 2)
+        if not self.taxes_id:
+            return round(self.list_price, 2)
+        res = self.taxes_id.compute_all(self.list_price, product=self)
+        return round(res['total_included'], 2)
 
     def _get_skroutz_vat_rate(self):
         """Return VAT percentage (e.g. 24.0)."""
@@ -86,9 +87,9 @@ class ProductTemplate(models.Model):
             return round(tax.amount, 2)
         return 0.0
 
-    def _get_skroutz_availability(self, default_avail='Delivery 1 to 3 days'):
+    def _get_skroutz_availability(self, default_avail='Delivery 1 to 3 days', in_stock_avail='In stock'):
         self.ensure_one()
-        return 'In stock' if self.qty_available > 0 else default_avail
+        return in_stock_avail if self.qty_available > 0 else default_avail
 
     def _get_skroutz_weight(self):
         """Return weight in grams (Odoo stores in kg)."""

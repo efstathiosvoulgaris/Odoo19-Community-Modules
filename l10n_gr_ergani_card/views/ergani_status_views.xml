@@ -1,0 +1,222 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="ergani_status_wizard_view_form" model="ir.ui.view">
+        <field name="name">ergani.status.wizard.form</field>
+        <field name="model">ergani.status.wizard</field>
+        <field name="arch" type="xml">
+            <form>
+                <div class="alert alert-warning" role="alert">
+                    <field name="disclaimer" nolabel="1"/>
+                </div>
+                <div class="alert alert-danger" role="alert" invisible="not warning">
+                    <field name="warning" nolabel="1"/>
+                </div>
+                <group>
+                    <group>
+                        <field name="date_from"/>
+                        <field name="date_to"/>
+                        <field name="is_manager" invisible="1"/>
+                        <field name="employee_ids" widget="many2many_tags" invisible="not is_manager"
+                               domain="[('ergani_enabled', '=', True)]" options="{'no_create': True}"/>
+                    </group>
+                    <group>
+                        <field name="filter"/>
+                        <field name="layout" widget="radio"/>
+                    </group>
+                </group>
+                <div class="text-muted">
+                    <strong>Χρειάζεται έλεγχος</strong> (χωρίς ανοχή): προσέλευση πριν την έναρξη, εργασία μετά τη
+                    λήξη ή εκτός ωραρίου, χτύπημα σε ρεπό/αργία, μη ζευγαρωμένες κινήσεις, μέρες με ωράριο χωρίς
+                    χτύπημα. <strong>Πληροφορία προσωπικού</strong> (με την ανοχή των Ρυθμίσεων): καθυστέρηση,
+                    προαναχώρηση, λιγότερη εργασία. Άδειες: μόνο όσες είναι καταχωρημένες στο ημερολόγιο
+                    εργασίας του Odoo.
+                </div>
+                <footer>
+                    <button name="action_view" type="object" string="Προβολή" class="btn-primary"/>
+                    <button name="action_print" type="object" string="Εκτύπωση PDF" class="btn-secondary"/>
+                    <button string="Άκυρο" special="cancel" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_ergani_status_wizard" model="ir.actions.act_window">
+        <field name="name">Κατάσταση κινήσεων</field>
+        <field name="res_model">ergani.status.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <record id="ergani_status_line_view_list" model="ir.ui.view">
+        <field name="name">ergani.status.line.list</field>
+        <field name="model">ergani.status.line</field>
+        <field name="arch" type="xml">
+            <list create="false" delete="false" edit="false"
+                  decoration-danger="f_risk" decoration-warning="not f_risk and (f_late or f_early or f_under)"
+                  decoration-muted="day_status in ('rest', 'leave', 'not_yet')">
+                <field name="employee_id"/>
+                <field name="date"/>
+                <field name="day_status"/>
+                <field name="sched_start"/>
+                <field name="sched_end"/>
+                <field name="in_dt"/>
+                <field name="out_dt"/>
+                <field name="scheduled_minutes" sum="Σύνολο" optional="show"/>
+                <field name="worked_minutes" sum="Σύνολο"/>
+                <field name="before_start_minutes" sum="Σύνολο" optional="show"/>
+                <field name="after_end_minutes" sum="Σύνολο" optional="show"/>
+                <field name="late_minutes" sum="Σύνολο" optional="show"/>
+                <field name="early_minutes" sum="Σύνολο" optional="show"/>
+                <field name="send_state" widget="badge" optional="show"
+                       decoration-success="send_state == 'ok'"
+                       decoration-info="send_state == 'pending'"
+                       decoration-danger="send_state == 'problem'"/>
+                <field name="f_risk" string="Έλεγχος" widget="boolean" optional="show"/>
+                <field name="schedule_warning" optional="hide"/>
+                <field name="note" optional="show"/>
+                <field name="f_late" column_invisible="1"/>
+                <field name="f_early" column_invisible="1"/>
+                <field name="f_under" column_invisible="1"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="ergani_status_line_view_form" model="ir.ui.view">
+        <field name="name">ergani.status.line.form</field>
+        <field name="model">ergani.status.line</field>
+        <field name="arch" type="xml">
+            <form create="false" delete="false" edit="false">
+                <sheet>
+                    <div class="alert alert-warning" role="alert">
+                        Σύγκριση με το ωράριο του Odoo, όχι με το ωράριο που δηλώθηκε στο ΕΡΓΑΝΗ.
+                        Δεν αποτελεί έλεγχο συμμόρφωσης.
+                    </div>
+                    <group>
+                        <group>
+                            <field name="employee_id"/>
+                            <field name="date"/>
+                            <field name="day_status"/>
+                            <field name="sched_start"/>
+                            <field name="sched_end"/>
+                            <field name="in_dt"/>
+                            <field name="out_dt"/>
+                            <field name="in_card_id"/>
+                            <field name="out_card_id"/>
+                            <field name="send_state"/>
+                        </group>
+                        <group>
+                            <field name="scheduled_minutes"/>
+                            <field name="worked_minutes"/>
+                            <field name="before_start_minutes"/>
+                            <field name="after_end_minutes"/>
+                            <field name="late_minutes"/>
+                            <field name="early_minutes"/>
+                            <field name="note"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="ergani_status_line_view_pivot" model="ir.ui.view">
+        <field name="name">ergani.status.line.pivot</field>
+        <field name="model">ergani.status.line</field>
+        <field name="arch" type="xml">
+            <pivot>
+                <field name="employee_id" type="row"/>
+                <field name="scheduled_minutes" type="measure"/>
+                <field name="worked_minutes" type="measure"/>
+                <field name="before_start_minutes" type="measure"/>
+                <field name="after_end_minutes" type="measure"/>
+                <field name="late_minutes" type="measure"/>
+                <field name="early_minutes" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="ergani_status_line_view_kanban" model="ir.ui.view">
+        <field name="name">ergani.status.line.kanban</field>
+        <field name="model">ergani.status.line</field>
+        <field name="arch" type="xml">
+            <kanban create="false" group_create="false" records_draggable="false">
+                <field name="f_risk"/>
+                <field name="day_status"/>
+                <field name="send_state"/>
+                <templates>
+                    <t t-name="card">
+                        <div t-attf-class="border-start border-4 ps-2 #{record.f_risk.raw_value ? 'border-danger' : (record.day_status.raw_value == 'in' ? 'border-success' : 'border-secondary')}">
+                            <div class="d-flex justify-content-between">
+                                <field name="employee_id" class="fw-bold"/>
+                                <field name="day_status" widget="badge"
+                                       decoration-success="day_status == 'in'"
+                                       decoration-danger="day_status in ('no_punch', 'forgotten', 'rest_work', 'outside')"
+                                       decoration-muted="day_status in ('rest', 'leave', 'not_yet')"/>
+                            </div>
+                            <div class="small text-muted" invisible="not sched_start">
+                                Ωράριο <field name="sched_start"/>
+                                – <field name="sched_end"/>
+                            </div>
+                            <div class="small" invisible="not in_dt">
+                                Προσέλευση <field name="in_dt"/>
+                                <span invisible="not out_dt"> · Αποχώρηση
+                                    <field name="out_dt"/></span>
+                            </div>
+                            <div class="small text-danger" invisible="not before_start_minutes">
+                                <field name="before_start_minutes"/>′ πριν την έναρξη
+                            </div>
+                            <div class="small text-warning" invisible="not f_late">
+                                Καθυστέρηση <field name="late_minutes"/>′
+                            </div>
+                            <div class="small text-danger" invisible="not note"><field name="note"/></div>
+                            <div class="d-flex justify-content-between mt-1">
+                                <field name="send_state" widget="badge" invisible="not send_state"
+                                       decoration-success="send_state == 'ok'"
+                                       decoration-info="send_state == 'pending'"
+                                       decoration-danger="send_state == 'problem'"/>
+                                <span class="text-muted" style="font-size: 0.7rem;">ωράριο Odoo — όχι έλεγχος συμμόρφωσης</span>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <record id="ergani_status_line_view_search" model="ir.ui.view">
+        <field name="name">ergani.status.line.search</field>
+        <field name="model">ergani.status.line</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="employee_id"/>
+                <filter name="risk" string="Χρειάζεται έλεγχος" domain="[('f_risk', '=', True)]"/>
+                <filter name="before_start" string="Προσέλευση πριν την έναρξη" domain="[('f_before_start', '=', True)]"/>
+                <filter name="over" string="Μετά τη λήξη / εκτός ωραρίου / περισσότερη" domain="[('f_over', '=', True)]"/>
+                <filter name="rest_work" string="Χτύπημα σε ρεπό ή αργία" domain="[('f_rest_work', '=', True)]"/>
+                <filter name="unpaired" string="Μη ζευγαρωμένες" domain="[('f_unpaired', '=', True)]"/>
+                <filter name="no_punch" string="Χωρίς χτύπημα (με ωράριο)" domain="[('f_no_punch', '=', True)]"/>
+                <separator/>
+                <filter name="info" string="Πληροφορία προσωπικού"
+                        domain="['|', '|', ('f_late', '=', True), ('f_early', '=', True), ('f_under', '=', True)]"/>
+                <filter name="late" string="Καθυστέρηση προσέλευσης" domain="[('f_late', '=', True)]"/>
+                <filter name="early" string="Προαναχώρηση" domain="[('f_early', '=', True)]"/>
+                <filter name="under" string="Λιγότερη εργασία" domain="[('f_under', '=', True)]"/>
+                <filter name="present" string="Παρόντες" domain="[('f_present', '=', True)]"/>
+                <separator/>
+                <filter name="no_schedule" string="Χωρίς ωράριο αναφοράς" domain="[('f_no_schedule', '=', True)]"/>
+                <group>
+                    <filter name="group_employee" string="Εργαζόμενος" context="{'group_by': 'employee_id'}"/>
+                    <filter name="group_date" string="Ημέρα" context="{'group_by': 'date:day'}"/>
+                    <filter name="group_status" string="Κατάσταση" context="{'group_by': 'day_status'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_ergani_today" model="ir.actions.server">
+        <field name="name">Σήμερα</field>
+        <field name="model_id" ref="model_ergani_status_wizard"/>
+        <field name="state">code</field>
+        <field name="code">action = model.action_ergani_today()</field>
+    </record>
+</odoo>

@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Vendor Reference (partner_ref) is in every purchase list but hidden by
+         default; show it so a supplier's document number is searchable at a
+         glance. Only the default changes: users can still hide the column, and
+         a choice a user already made in the column menu is kept. -->
+    <record id="purchase_order_kpis_tree_vendor_ref" model="ir.ui.view">
+        <field name="name">purchase.order.kpis.list.vendor.ref</field>
+        <field name="model">purchase.order</field>
+        <field name="inherit_id" ref="purchase.purchase_order_kpis_tree"/>
+        <field name="arch" type="xml">
+            <field name="partner_ref" position="attributes">
+                <attribute name="optional">show</attribute>
+            </field>
+        </field>
+    </record>
+
+    <record id="purchase_order_view_tree_vendor_ref" model="ir.ui.view">
+        <field name="name">purchase.order.view.list.vendor.ref</field>
+        <field name="model">purchase.order</field>
+        <field name="inherit_id" ref="purchase.purchase_order_view_tree"/>
+        <field name="arch" type="xml">
+            <field name="partner_ref" position="attributes">
+                <attribute name="optional">show</attribute>
+            </field>
+        </field>
+    </record>
+
+    <record id="purchase_order_tree_vendor_ref" model="ir.ui.view">
+        <field name="name">purchase.order.list.vendor.ref</field>
+        <field name="model">purchase.order</field>
+        <field name="inherit_id" ref="purchase.purchase_order_tree"/>
+        <field name="arch" type="xml">
+            <field name="partner_ref" position="attributes">
+                <attribute name="optional">show</attribute>
+            </field>
+        </field>
+    </record>
+</odoo>

@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Κουμπί στη σελίδα login: μόνο σε εγγεγραμμένο υπολογιστή καταστήματος. -->
+    <template id="login_quick_button" inherit_id="web.login" name="Γρήγορη σύνδεση: κουμπί">
+        <!-- Μέσα στη στήλη της φόρμας (όχι δίπλα της): ίδιο πλάτος με τα υπόλοιπα κουμπιά. -->
+        <xpath expr="//form" position="inside">
+            <div t-if="ql_idle" class="alert alert-warning mt-3 mb-0" role="alert">
+                Αποσυνδεθήκατε λόγω αδράνειας. <strong>ΔΕΝ</strong> δηλώθηκε Αποχώρηση ΕΡΓΑΝΗ.
+            </div>
+            <div t-if="ql_device_name" class="text-center mt-2">
+                <a class="btn btn-light border w-100" href="/quick-login">
+                    <i class="fa fa-th me-1"/> Γρήγορη σύνδεση (PIN / κάρτα)
+                </a>
+                <div class="small text-muted mt-1">Υπολογιστής καταστήματος: <t t-out="ql_device_name"/></div>
+            </div>
+        </xpath>
+    </template>
+
+    <!-- Αυτόνομη σελίδα (χωρίς τα αρχεία του Odoo), όπως η πύλη ΕΡΓΑΝΗ. -->
+    <template id="quick_login_page" name="Γρήγορη σύνδεση">
+        &lt;!DOCTYPE html&gt;
+        <html lang="el">
+            <head>
+                <meta charset="utf-8"/>
+                <meta name="viewport" content="width=device-width, initial-scale=1"/>
+                <title>Γρήγορη σύνδεση</title>
+                <link rel="stylesheet" href="/shop_quick_login/static/src/page/page.css"/>
+            </head>
+            <body>
+                <main class="ql" t-att-data-db="db">
+                    <div class="card">
+                        <div class="brand">Γρήγορη σύνδεση</div>
+                        <t t-if="not device">
+                            <p>Αυτός ο υπολογιστής δεν είναι εγγεγραμμένος για γρήγορη σύνδεση.</p>
+                            <a class="link" t-attf-href="/web/login?db={{db}}">Σύνδεση με κωδικό</a>
+                        </t>
+                        <t t-else="">
+                            <p class="where">Υπολογιστής: <t t-out="device.name"/></p>
+                            <p id="pos-warning" class="warn" hidden="">Σε αυτόν τον browser είναι ανοιχτό ταμείο.
+                                Αν συνδεθεί άλλος χρήστης, το ταμείο θα κλείσει.</p>
+
+                            <section id="step-who">
+                                <button id="btn-scan" type="button" class="scan">Σάρωση κάρτας</button>
+                                <input id="wedge" class="wedge" autocomplete="off" aria-label="Κάρτα από σκάνερ"/>
+                                <p class="or">ή επιλέξτε όνομα</p>
+                                <div class="tiles">
+                                    <button t-foreach="users" t-as="u" type="button" class="tile"
+                                            t-att-data-user="u['id']" t-out="u['name']"/>
+                                </div>
+                                <p t-if="not users" class="hint">Κανένας χρήστης με γρήγορη σύνδεση.</p>
+                            </section>
+
+                            <section id="step-camera" hidden="">
+                                <video id="video" playsinline="" muted=""></video>
+                                <button id="btn-cancel-scan" type="button" class="link">Άκυρο</button>
+                            </section>
+
+                            <section id="step-pin" hidden="">
+                                <p id="who" class="who"></p>
+                                <input id="pin" type="password" inputmode="numeric" maxlength="6"
+                                       autocomplete="off" placeholder="PIN"/>
+                                <div id="pad" class="pad"></div>
+                                <button id="btn-login" type="button" class="primary">Σύνδεση</button>
+                                <button id="btn-back" type="button" class="link">Πίσω</button>
+                            </section>
+
+                            <p id="msg" class="msg" role="status"></p>
+                            <a class="link" t-attf-href="/web/login?db={{db}}">Σύνδεση με κωδικό</a>
+                        </t>
+                    </div>
+                </main>
+                <script src="/web/static/lib/zxing-library/zxing-library.js"></script>
+                <script src="/shop_quick_login/static/src/page/page.js"></script>
+            </body>
+        </html>
+    </template>
+</odoo>

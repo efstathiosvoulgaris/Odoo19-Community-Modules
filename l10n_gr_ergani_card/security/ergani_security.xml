@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- An employee sees only his own cards («Οι κάρτες μου», DESIGN §3);
+         HR managers and administrators see all. -->
+    <record id="ergani_card_rule_own" model="ir.rule">
+        <field name="name">ΕΡΓΑΝΗ: δικές μου κάρτες</field>
+        <field name="model_id" ref="model_ergani_card"/>
+        <field name="domain_force">[('employee_id.user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+    </record>
+    <record id="ergani_card_rule_all" model="ir.rule">
+        <field name="name">ΕΡΓΑΝΗ: όλες οι κάρτες</field>
+        <field name="model_id" ref="model_ergani_card"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('hr.group_hr_manager')), (4, ref('base.group_system'))]"/>
+    </record>
+    <record id="ergani_card_rule_company" model="ir.rule">
+        <field name="name">ΕΡΓΑΝΗ: εταιρεία</field>
+        <field name="model_id" ref="model_ergani_card"/>
+        <field name="global" eval="True"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+    <!-- Report lines and wizards are private to whoever ran them: an employee
+         sees only his own report, two managers never see each other's runs. -->
+    <record id="ergani_status_wizard_rule_own" model="ir.rule">
+        <field name="name">ΕΡΓΑΝΗ: δικές μου αναφορές</field>
+        <field name="model_id" ref="model_ergani_status_wizard"/>
+        <field name="global" eval="True"/>
+        <field name="domain_force">[('create_uid', '=', user.id)]</field>
+    </record>
+    <record id="ergani_status_line_rule_own" model="ir.rule">
+        <field name="name">ΕΡΓΑΝΗ: δικές μου γραμμές αναφοράς</field>
+        <field name="model_id" ref="model_ergani_status_line"/>
+        <field name="global" eval="True"/>
+        <field name="domain_force">[('create_uid', '=', user.id)]</field>
+    </record>
+    <record id="ergani_submission_rule_company" model="ir.rule">
+        <field name="name">ΕΡΓΑΝΗ: αρχείο υποβολών, εταιρεία</field>
+        <field name="model_id" ref="model_ergani_submission"/>
+        <field name="global" eval="True"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+    <!-- Declarations: an employee sees only his own (leave types are health data, PLAN_2.0 §2.6). -->
+    <record id="ergani_wto_rule_own" model="ir.rule">
+        <field name="name">ΕΡΓΑΝΗ: δικές μου δηλώσεις</field>
+        <field name="model_id" ref="model_ergani_wto"/>
+        <field name="domain_force">[('employee_id.user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+    </record>
+    <record id="ergani_wto_rule_all" model="ir.rule">
+        <field name="name">ΕΡΓΑΝΗ: όλες οι δηλώσεις</field>
+        <field name="model_id" ref="model_ergani_wto"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('hr.group_hr_manager')), (4, ref('base.group_system'))]"/>
+    </record>
+    <record id="ergani_wto_line_rule_own" model="ir.rule">
+        <field name="name">ΕΡΓΑΝΗ: δικές μου γραμμές δηλώσεων</field>
+        <field name="model_id" ref="model_ergani_wto_line"/>
+        <field name="domain_force">[('employee_id.user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+    </record>
+    <record id="ergani_wto_line_rule_all" model="ir.rule">
+        <field name="name">ΕΡΓΑΝΗ: όλες οι γραμμές δηλώσεων</field>
+        <field name="model_id" ref="model_ergani_wto_line"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('hr.group_hr_manager')), (4, ref('base.group_system'))]"/>
+    </record>
+    <record id="ergani_wto_rule_company" model="ir.rule">
+        <field name="name">ΕΡΓΑΝΗ: δηλώσεις, εταιρεία</field>
+        <field name="model_id" ref="model_ergani_wto"/>
+        <field name="global" eval="True"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+</odoo>

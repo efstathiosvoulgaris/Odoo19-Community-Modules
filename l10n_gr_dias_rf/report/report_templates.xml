@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Το πλαίσιο RF, κοινό για τιμολόγιο και παραγγελία. info = _dias_rf_print(). -->
+    <template id="dias_rf_block">
+        <div t-if="info" style="page-break-inside: avoid; margin-top: 1.5mm; font-size: 9px;">
+            <table style="width: 100%; border-collapse: collapse;">
+                <tr style="vertical-align: middle;">
+                    <td style="border: 0 !important; padding: 0;">
+                        <div><strong>ΠΛΗΡΩΜΗ ΜΕ ΚΩΔΙΚΟ RF</strong></div>
+                        <div t-if="info['test']" style="font-weight: bold; color: #c00;">ΔΟΚΙΜΗ – μη πληρώνετε</div>
+                        <div style="font-family: monospace; font-size: 11px; font-weight: bold;" t-out="info['code']"/>
+                        <div t-if="info['fixed']">Πάγιος κωδικός πελάτη (οποιοδήποτε ποσό).</div>
+                        <div>Από οποιαδήποτε τράπεζα: e-banking → Πληρωμές → «Κωδικός RF / ΔΙΑΣ».
+                            Η εξόφληση καταχωρείται αυτόματα.</div>
+                    </td>
+                    <td style="border: 0 !important; padding: 0; width: 22mm; text-align: right;">
+                        <img t-att-src="info['qr']" style="width: 20mm; height: 20mm;"/>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </template>
+
+    <!-- Ελληνικό A4: μέσα στο κελί ΠΑΡΑΤΗΡΗΣΕΙΣ (μπλοκ που δεν σπάει), ποτέ στο header/footer.
+         Το 80mm δεν αγγίζεται. -->
+    <template id="report_gr_invoice_a4_dias" inherit_id="l10n_gr_provider_base.report_gr_invoice_a4_body">
+        <xpath expr="//span[@t-field='o.narration']/.." position="after">
+            <t t-call="l10n_gr_dias_rf.dias_rf_block">
+                <t t-set="info" t-value="o._dias_rf_print()"/>
+            </t>
+        </xpath>
+    </template>
+
+    <template id="report_saleorder_dias" inherit_id="sale.report_saleorder_document">
+        <xpath expr="//div[@id='total']" position="after">
+            <t t-call="l10n_gr_dias_rf.dias_rf_block">
+                <t t-set="info" t-value="doc._dias_rf_print()"/>
+            </t>
+        </xpath>
+    </template>
+</odoo>

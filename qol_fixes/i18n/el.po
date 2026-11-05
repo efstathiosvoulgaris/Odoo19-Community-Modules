@@ -1,0 +1,29 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* qol_fixes
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 19.0\n"
+"Report-Msgid-Bugs-To: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: el\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#. module: qol_fixes
+#: model_terms:ir.ui.view,arch_db:qol_fixes.purchase_order_form_create_bill
+msgid "Create Bill"
+msgstr "Δημιουργία Λογαριασμού"
+
+#. module: qol_fixes
+#: model_terms:ir.ui.view,arch_db:qol_fixes.res_partner_form_viber
+msgid "Open a Viber chat with this mobile"
+msgstr "Συνομιλία Viber με αυτό το κινητό"
+
+#. module: qol_fixes
+#. odoo-python
+#: code:addons/qol_fixes/models/res_partner.py:0
+msgid "The mobile number %s is not valid for Viber."
+msgstr "Το κινητό %s δεν είναι έγκυρο για Viber."

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_partner_form_viber" model="ir.ui.view">
+        <field name="name">res.partner.form.viber</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="l10n_gr_partner.view_partner_form_gr_fields"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='kinito']" position="after">
+                <button name="action_qol_open_viber" type="object"
+                    class="btn btn-sm btn-link p-0 ms-2 text-nowrap"
+                    style="color: #7360f2;" title="Open a Viber chat with this mobile"
+                    invisible="not kinito">
+                    <i class="fa fa-commenting"/> Viber
+                </button>
+            </xpath>
+        </field>
+    </record>
+</odoo>

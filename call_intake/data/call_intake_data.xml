@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <!-- The shared inbox: visible to every internal user, unlike a To-Do,
+         which only its assignees can see. noupdate: renaming a stage or tag
+         in the UI survives module upgrades. -->
+    <record id="stage_new" model="project.task.type">
+        <field name="name">Νέο</field>
+        <field name="sequence">1</field>
+    </record>
+    <record id="stage_in_progress" model="project.task.type">
+        <field name="name">Σε εξέλιξη</field>
+        <field name="sequence">2</field>
+    </record>
+    <record id="stage_waiting" model="project.task.type">
+        <field name="name">Αναμονή πελάτη</field>
+        <field name="sequence">3</field>
+    </record>
+    <record id="stage_done" model="project.task.type">
+        <field name="name">Ολοκληρώθηκε</field>
+        <field name="sequence">4</field>
+        <field name="fold" eval="True"/>
+    </record>
+
+    <record id="tag_quote" model="project.tags"><field name="name">Προσφορά</field></record>
+    <record id="tag_repair" model="project.tags"><field name="name">Επισκευή</field></record>
+    <record id="tag_order" model="project.tags"><field name="name">Παραγγελία</field></record>
+    <record id="tag_support" model="project.tags"><field name="name">Τεχνική υποστήριξη</field></record>
+    <record id="tag_accounting" model="project.tags"><field name="name">Λογιστήριο</field></record>
+    <record id="tag_call_back" model="project.tags"><field name="name">Επιστροφή κλήσης</field></record>
+
+    <record id="project_customer_requests" model="project.project">
+        <field name="name">Αιτήματα Πελατών</field>
+        <field name="label_tasks">Αιτήματα</field>
+        <field name="privacy_visibility">employees</field>
+        <field name="allow_milestones" eval="False"/>
+        <field name="allow_task_dependencies" eval="False"/>
+        <field name="type_ids" eval="[(6, 0, [ref('stage_new'), ref('stage_in_progress'),
+                                             ref('stage_waiting'), ref('stage_done')])]"/>
+    </record>
+</odoo>

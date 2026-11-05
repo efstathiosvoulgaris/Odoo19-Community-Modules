@@ -22,7 +22,7 @@ from odoo.addons.l10n_gr_provider_ilyda.models.account_move import (
 from .eft_driver import (
     MegEftPosDriver, POS_PROTOCOLS, RESPONSE_CODES, PAYMENT_METHODS,
     PROTOCOLS_NEED_HOST, PROTOCOLS_NEED_API_KEY, PROTOCOLS_NEED_CLIENT,
-    PROTOCOLS_NO_INSTALLMENTS, PROTOCOLS_SINGLE_USE_SIGNATURE, DriverNoAnswer, DriverRejected, as_user_error, check_driver_url,
+    PROTOCOLS_FREE_REFUND, PROTOCOLS_NO_INSTALLMENTS, PROTOCOLS_SINGLE_USE_SIGNATURE, DriverNoAnswer, DriverRejected, as_user_error, check_driver_url,
     check_driver_url_rights,
 )
 
@@ -210,6 +210,11 @@ class EftTerminal(models.Model):
             return _('Σφάλμα διακομιστή (HTTP %s).', resp.status_code)
         return False
 
+    def action_pending_transactions(self):
+        """What the terminal still reports as pending (τακτοποίηση)."""
+        self.ensure_one()
+        return self.env['l10n.gr.prov.eft.pending.wizard']._open_for(self)
+
     def action_check_driver(self):
         self.ensure_one()
         problem = self._l10n_gr_prov_driver_ping()
@@ -355,6 +360,11 @@ class EftPayment(models.Model):
         domain="[('company_id', '=', company_id)]")
     amount = fields.Monetary(string='Ποσό', currency_field='currency_id', required=True)
     tip_amount = fields.Monetary(string='Φιλοδώρημα', currency_field='currency_id')
+    preload = fields.Boolean(
+        string='Πληρωμή αργότερα (προφόρτωση)', copy=False,
+        help='Μετά την υπογραφή η πληρωμή προφορτώνεται στο τερματικό αντί να '
+             'χρεωθεί· ο πελάτης πληρώνει όταν του φέρουν το τερματικό και η '
+             'έκβαση έρχεται με «Ανάκτηση Εκκρεμούς». Μόνο σε πωλήσεις.')
     installments = fields.Integer(
         string='Δόσεις', default=0,
         help='Πλήθος δόσεων για τη χρέωση της κάρτας. 0 ή 1 = εφάπαξ. '
@@ -479,8 +489,8 @@ class EftPayment(models.Model):
     origin_payment_id = fields.Many2one(
         'l10n.gr.prov.eft.payment', string='Αρχική Χρέωση', copy=False,
         help='Η χρέωση κάρτας που επιστρέφεται. Σε πιστωτικό συμπληρώνεται '
-             'από το αρχικό παραστατικό — ο driver χρειάζεται τους κωδικούς '
-             'της για να εκτελέσει Refund.')
+             'από το αρχικό παραστατικό. Κενό = επιστροφή χωρίς αρχική χρέωση, '
+             'μόνο σε Viva Cloud και WebECR (Mellon, Nexi, Attica, Worldline, ePay).')
     account_payment_id = fields.Many2one(
         'account.payment', string='Λογιστική Πληρωμή', readonly=True, copy=False,
         help='Η είσπραξη (ή πληρωμή, σε επιστροφή) που καταχωρήθηκε για την '
@@ -670,6 +680,8 @@ class EftPayment(models.Model):
         # for exactly this and expires. Otherwise keep the dialog open so the
         # cashier can charge the terminal by hand and type the id.
         if self.driver_enabled:
+            if self.preload and self.move_type != 'out_refund':
+                return self.action_preload_terminal()
             return self.action_charge_terminal()
         return self._reopen()
 
@@ -690,7 +702,7 @@ class EftPayment(models.Model):
             raise UserError(_(
                 'Ο πάροχος του τερματικού %s δέχεται κάθε υπογραφή μία φορά, '
                 'και αυτή χρησιμοποιήθηκε ήδη. Πατήστε «Ακύρωση Υπογραφής» '
-                '(αιτία: Η συναλλαγή απέτυχε) και μετά «Send to Provider» για '
+                '(αιτία: Η συναλλαγή απέτυχε) και μετά «Πληρωμή με Κάρτα & Διαβίβαση» για '
                 'νέα υπογραφή.', self.terminal_id.display_name))
 
     def _check_signature_usable(self):
@@ -865,14 +877,14 @@ class EftPayment(models.Model):
     def _original_transaction_block(self):
         """The references of the sale a refund reverses.
 
-        Viva Cloud gained «Ελεύθερο Refund» in driver v2.1.08: it refunds to
-        the card without quoting an earlier charge, which is the only way to
-        credit a customer whose original sale went through another channel.
-        Every other NSP needs the references.
+        Without an origin, a «free refund» (PROTOCOLS_FREE_REFUND) goes to the
+        card without quoting an earlier charge — the only way to credit a
+        customer whose original sale went through another channel. The other
+        NSPs need the references.
         """
         self.ensure_one()
         origin = self.origin_payment_id
-        if not origin and self.terminal_id.pos_protocol == 'VIVA_CLOUD':
+        if not origin and self.terminal_id.pos_protocol in PROTOCOLS_FREE_REFUND:
             return {}
         if not origin.nsp_reference:
             raise UserError(_(
@@ -1140,6 +1152,16 @@ class EftPayment(models.Model):
             raise UserError(_(
                 'Ο driver δεν βρήκε εκκρεμή συναλλαγή — ο πελάτης δεν έχει '
                 'πληρώσει ακόμη στο τερματικό.'))
+        if (self.preloaded_at and found[0].get('responseCode')
+                not in ('APPROVED',) + NOT_CHARGED_CODES):
+            # A preload the customer has not paid yet answers UNKNOWN-SENT: it
+            # is waiting at the terminal, not an interrupted charge.
+            if self.state != 'signed':
+                self.write({'state': 'signed', 'driver_response_code': False})
+                self._commit()
+            raise UserError(_(
+                'Η προφόρτωση περιμένει ακόμη στο τερματικό — ο πελάτης δεν έχει '
+                'πληρώσει. Πατήστε ξανά «Ανάκτηση Εκκρεμούς» μετά την πληρωμή.'))
         return self._apply_charge_result(found[0])
 
     def _find_pending(self):

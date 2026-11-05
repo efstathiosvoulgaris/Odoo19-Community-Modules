@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_view_form_ergani" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.ergani</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="base.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form" position="inside">
+                <app string="ΕΡΓΑΝΗ" name="l10n_gr_ergani_card"
+                     logo="/l10n_gr_ergani_card/static/description/icon.svg">
+                    <block title="Λειτουργία" name="ergani_mode_block">
+                        <setting string="Κατάσταση" name="ergani_mode_setting"
+                                 help="Προσομοίωση: η ροή δουλεύει, τίποτα δεν στέλνεται. Οι κάρτες δεν μεταφέρονται από ένα περιβάλλον σε άλλο.">
+                            <field name="ergani_mode"/>
+                            <div class="text-danger mt-2" invisible="ergani_mode != 'production'">
+                                Παραγωγικό: οι κάρτες στέλνονται στο πραγματικό ΕΡΓΑΝΗ.
+                            </div>
+                        </setting>
+                        <setting string="Υπεύθυνος" name="ergani_manager_setting"
+                                 help="Παίρνει email και δραστηριότητα για σφάλματα, άγνωστες και εκπρόθεσμες κάρτες.">
+                            <field name="ergani_manager_id" options="{'no_create': True}"/>
+                        </setting>
+                        <setting string="Παύση αποστολής" name="ergani_pause_setting"
+                                 invisible="not ergani_paused">
+                            <field name="ergani_paused" invisible="1"/>
+                            <div class="text-danger"><field name="ergani_pause_reason"/></div>
+                            <button name="action_ergani_resume" type="object" string="Συνέχιση αποστολής"
+                                    class="btn-primary mt-2"/>
+                        </setting>
+                    </block>
+                    <block title="Σύνδεση ΕΡΓΑΝΗ" name="ergani_connection_block">
+                        <setting string="Λογαριασμός" name="ergani_account_setting"
+                                 help="Κωδικοί ΕΡΓΑΝΗ του εργοδότη (Usertype 02). Ορατοί μόνο σε διαχειριστές.">
+                            <div class="row"><label class="col-4" for="ergani_username"/>
+                                <field name="ergani_username" class="col-8"/></div>
+                            <div class="row"><label class="col-4" for="ergani_password"/>
+                                <field name="ergani_password" password="True" class="col-8"/></div>
+                            <button name="action_ergani_test_connection" type="object"
+                                    string="Δοκιμή σύνδεσης" class="btn-link" icon="oi-arrow-right"
+                                    invisible="ergani_mode not in ('trial', 'production')"/>
+                        </setting>
+                        <setting string="Ανοχή καθυστέρησης / προαναχώρησης" name="ergani_tolerance_setting"
+                                 help="Λεπτά. Μόνο για την «Πληροφορία προσωπικού» της κατάστασης κινήσεων· η εργασία έξω από το ωράριο δεν έχει ανοχή.">
+                            <field name="ergani_tolerance_minutes"/>
+                        </setting>
+                        <setting string="Παράρτημα" name="ergani_branch_setting"
+                                 help="Α/Α παραρτήματος στο ΕΡΓΑΝΗ (0 = έδρα).">
+                            <field name="ergani_branch_aa"/>
+                        </setting>
+                        <setting string="Κωδικός αιτιολογίας «σύνδεση ΕΡΓΑΝΗ»" name="ergani_reason_setting"
+                                 help="Για εκπρόθεσμη κάρτα λόγω καταγεγραμμένης αποτυχίας σύνδεσης. Επιβεβαιώνεται στο trial.">
+                            <field name="ergani_late_reason_id" options="{'no_create': True}"/>
+                            <button name="action_ergani_sync_reasons" type="object" string="Αιτιολογίες από ΕΡΓΑΝΗ"
+                                    class="btn-link" icon="fa-refresh"
+                                    invisible="ergani_mode not in ('trial', 'production')"/>
+                        </setting>
+                        <setting string="Νυχτερινή εργασία" name="ergani_night_setting"
+                                 help="Αποχώρηση την επόμενη μέρα έως τις 11:00 με ημερομηνία αναφοράς της προσέλευσης.">
+                            <field name="ergani_night_shift"/>
+                        </setting>
+                    </block>
+                </app>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="action_ergani_settings" model="ir.actions.act_window">
+        <field name="name">Ρυθμίσεις ΕΡΓΑΝΗ</field>
+        <field name="res_model">res.config.settings</field>
+        <field name="view_mode">form</field>
+        <field name="target">current</field>
+        <field name="context">{'module': 'l10n_gr_ergani_card', 'bin_size': False}</field>
+    </record>
+</odoo>

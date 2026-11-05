@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="ergani_submission_view_list" model="ir.ui.view">
+        <field name="name">ergani.submission.list</field>
+        <field name="model">ergani.submission</field>
+        <field name="arch" type="xml">
+            <list create="false" delete="false" edit="false"
+                  decoration-danger="outcome in ('unknown', 'rejected', 'auth', 'error')"
+                  decoration-warning="outcome in ('not_sent', 'throttled')">
+                <field name="date"/>
+                <field name="kind"/>
+                <field name="endpoint" optional="hide"/>
+                <field name="outcome" widget="badge"
+                       decoration-success="outcome == 'ok'"
+                       decoration-warning="outcome in ('not_sent', 'throttled')"
+                       decoration-danger="outcome in ('unknown', 'rejected', 'auth', 'error')"/>
+                <field name="http_status" optional="show"/>
+                <field name="card_id" optional="show"/>
+                <field name="environment" optional="hide"/>
+                <field name="duration_ms" optional="hide"/>
+                <field name="message" optional="show"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="ergani_submission_view_form" model="ir.ui.view">
+        <field name="name">ergani.submission.form</field>
+        <field name="model">ergani.submission</field>
+        <field name="arch" type="xml">
+            <form create="false" delete="false" edit="false">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="date"/>
+                            <field name="kind"/>
+                            <field name="method"/>
+                            <field name="endpoint"/>
+                            <field name="environment"/>
+                        </group>
+                        <group>
+                            <field name="outcome"/>
+                            <field name="http_status"/>
+                            <field name="duration_ms"/>
+                            <field name="card_id"/>
+                            <field name="card_hash"/>
+                        </group>
+                    </group>
+                    <group string="Μήνυμα" invisible="not message">
+                        <field name="message" nolabel="1" colspan="2"/>
+                    </group>
+                    <div class="text-muted" invisible="request_body or response_body">
+                        Τα σώματα κρατιούνται μόνο σε αποτυχία, και ποτέ για σύνδεση/ανανέωση token ή
+                        για την κάρτα (η κάρτα έχει ήδη το δικό της αίτημα και απάντηση).
+                    </div>
+                    <group string="Αίτημα" invisible="not request_body">
+                        <field name="request_body" nolabel="1" colspan="2"/>
+                    </group>
+                    <group string="Απάντηση" invisible="not response_body">
+                        <field name="response_body" nolabel="1" colspan="2"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="ergani_submission_view_search" model="ir.ui.view">
+        <field name="name">ergani.submission.search</field>
+        <field name="model">ergani.submission</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="card_id"/>
+                <field name="message"/>
+                <filter name="failed" string="Αποτυχίες" domain="[('outcome', '!=', 'ok')]"/>
+                <filter name="cards" string="Κάρτες" domain="[('kind', '=', 'card')]"/>
+                <filter name="today" string="Σήμερα"
+                        domain="[('date', '>=', (context_today()).strftime('%Y-%m-%d'))]"/>
+                <group>
+                    <filter name="group_kind" string="Είδος" context="{'group_by': 'kind'}"/>
+                    <filter name="group_outcome" string="Έκβαση" context="{'group_by': 'outcome'}"/>
+                    <filter name="group_day" string="Ημέρα" context="{'group_by': 'date:day'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_ergani_submission" model="ir.actions.act_window">
+        <field name="name">Αρχείο υποβολών</field>
+        <field name="res_model">ergani.submission</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_empty_folder">Καμία κλήση στο ΕΡΓΑΝΗ ακόμα</p>
+            <p>Κάθε επικοινωνία με το ΕΡΓΑΝΗ (κάρτα, αποδεικτικό, δοκιμή σύνδεσης, token) γράφεται εδώ.
+               Στην προσομοίωση δεν γίνεται καμία κλήση.</p>
+        </field>
+    </record>
+</odoo>

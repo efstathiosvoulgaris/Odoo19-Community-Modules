@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="menu_contracts_root" name="Συμβόλαια"
+              web_icon="maintenance_contracts,static/description/icon.svg"
+              sequence="46" groups="base.group_user"/>
+    <menuitem id="menu_contracts" name="Συμβόλαια"
+              parent="menu_contracts_root" action="action_service_contract" sequence="1"/>
+    <menuitem id="menu_contracts_config" name="Διαμόρφωση"
+              parent="menu_contracts_root" sequence="90" groups="base.group_system"/>
+    <menuitem id="menu_contracts_settings" name="Ρυθμίσεις"
+              parent="menu_contracts_config" action="action_contract_settings" sequence="1"/>
+</odoo>

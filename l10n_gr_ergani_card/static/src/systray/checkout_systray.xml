@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="l10n_gr_ergani_card.CheckoutSystray">
+        <div class="o_nav_entry" role="button" t-on-click="checkout"
+             title="Αποχώρηση — τέλος περιόδου εργασίας (όχι διάλειμμα)">
+            <i class="fa fa-sign-out me-1"/><span class="d-none d-md-inline">Αποχώρηση</span>
+        </div>
+    </t>
+</templates>

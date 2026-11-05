@@ -120,6 +120,15 @@ MOVE_PURPOSE_NOT_SENDABLE = frozenset({'6', '15', '16', '17'})
 TYPES_NO_CLASSIFICATION = frozenset()
 TYPES_CREDIT = frozenset({'5.1', '5.2', '11.4', '13.31', '14.31'})
 TYPES_CORRELATED_CREDIT = frozenset({'5.1'})
+# Journals a sale may be posted in vs. journals a credit note may be posted in.
+# A credit note may also sit in its forward invoice journal (1.x/2.x — sent as
+# 5.1/5.2, Odoo's usual «reverse in the same journal»); a sale never sits in a
+# credit journal (ΠΙΜΣ/00001, 2026-10-30, was posted as a sale and preloaded).
+TYPES_CREDIT_JOURNAL = TYPES_CREDIT | {'8.5'}
+
+
+def refund_journal_ok(journal_type):
+    return journal_type in TYPES_CREDIT_JOURNAL or journal_type[:2] in ('1.', '2.')
 TYPES_NEED_CORRELATED = frozenset({'5.1', '1.6', '2.4', '9.1', '10.1'})
 # correlated dispatch advices — need a MARK of the referenced document
 TYPES_DISPATCH_CORRELATED = TYPES_DISPATCH & TYPES_NEED_CORRELATED
@@ -145,6 +154,10 @@ INV_TYPE_PARTNER_CLASS = {
     '2.2': {'eu'},
     '2.3': {'third'},
     '2.4': {'b2b'},
+    # Πιστωτικά τιμολόγια need the counterpart's ΑΦΜ (ILYDA refuses 5.2
+    # without one, 2026-10-30); a retail credit is the 11.4 below.
+    '5.1': {'b2b', 'eu', 'third'},
+    '5.2': {'b2b', 'eu', 'third'},
     '11.1': {'retail'},
     '11.2': {'retail'},
     '11.3': {'retail'},
@@ -1492,7 +1505,10 @@ def _demo():
     assert '11.1' in journal_types_for_class('retail')
     assert '1.2' in journal_types_for_class('eu')
     assert '1.3' in journal_types_for_class('third')
-    assert '5.1' in journal_types_for_class('retail')  # credit is agnostic
+    assert '5.1' not in journal_types_for_class('retail')  # needs ΑΦΜ
+    assert '11.4' in journal_types_for_class('retail')
+    assert refund_journal_ok('11.4') and refund_journal_ok('1.1')
+    assert not refund_journal_ok('11.1') and not refund_journal_ok('9.3')
     # derived classification defaults
     assert default_classification('1.1', 'goods') == ('category1_1', 'E3_561_001')
     assert default_classification('11.1', 'goods') == ('category1_1', 'E3_561_003')

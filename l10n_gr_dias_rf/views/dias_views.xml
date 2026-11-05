@@ -1,0 +1,208 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Πληρωμές ΔΙΑΣ -->
+    <record id="dias_payment_list" model="ir.ui.view">
+        <field name="name">dias.payment.list</field>
+        <field name="model">dias.payment</field>
+        <field name="arch" type="xml">
+            <list create="false" delete="false"
+                  decoration-danger="state in ('unmatched', 'v13', 'error')"
+                  decoration-muted="state in ('rejected', 'ignored')"
+                  decoration-info="state in ('validated', 'new')">
+                <field name="create_date" string="Παραλαβή"/>
+                <field name="name"/>
+                <field name="ri_mid"/>
+                <field name="kind" optional="show"/>
+                <field name="debtor_name" optional="show"/>
+                <field name="partner_id"/>
+                <field name="amount" sum="Σύνολο"/>
+                <field name="bk_date" optional="show"/>
+                <field name="source" optional="hide"/>
+                <field name="state" widget="badge"
+                       decoration-success="state in ('matched', 'credit')"
+                       decoration-danger="state in ('unmatched', 'v13', 'error')"
+                       decoration-info="state in ('validated', 'new')"/>
+                <field name="company_id" column_invisible="1"/>
+                <field name="currency_id" column_invisible="1"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="dias_payment_form" model="ir.ui.view">
+        <field name="name">dias.payment.form</field>
+        <field name="model">dias.payment</field>
+        <field name="arch" type="xml">
+            <form create="false" delete="false">
+                <header>
+                    <button name="action_book_credit" type="object" string="Καταχώρηση ως πίστωση"
+                            class="oe_highlight" groups="account.group_account_manager"
+                            invisible="state not in ('unmatched', 'v13') or payment_id"
+                            confirm="Θα καταχωρηθεί εισερχόμενη πληρωμή στον πελάτη που ορίσατε. Συνέχεια;"/>
+                    <button name="action_retry" type="object" string="Ξανά καταχώρηση"
+                            groups="account.group_account_manager" invisible="state != 'error'"/>
+                    <button name="action_ignore" type="object" string="Αγνόησε"
+                            groups="account.group_account_manager"
+                            invisible="state not in ('unmatched', 'v13', 'error') or payment_id"
+                            confirm="Η πληρωμή δεν θα καταχωρηθεί σε αυτή τη βάση. Συνέχεια;"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="validated,new,matched"/>
+                </header>
+                <sheet>
+                    <div class="oe_title"><h1><field name="ri_mid" readonly="1"/></h1></div>
+                    <group>
+                        <group string="Πληρωμή">
+                            <field name="amount"/>
+                            <field name="debtor_name"/>
+                            <field name="debtor_bic"/>
+                            <field name="payment_dt"/>
+                            <field name="bk_date"/>
+                            <field name="remittance"/>
+                        </group>
+                        <group string="Αντιστοίχιση">
+                            <field name="kind"/>
+                            <field name="partner_id"
+                                   readonly="state not in ('unmatched', 'v13') or payment_id"/>
+                            <field name="move_id" invisible="not move_id"/>
+                            <field name="order_id" invisible="not order_id"/>
+                            <field name="payment_id" invisible="not payment_id"/>
+                            <field name="message"/>
+                        </group>
+                    </group>
+                    <group string="ΔΙΑΣ">
+                        <group>
+                            <field name="name"/>
+                            <field name="transaction_id"/>
+                            <field name="source"/>
+                        </group>
+                        <group>
+                            <field name="validated_at" invisible="not validated_at"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                            <field name="currency_id" invisible="1"/>
+                        </group>
+                    </group>
+                    <group string="Αρχικά δεδομένα" groups="account.group_account_manager">
+                        <field name="raw" nolabel="1" colspan="2"/>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="dias_payment_search" model="ir.ui.view">
+        <field name="name">dias.payment.search</field>
+        <field name="model">dias.payment</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="ri_mid"/>
+                <field name="name"/>
+                <field name="debtor_name"/>
+                <field name="partner_id"/>
+                <filter name="todo" string="Θέλουν χειρισμό"
+                        domain="[('state', 'in', ('unmatched', 'v13', 'error'))]"/>
+                <filter name="waiting" string="Εγκρίθηκε, αναμονή πληρωμής"
+                        domain="[('state', '=', 'validated')]"/>
+                <filter name="done" string="Καταχωρήθηκαν"
+                        domain="[('state', 'in', ('matched', 'credit'))]"/>
+                <separator/>
+                <filter name="group_state" string="Κατάσταση" context="{'group_by': 'state'}"/>
+                <filter name="group_source" string="Πηγή" context="{'group_by': 'source'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_dias_payment" model="ir.actions.act_window">
+        <field name="name">Πληρωμές ΔΙΑΣ</field>
+        <field name="res_model">dias.payment</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="dias_payment_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Δεν έχει έρθει ακόμα πληρωμή μέσω ΔΙΑΣ.</p>
+        </field>
+    </record>
+
+    <!-- Αρχεία PNO -->
+    <record id="dias_file_list" model="ir.ui.view">
+        <field name="name">dias.file.list</field>
+        <field name="model">dias.file</field>
+        <field name="arch" type="xml">
+            <list create="false" delete="false">
+                <field name="imported_at"/>
+                <field name="name"/>
+                <field name="rows_total"/>
+                <field name="rows_new"/>
+                <field name="result"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_dias_file" model="ir.actions.act_window">
+        <field name="name">Αρχεία πληρωμών</field>
+        <field name="res_model">dias.file</field>
+        <field name="view_mode">list</field>
+    </record>
+
+    <!-- Μητρώο κωδικών -->
+    <record id="dias_rf_code_list" model="ir.ui.view">
+        <field name="name">dias.rf.code.list</field>
+        <field name="model">dias.rf.code</field>
+        <field name="arch" type="xml">
+            <list create="false" delete="false">
+                <field name="create_date" string="Έκδοση"/>
+                <field name="code"/>
+                <field name="move_id"/>
+                <field name="partner_id"/>
+                <field name="amount"/>
+                <field name="currency_id" column_invisible="1"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="dias_rf_code_search" model="ir.ui.view">
+        <field name="name">dias.rf.code.search</field>
+        <field name="model">dias.rf.code</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="code"/>
+                <field name="move_id"/>
+                <field name="partner_id"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_dias_rf_code" model="ir.actions.act_window">
+        <field name="name">Κωδικοί RF τιμολογίων</field>
+        <field name="res_model">dias.rf.code</field>
+        <field name="view_mode">list</field>
+    </record>
+
+    <!-- Εισαγωγή αρχείου -->
+    <record id="dias_import_wizard_form" model="ir.ui.view">
+        <field name="name">dias.import.wizard.form</field>
+        <field name="model">dias.import.wizard</field>
+        <field name="arch" type="xml">
+            <form>
+                <p>Αρχείο πληρωμών από το ΔΙΑΣ Portal (Μεταφορά Αρχείων → IN), χωρίς κρυπτογράφηση.
+                    Πληρωμές που έχουν ήδη έρθει online δεν καταχωρούνται δεύτερη φορά.</p>
+                <group>
+                    <field name="data" filename="filename"/>
+                    <field name="filename" invisible="1"/>
+                    <field name="company_id" groups="base.group_multi_company"/>
+                </group>
+                <footer>
+                    <button name="action_import" type="object" string="Εισαγωγή" class="btn-primary"/>
+                    <button string="Άκυρο" special="cancel" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_dias_import_wizard" model="ir.actions.act_window">
+        <field name="name">Εισαγωγή αρχείου πληρωμών</field>
+        <field name="res_model">dias.import.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+</odoo>
