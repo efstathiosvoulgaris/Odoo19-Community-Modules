@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <!-- Odoo's «Local Network Access» menu entry is about its own IoT/ePOS
+         printers, which this setup does not use; the Print Agent's access is
+         granted by the Chrome policy its setup writes. Hidden, not removed. -->
+    <t t-name="direct_print.Navbar" t-inherit="point_of_sale.Navbar" t-inherit-mode="extension">
+        <xpath expr="//span[@t-on-click='openLnaPopup']/.." position="attributes">
+            <attribute name="class" add="d-none" separator=" "/>
+        </xpath>
+    </t>
+</templates>
