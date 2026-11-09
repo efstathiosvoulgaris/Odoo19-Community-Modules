@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Greece - E-Invoicing Provider (Base)',
-    'version': '2.20',
+    'version': '2.21',
     'category': 'Accounting/Localizations',
     'summary': 'Issue invoices through a licensed Greek e-invoicing provider (Y.PA.H.E.S.)',
     'description': (
@@ -17,6 +17,8 @@
         '\n'
         'Changelog\n'
         '---------\n'
+        '2.21 — Φόρμα A4: η περιοχή ειδών γεμίζει τη σελίδα ως το υποσέλιδο· γραμματοσειρές +2px (σώμα 12px, πίνακες 11px); το υποσέλιδο μένει 8px — έχει σταθερά 24mm.\n'
+        '\n'
         '2.20 — Κουμπιά τιμολογίου ανά στάδιο, ένα μπλε κάθε φορά: Έκδοση →\n'
         'Διαβίβαση στο myDATA → Εκτύπωση / Αποστολή με Email / Καταχώριση Είσπραξης.\n'
         'Πριν τον ΜΑΡΚ η εκτύπωση και το email μένουν γκρι, το Πιστωτικό κρύβεται·\n'

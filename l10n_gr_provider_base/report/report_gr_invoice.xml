@@ -216,16 +216,16 @@
                  one. Continuation pages therefore carry no identifier of their
                  own — the footer's ΜΑΡΚ and page counter do that job. -->
 
-            <div class="page gra4" style="font-size: 10px;">
+            <div class="page gra4" style="font-size: 12px;">
             <style>.gra4 table, .gra4 tr, .gra4 td, .gra4 th { border: 0 !important; }</style>
-            <table style="width: 100%; font-size: 10px; margin-bottom: 2mm;">
+            <table style="width: 100%; font-size: 12px; margin-bottom: 2mm;">
                 <tr style="vertical-align: top;">
                     <td style="width: 50%;">
                         <img t-if="o.company_id.logo" t-att-src="image_data_uri(o.company_id.logo)"
                              style="max-height: 24mm; max-width: 75mm;" alt="Logo"/>
                     </td>
                     <td style="width: 50%; text-align: right;">
-                        <div style="font-size: 18px; font-weight: bold;" t-out="o.company_id.name"/>
+                        <div style="font-size: 20px; font-weight: bold;" t-out="o.company_id.name"/>
                         <!-- ΓΕΜΗ rides on the Α.Φ.Μ. line to keep the masthead
                              compact. Now that this block is in the page flow
                              rather than the wkhtmltopdf header region, growing
@@ -244,7 +244,7 @@
             </table>
 
                 <!-- Row 1 (repeats with the header): document type / series / number / date / time -->
-                <table style="width: 100%; border-collapse: collapse; font-size: 10px;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
                     <tr t-attf-style="{{band}}">
                         <td t-attf-style="{{cell}} width: 44%;">ΕΙΔΟΣ ΠΑΡΑΣΤΑΤΙΚΟΥ</td>
                         <td t-attf-style="{{cell}} width: 10%;">ΣΕΙΡΑ</td>
@@ -277,7 +277,7 @@
                      and alignment only. The captions previously used negative
                      margins to bleed over the cell border — with the border
                      gone they are plain full-width bars. -->
-                <table style="width: 100%; border-collapse: collapse; font-size: 10px;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
                     <tr style="vertical-align: top;">
                         <td style="width: 55%; height: 34mm; padding-right: 3mm;">
                             <div t-attf-style="{{band}} padding: 0.5mm; margin-bottom: 1mm;">ΣΤΟΙΧΕΙΑ ΣΥΜΒΑΛΛΟΜΕΝΟΥ</div>
@@ -395,7 +395,7 @@
                                 <td t-attf-style="{{vcell}}" t-out="line.product_id.default_code or ''"/>
                                 <td t-attf-style="{{vcell}}">
                                     <span t-out="line.name or line.product_id.display_name"/>
-                                    <div t-if="lot_names" style="font-size: 9px;">
+                                    <div t-if="lot_names" style="font-size: 11px;">
                                         SN: <t t-out="', '.join(lot_names)"/>
                                     </div>
                                 </td>
@@ -410,12 +410,22 @@
                                 <td t-attf-style="{{vcell}} text-align: right;" t-out="'%g' % (line.tax_ids[:1].amount if line.tax_ids else 0)"/>
                             </tr>
                         </t>
-                        <!-- filler row so the item area stays tall like the form —
-                             only on short documents; with many lines it would
-                             just push the totals to an extra page. Nine separate
-                             cells, not one colspan, so the column dividers carry
-                             on down to the bottom of the item area. -->
-                        <tr t-if="len(plines) &lt;= 8" style="height: 70mm;">
+                        <!-- filler row so the item area runs down the page and the
+                             signature strip lands just above the footer. Its height
+                             is estimated here — wkhtmltopdf lays the page out at
+                             width 0 for JavaScript, so nothing can be measured at
+                             print time. Per line: 2 mm padding + 4.2 mm per ~38
+                             characters of description (or per serial row). 141 mm
+                             = filler + lines that put the strip at ~269 mm on
+                             ΤΙΜ/00017 (2026-11-05), less a few mm to spare; four test
+                             documents land at 254–268 mm, footer starts at 273.
+                             ponytail: an estimate; a very tall customer block or
+                             long notes can still leave a gap or reach page 2.
+                             Nine separate cells, not one colspan, so the column
+                             dividers carry on down to the bottom of the item area. -->
+                        <t t-set="gr_lines_mm" t-value="sum(2 + 4.2 * (max(1, -(-len(l.name or '') // 38)) + (1 if lots.get(l.id) else 0)) for l in plines)"/>
+                        <t t-set="gr_fill_mm" t-value="141 - gr_lines_mm"/>
+                        <tr t-if="gr_fill_mm &gt; 0" t-attf-style="height: {{ '%.1f' % gr_fill_mm }}mm;">
                             <td t-attf-style="{{vcell}}"/><td t-attf-style="{{vcell}}"/><td t-attf-style="{{vcell}}"/>
                             <td t-attf-style="{{vcell}}"/><td t-attf-style="{{vcell}}"/><td t-attf-style="{{vcell}}"/>
                             <td t-attf-style="{{vcell}}"/><td t-attf-style="{{vcell}}"/><td t-attf-style="{{vcell}}"/>
@@ -437,14 +447,14 @@
                                  long narration. -->
                             <div t-if="notes" style="margin-bottom: 1mm;">
                                 <div t-foreach="notes" t-as="note"
-                                     style="font-weight: bold; font-size: 9px;" t-out="note"/>
+                                     style="font-weight: bold; font-size: 11px;" t-out="note"/>
                             </div>
                             <div><strong>ΠΑΡΑΤΗΡΗΣΕΙΣ:</strong></div>
-                            <div style="font-size: 9px;"><span t-if="o.narration" t-field="o.narration"/></div>
+                            <div style="font-size: 11px;"><span t-if="o.narration" t-field="o.narration"/></div>
                         </td>
                         <td t-attf-style="{{cell}} width: 30%;">
                             <div t-attf-style="{{band}} margin: -1mm -2mm 1mm -2mm; padding: 0.5mm;">ΑΝΑΛΥΣΗ ΥΠΟΛΟΓΙΣΜΟΥ ΦΠΑ</div>
-                            <table style="width: 100%; border-collapse: collapse; font-size: 9px;">
+                            <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
                                 <tr style="font-weight: bold; text-align: center;">
                                     <td style="border: 1px solid #999 !important; padding: 0.5mm;">ΚΑΘΑΡΗ ΑΞΙΑ</td>
                                     <td style="border: 1px solid #999 !important; padding: 0.5mm;">% Φ.Π.Α.</td>
@@ -458,7 +468,7 @@
                             </table>
                         </td>
                         <td t-attf-style="{{cell}} width: 24%; padding: 0;">
-                            <table style="width: 100%; border-collapse: collapse; font-size: 10px;">
+                            <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
                                 <tr><td style="padding: 0.5mm 2mm;">ΑΞΙΑ ΠΡΟ ΕΚΠΤ.</td><td style="padding: 0.5mm 2mm; text-align: right;" t-out="tot['gross_before']" t-options="num"/></tr>
                                 <tr><td style="padding: 0.5mm 2mm;">ΕΚΠΤΩΣΗ</td><td style="padding: 0.5mm 2mm; text-align: right;" t-out="tot['discount']" t-options="num"/></tr>
                                 <tr><td style="padding: 0.5mm 2mm;">ΚΑΘΑΡΗ ΑΞΙΑ</td><td style="padding: 0.5mm 2mm; text-align: right;" t-out="tot['net']" t-options="num"/></tr>
@@ -469,7 +479,7 @@
                                 <tr t-attf-style="{{grey}} font-weight: bold; border-top: 1px solid #000 !important; border-bottom: 1px solid #000 !important;">
                                     <td style="padding: 0.8mm 2mm;">ΤΕΛΙΚΗ ΑΞΙΑ</td><td style="padding: 0.8mm 2mm; text-align: right;" t-out="tot['final']" t-options="mono"/></tr>
                                 <tr><td style="padding: 0.5mm 2mm;">ΚΡΑΤΗΣΕΙΣ</td><td style="padding: 0.5mm 2mm; text-align: right;" t-out="tot['withholding']" t-options="num"/></tr>
-                                <tr t-attf-style="{{grey}} font-weight: bold; font-size: 12px; border-bottom: 1px solid #000 !important;">
+                                <tr t-attf-style="{{grey}} font-weight: bold; font-size: 14px; border-bottom: 1px solid #000 !important;">
                                     <td style="padding: 0.8mm 2mm;">ΠΛΗΡΩΤΕΟ</td><td style="padding: 0.8mm 2mm; text-align: right;" t-out="tot['payable']" t-options="mono"/></tr>
                             </table>
                         </td>
@@ -477,7 +487,7 @@
                 </table>
 
                 <!-- Row 5: signature strip -->
-                <table style="width: 100%; border-collapse: collapse; text-align: center; font-size: 9px;">
+                <table style="width: 100%; border-collapse: collapse; text-align: center; font-size: 11px;">
                     <tr>
                         <td t-attf-style="{{cell}} width: 40%; text-align: left;">ΕΝΙΑΙΟ ΜΗΧΑΝΟΓΡΑΦΙΚΟ ΕΝΤΥΠΟ ΠΟΛΛΑΠΛΗΣ ΧΡΗΣΗΣ</td>
                         <td t-attf-style="{{cell}} width: 20%; height: 12mm; vertical-align: top;">ΕΚΔΟΣΗ</td>
