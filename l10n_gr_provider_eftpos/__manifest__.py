@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Greece - E-Invoicing Provider (EFT/POS Α.1155)',
-    'version': '1.29',
+    'version': '1.30',
     'category': 'Accounting/Localizations',
     'summary': 'Card-terminal payment signatures per Α.1155/2023 through the e-invoicing provider',
     'description': (
@@ -28,6 +28,10 @@
         '\n'
         'Changelog\n'
         '---------\n'
+        '1.30 — Η «Ανάκτηση Εκκρεμούς» δεν ζητά ποτέ όλη τη λίστα εκκρεμών: χωρίς\n'
+        'αριθμό αναφοράς τερματικού σταματά με οδηγίες. Ο driver τότε περνούσε μία-μία\n'
+        'όλες τις συναλλαγές του τερματικού (711 στην πιστοποίηση Mellon, 09/11).\n'
+        '\n'
         '1.29 — «Εκκρεμείς Συναλλαγές»: ρωτά το τερματικό μία-μία με ecrReferenceNumber\n'
         'τις ανοιχτές πληρωμές του Odoo, όχι μαζικά (ILYDA: το τερματικό πιστοποίησης\n'
         'της Mellon είναι κοινό για όλα τα ERP).\n'

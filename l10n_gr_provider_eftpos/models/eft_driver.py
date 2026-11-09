@@ -349,10 +349,6 @@ class MegEftPosDriver:
             f'/api/v1/transaction/pending/by/nspReferenceNumber/{nsp_reference}',
             self._envelope(pos_device))) or []
 
-    def pending_all(self, pos_device):
-        return self.check(self._post(
-            '/api/v1/transaction/pending', self._envelope(pos_device))) or []
-
     # ── WebECR key ───────────────────────────────────────────────────────────
 
     def redeem_otp(self, pos_device, otp):

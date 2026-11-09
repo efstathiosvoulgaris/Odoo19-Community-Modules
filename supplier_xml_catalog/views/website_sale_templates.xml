@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- WEBSITE PRODUCT DETAIL PAGE
+         Hooks the product title sub-template, the same anchor website_sale_brand
+         uses on Odoo 19 (the old //div[@id='product_details']//form was unverified). -->
+    <template id="supplier_product_page_info" inherit_id="website_sale.product_title" name="Supplier Feed Availability &amp; Shipping on Product Page">
+        <h1 t-field="product.name" position="after">
+            <t t-if="product.is_supplier_feed_product">
+                <div class="supplier-feed-info mt-2 mb-3 p-3 bg-light rounded border">
+                    <t t-if="product.supplier_availability_text">
+                        <div class="d-flex align-items-center mb-1">
+                            <i class="fa fa-truck text-primary me-2 fs-5"/>
+                            <span class="fw-semibold text-dark" t-field="product.supplier_availability_text"/>
+                        </div>
+                    </t>
+                    <t t-if="product.supplier_shipping_text">
+                        <div class="d-flex align-items-center text-muted small mt-1">
+                            <i class="fa fa-info-circle me-2"/>
+                            <span t-field="product.supplier_shipping_text"/>
+                        </div>
+                    </t>
+                </div>
+            </t>
+        </h1>
+    </template>
+
+    <!-- WEBSITE PRODUCT GRID CARD / TILE -->
+    <template id="supplier_product_tile_badge" inherit_id="website_sale.products_item" name="Supplier Feed Badge on Grid Tile">
+        <xpath expr="//h2[hasclass('o_wsale_products_item_title')]" position="after">
+            <t t-if="product.is_supplier_feed_product and product.supplier_availability_text">
+                <div class="o_wsale_supplier_tile mt-1">
+                    <span class="badge text-bg-light border text-muted fw-normal" style="font-size: 0.75rem;">
+                        <i class="fa fa-truck me-1"/>
+                        <t t-esc="product.supplier_availability_text"/>
+                    </span>
+                </div>
+            </t>
+        </xpath>
+    </template>
+
+</odoo>

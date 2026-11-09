@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- LIST VIEW -->
+    <record id="view_supplier_xml_feed_list" model="ir.ui.view">
+        <field name="name">supplier.xml.feed.list</field>
+        <field name="model">supplier.xml.feed</field>
+        <field name="arch" type="xml">
+            <list string="Supplier Feeds">
+                <field name="name"/>
+                <field name="feed_url"/>
+                <field name="pricing_type"/>
+                <field name="product_count"/>
+                <field name="last_sync"/>
+                <field name="state" widget="badge"
+                       decoration-info="state == 'draft'"
+                       decoration-warning="state == 'running'"
+                       decoration-success="state == 'ready'"
+                       decoration-danger="state == 'error'"/>
+                <field name="auto_sync" widget="boolean_toggle"/>
+                <field name="active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- FORM VIEW -->
+    <record id="view_supplier_xml_feed_form" model="ir.ui.view">
+        <field name="name">supplier.xml.feed.form</field>
+        <field name="model">supplier.xml.feed</field>
+        <field name="arch" type="xml">
+            <form string="Supplier XML Feed">
+                <header>
+                    <button name="action_sync"
+                            string="Συγχρονισμός"
+                            type="object"
+                            class="oe_highlight"
+                            icon="fa-refresh"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,ready"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_products"
+                                type="object"
+                                class="oe_stat_button"
+                                icon="fa-cubes">
+                            <field name="product_count" widget="statinfo" string="Προϊόντα"/>
+                        </button>
+                    </div>
+
+                    <widget name="web_ribbon" title="Ανενεργό" bg_color="text-bg-danger" invisible="active"/>
+
+                    <div class="oe_title">
+                        <label for="name" class="oe_edit_only" string="Όνομα Feed / Προμηθευτή"/>
+                        <h1>
+                            <field name="name" placeholder="π.χ. Προμηθευτής Westnet, Oktabit..."/>
+                        </h1>
+                    </div>
+
+                    <group>
+                        <group string="Πηγή XML">
+                            <field name="partner_id"/>
+                            <field name="feed_url" placeholder="https://example.com/feed.xml"/>
+                            <field name="xml_file" filename="xml_filename"/>
+                            <field name="xml_filename" invisible="1"/>
+                        </group>
+                        <group string="Ρυθμίσεις">
+                            <field name="active"/>
+                            <field name="auto_sync"/>
+                            <field name="max_images_per_sync"/>
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <!-- TAB: PRICING POLICY -->
+                        <page string="Πολιτική Τιμολόγησης" name="pricing">
+                            <group>
+                                <group string="Υπολογισμός Λιανικής Τιμής">
+                                    <field name="pricing_type"/>
+                                    <field name="markup_percent" invisible="pricing_type not in ['markup_pct', 'both']"/>
+                                    <field name="markup_fixed" invisible="pricing_type not in ['markup_fixed', 'both']"/>
+                                    <field name="price_round"/>
+                                </group>
+                                <group string="ΦΠΑ Feed">
+                                    <field name="vat_included_in_feed"/>
+                                    <field name="vat_rate" invisible="vat_included_in_feed"/>
+                                </group>
+                            </group>
+                        </page>
+
+                        <!-- TAB: AVAILABILITY & SHIPPING -->
+                        <page string="Διαθεσιμότητα &amp; Αποστολή" name="availability">
+                            <group>
+                                <group string="Κανόνες Διαθεσιμότητας">
+                                    <field name="stock_mode"/>
+                                    <field name="min_stock_threshold" invisible="stock_mode != 'quantity'"/>
+                                    <field name="in_stock_text"/>
+                                    <field name="out_of_stock_action"/>
+                                    <field name="out_of_stock_text"/>
+                                </group>
+                                <group string="Στοιχεία Αποστολής (Website)">
+                                    <field name="shipping_lead_time" placeholder="π.χ. 1-3 εργάσιμες ημέρες"/>
+                                    <field name="shipping_note" placeholder="π.χ. Αποστολή με Courier"/>
+                                </group>
+                            </group>
+                        </page>
+
+                        <!-- TAB: TAG MAPPINGS -->
+                        <page string="Αντιστοίχιση Tags XML" name="mapping">
+                            <div class="alert alert-info" role="alert">
+                                Ορίστε τα ονόματα των XML tags όπως εμφανίζονται στο feed του προμηθευτή σας.
+                            </div>
+                            <group>
+                                <group string="Βασικά Στοιχεία">
+                                    <field name="tag_product"/>
+                                    <field name="tag_sku"/>
+                                    <field name="tag_barcode"/>
+                                    <field name="tag_mpn"/>
+                                    <field name="tag_name"/>
+                                </group>
+                                <group string="Τιμή, Απόθεμα &amp; Εικόνα">
+                                    <field name="tag_price"/>
+                                    <field name="tag_cost"/>
+                                    <field name="tag_quantity"/>
+                                    <field name="tag_availability"/>
+                                    <field name="tag_image"/>
+                                </group>
+                            </group>
+                            <group>
+                                <group string="Κατηγορία &amp; Μάρκα">
+                                    <field name="tag_category"/>
+                                    <field name="tag_brand"/>
+                                </group>
+                                <group string="Περιγραφή">
+                                    <field name="tag_description"/>
+                                </group>
+                            </group>
+                        </page>
+
+                        <!-- TAB: CATEGORIES & BRANDS -->
+                        <page string="Κατηγορίες &amp; Μάρκες" name="categories_brands">
+                            <group>
+                                <group string="Αυτόματη Κατηγοριοποίηση">
+                                    <field name="auto_create_categories"/>
+                                </group>
+                                <group string="Μάρκες (Brands)">
+                                    <field name="auto_create_brands"/>
+                                </group>
+                            </group>
+                        </page>
+
+                        <!-- TAB: LOGS -->
+                        <page string="Ιστορικό Συγχρονισμού" name="sync_log">
+                            <group>
+                                <field name="last_sync"/>
+                                <field name="sync_requested"/>
+                                <field name="sync_position" invisible="not sync_requested"/>
+                            </group>
+                            <group string="Αναφορά Τελευταίου Συγχρονισμού">
+                                <field name="last_sync_message" nolabel="1" readonly="1"/>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- ACTION -->
+    <record id="action_supplier_xml_feed" model="ir.actions.act_window">
+        <field name="name">Feeds Προμηθευτών</field>
+        <field name="res_model">supplier.xml.feed</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Δημιουργήστε το πρώτο σας Supplier XML Feed!
+            </p>
+            <p>
+                Συνδέστε τα XML των προμηθευτών σας για να προβάλλετε αυτόματα τα προϊόντα τους στο eshop χωρίς να επηρεάζεται η αποθήκη σας.
+            </p>
+        </field>
+    </record>
+
+    <!-- MENU ITEM -->
+    <menuitem id="menu_supplier_xml_feed"
+              name="Feeds Προμηθευτών"
+              action="action_supplier_xml_feed"
+              parent="website_sale.menu_catalog"
+              sequence="45"/>
+
+</odoo>

@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- INHERIT PRODUCT TEMPLATE FORM -->
+    <record id="view_product_template_form_supplier_feed" model="ir.ui.view">
+        <field name="name">product.template.form.supplier.feed</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_only_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[@name='options']" position="inside">
+                <span class="d-inline-block">
+                    <field name="is_supplier_feed_product"/>
+                    <label for="is_supplier_feed_product" string="Προϊόν Feed Προμηθευτή"/>
+                </span>
+            </xpath>
+
+            <!-- Dedicated page in notebook -->
+            <xpath expr="//notebook" position="inside">
+                <page string="Feed Προμηθευτή" name="supplier_feed" invisible="not is_supplier_feed_product">
+                    <group>
+                        <group string="Σύνδεση Feed">
+                            <field name="supplier_feed_id"/>
+                            <field name="supplier_sku"/>
+                            <field name="supplier_cost"/>
+                            <field name="supplier_last_sync"/>
+                        </group>
+                        <group string="Πληροφορίες Website">
+                            <field name="supplier_availability_text"/>
+                            <field name="supplier_shipping_text"/>
+                            <field name="supplier_image_url"/>
+                            <field name="supplier_manual_unpublish"/>
+                        </group>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- INHERIT PRODUCT TEMPLATE SEARCH VIEW -->
+    <record id="view_product_template_search_supplier_feed" model="ir.ui.view">
+        <field name="name">product.template.search.supplier.feed</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_search_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//filter[@name='filter_to_sell']" position="after">
+                <filter string="Προϊόντα Feed Προμηθευτών" name="filter_supplier_feed"
+                        domain="[('is_supplier_feed_product', '=', True)]"/>
+            </xpath>
+            <xpath expr="//group" position="inside">
+                <filter string="Feed Προμηθευτή" name="group_supplier_feed"
+                        context="{'group_by': 'supplier_feed_id'}"/>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

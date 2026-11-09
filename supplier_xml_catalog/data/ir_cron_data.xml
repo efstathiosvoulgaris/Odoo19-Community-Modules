@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="ir_cron_sync_supplier_feeds" model="ir.cron">
+        <field name="name">Supplier XML: Αυτόματος Συγχρονισμός Feeds</field>
+        <field name="model_id" ref="model_supplier_xml_feed"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_sync_feeds()</field>
+        <field name="interval_number">6</field>
+        <field name="interval_type">hours</field>
+        <field name="active" eval="True"/>
+    </record>
+
+    <!-- Woken by the «Συγχρονισμός» button; syncs only the feeds queued there.
+         The daily run is just a fallback and does nothing when the queue is empty. -->
+    <record id="ir_cron_sync_requested_feeds" model="ir.cron">
+        <field name="name">Supplier XML: Συγχρονισμός κατ' απαίτηση</field>
+        <field name="model_id" ref="model_supplier_xml_feed"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_sync_requested()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+        <field name="active" eval="True"/>
+    </record>
+</odoo>

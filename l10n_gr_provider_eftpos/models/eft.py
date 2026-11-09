@@ -1167,29 +1167,28 @@ class EftPayment(models.Model):
     def _find_pending(self):
         """This payment's transaction in the driver's pending list, or [].
 
-        By reference when we have one. Without one (the answer carrying it was
-        lost) the terminal's whole list is searched, and an entry is adopted
-        only when its amount is this payment's — never «the only one there»,
-        which may be another till's sale or an unrelated preload.
+        Only ever by reference. The terminal's whole list is never fetched:
+        the driver then walks every transaction the terminal ever had, one
+        WebECR call each — 711 on Mellon's shared certification terminal
+        (2026-11-09), other ERPs' included, which ILYDA forbade (2026-11-05).
+        The driver generates ecrReferenceNumber itself and returns it only
+        with the answer, so without one there is nothing safe to ask.
         """
+        if not (self.ecr_reference or self.nsp_reference):
+            raise UserError(_(
+                'Η πληρωμή δεν έχει ακόμη αριθμό αναφοράς τερματικού, οπότε η '
+                'συναλλαγή δεν μπορεί να αναζητηθεί.\n\n'
+                '• Αν η χρέωση μόλις ξεκίνησε, περιμένετε την απάντηση του '
+                'τερματικού (έως 3,5 λεπτά) και δοκιμάστε ξανά.\n'
+                '• Αλλιώς ελέγξτε το ίδιο το τερματικό: αν η κάρτα ΔΕΝ χρεώθηκε, '
+                'ο υπεύθυνος λογιστηρίου πατά «Δεν χρεώθηκε». Αν χρεώθηκε, '
+                'ακυρώστε τη συναλλαγή στο τερματικό, πατήστε «Δεν χρεώθηκε» και '
+                'χρεώστε ξανά.'))
         driver = MegEftPosDriver(self.company_id, self.terminal_id)
         device = self.terminal_id._l10n_gr_prov_pos_device()
         if self.ecr_reference:
             return driver.pending_by_ecr(device, self.ecr_reference)
-        if self.nsp_reference:
-            return driver.pending_by_nsp(device, self.nsp_reference)
-        pending = driver.pending_all(device)
-        wanted = {_r2(self.amount), _r2(self.amount + self.tip_amount)}
-        found = [
-            t for t in pending
-            if _r2(t.get('originalAmount') or t.get('amount')
-                   or t.get('paidAmount') or 0) in wanted
-        ]
-        if len(found) > 1:
-            raise UserError(_(
-                'Το τερματικό έχει %s εκκρεμείς συναλλαγές με το ίδιο ποσό — δεν '
-                'μπορεί να ταυτοποιηθεί η σωστή. Ελέγξτε το τερματικό.', len(found)))
-        return found
+        return driver.pending_by_nsp(device, self.nsp_reference)
 
     def action_mark_not_charged(self):
         """Manager override for «charging» when recovery cannot run (driver

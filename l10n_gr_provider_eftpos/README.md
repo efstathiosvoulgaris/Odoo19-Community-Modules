@@ -159,8 +159,15 @@ payment line Α.1155 demands, posts it, and hands over to the EFT dialog.
 A dropped connection leaves the charge in an unknown state. The module never
 rolls back after calling the driver, because `ecrReferenceNumber` is the only
 handle for recovering it. *Ανάκτηση Εκκρεμούς* queries the driver by
-`ecrReferenceNumber`, then `nspReferenceNumber`, then falls back to listing all
-pending transactions (refusing to guess when more than one is open).
+`ecrReferenceNumber`, then `nspReferenceNumber`. Since 1.30 there is no bulk
+fallback: the terminal is shared, so listing all pending transactions returned
+hundreds of other merchants' intents. With neither reference stored the button
+raises an error that tells the user to check the terminal's own history.
+
+A charge is never voided after its document has gone to the provider. Law
+Α.1155 art. 3 §1(ε) allows a void only before the sale document exists; after
+that the reversal is a credit note with a card refund, which is what the
+module does.
 
 ---
 
