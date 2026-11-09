@@ -1,0 +1,130 @@
+//
+// SKARLAS theme — component styles
+//
+
+// Brand tokens (mirror primary_variables)
+$sk-red: #C8102E;
+$sk-red-dark: #A30D25;
+$sk-ink: #191817;
+$sk-bg: #FAF9F8;
+$sk-border: #EAE7E4;
+$sk-muted: #5A5754;
+
+body {
+    background-color: $sk-bg;
+    -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, .display-1, .display-2 {
+    font-weight: 800;
+    letter-spacing: -.02em;
+}
+
+// Logo badge (used in header + footer)
+.sk-logo-badge {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    background: $sk-red;
+    color: #fff !important;
+    padding: 8px 16px;
+    border-radius: 8px;
+    line-height: 1;
+    text-decoration: none;
+    .sk-logo-name { font-weight: 800; font-size: 20px; letter-spacing: .04em; }
+    .sk-logo-sub  { font-size: 7.5px; letter-spacing: .14em; margin-top: 3px; opacity: .9; }
+}
+
+// Eyebrow label
+.sk-eyebrow {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: .12em;
+    color: $sk-red;
+    text-transform: uppercase;
+}
+
+// Cards
+.sk-card {
+    background: #fff;
+    border: 1px solid $sk-border;
+    border-radius: 14px;
+    padding: 26px;
+    height: 100%;
+    transition: border-color .15s ease;
+    &:hover { border-color: $sk-red; }
+}
+
+.sk-icon-chip {
+    width: 42px;
+    height: 42px;
+    border-radius: 10px;
+    background: #FBEAEC;
+    color: $sk-red;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 19px;
+    flex-shrink: 0;
+}
+
+// Pixel-mosaic brand motif
+.sk-pixels {
+    display: grid;
+    grid-template-columns: repeat(5, 16px);
+    grid-auto-rows: 16px;
+    gap: 3px;
+    div { background: $sk-red; }
+    div:nth-child(2n) { opacity: .35; }
+    div:nth-child(3n) { opacity: .15; }
+    div:nth-child(7n) { background: #E8A2AB; opacity: 1; }
+}
+
+// Striped image placeholder (replace with real photos via website editor)
+.sk-placeholder {
+    border-radius: 16px;
+    border: 1px solid #E5E1DD;
+    background: repeating-linear-gradient(45deg, #F1EDEA 0 14px, #E9E4E0 14px 28px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    span {
+        font-family: monospace;
+        font-size: 13px;
+        color: #96908A;
+        background: #fff;
+        padding: 6px 12px;
+        border-radius: 6px;
+    }
+}
+
+// Steps timeline (digital signature page)
+.sk-step {
+    display: grid;
+    grid-template-columns: 64px 1fr;
+    gap: 24px;
+    .sk-step-n {
+        width: 48px; height: 48px; border-radius: 50%;
+        background: $sk-red; color: #fff;
+        display: flex; align-items: center; justify-content: center;
+        font-weight: 800; font-size: 18px;
+    }
+    .sk-step-line { width: 2px; flex: 1; background: #E9D3D6; margin: 6px auto 0; }
+    .sk-step-note {
+        background: #FBEAEC; border-radius: 10px; padding: 12px 16px;
+        font-size: 13.5px; color: #8C2531;
+    }
+}
+
+// Dark + red band sections
+.sk-band-dark { background: $sk-ink; color: #B5B0AB; border-radius: 20px;
+    h2, h3 { color: #fff; }
+}
+.sk-band-red { background: $sk-red;
+    h2, h3 { color: #fff; }
+}
+
+// Pricing card highlight
+.sk-pricing-popular { border: 1.5px solid $sk-red !important; position: relative;
+    .badge { position: absolute; top: -12px; left: 32px; background: $sk-red; }
+}

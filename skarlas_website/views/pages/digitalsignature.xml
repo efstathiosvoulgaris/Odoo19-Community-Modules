@@ -1,0 +1,80 @@
+<odoo>
+    <record id="page_sk_digitalsignature" model="website.page">
+        <field name="name">Ψηφιακή Υπογραφή</field>
+        <field name="type">qweb</field>
+        <field name="url">/psifiaki-ypografi</field>
+        <field name="is_published" eval="True"/>
+        <field name="key">skarlas_website.page_sk_digitalsignature</field>
+        <field name="arch" type="xml">
+            <t t-name="skarlas_website.page_sk_digitalsignature">
+                <t t-call="website.layout">
+                    <div id="wrap" class="oe_structure">
+
+<section class="pt-5 pb-4">
+  <div class="container">
+    <div class="row align-items-center g-5">
+      <div class="col-lg-7">
+        <div class="sk-eyebrow mb-2">Ψηφιακή Υπογραφή · ΑΠΕΔ</div>
+        <h1 style="font-size:44px">Όλα όσα πρέπει να γνωρίζετε — σε 6 βήματα.</h1>
+        <p class="lead" style="color:#5A5754;max-width:58ch">Το ψηφιακό πιστοποιητικό είναι το «διαβατήριο» του ηλεκτρονικού κόσμου: ταυτοποιεί τον υπογράφοντα, εγγυάται τη γνησιότητα των δεδομένων και δεσμεύει νομικά τη συναλλαγή. Ισχύς 3 ετών.</p>
+        <div class="d-flex gap-3 flex-wrap mt-3">
+          <a href="#steps" class="btn btn-primary">Δες τα βήματα</a>
+          <a href="#token" class="btn btn-outline-secondary">Αγορά USB token</a>
+        </div>
+      </div>
+      <div class="col-lg-5"><div class="sk-placeholder" style="aspect-ratio:4/3.4"><span>safenet 5110cc usb token</span></div></div>
+    </div>
+  </div>
+</section>
+<section class="py-5 bg-white border-top border-bottom" style="border-color:#EAE7E4 !important" id="token">
+  <div class="container">
+    <h2 style="font-size:28px">Συμβατές ΕΔΔΥ (USB tokens)</h2>
+    <p style="color:#5A5754;max-width:70ch" class="mb-4">Η ΕΔΔΥ είναι ειδική συσκευή usb token αποκλειστικά για τη δημιουργία ψηφιακής υπογραφής. Μόνο οι παρακάτω είναι συμβατές με την ΑΠΕΔ:</p>
+    <div class="row g-4 row-cols-1 row-cols-md-2">
+      <div class="col"><div class="sk-card sk-pricing-popular p-4">
+        <span class="badge rounded-pill text-white">Διαθέσιμο στο κατάστημα</span>
+        <div style="font-weight:800;font-size:18px">Safenet 5110cc / Gemalto / Thales</div>
+        <div style="color:#5A5754;font-size:14px" class="mb-3">Κατασκευαστής: Gemalto · Μοντέλο: ID Prime MD (MD 940)</div>
+        <a href="/shop" class="btn btn-primary">Παράγγειλέ το</a></div></div>
+      <div class="col"><div class="sk-card p-4">
+        <div style="font-weight:800;font-size:18px">Oberthur / IDEMIA / TokenME EVO</div>
+        <div style="color:#5A5754;font-size:14px" class="mb-3">Κατασκευαστής: IDEMIA · Μοντέλο: Cosmo v8.1 R2</div>
+        <div style="color:#8A8580;font-size:13.5px">Κατόπιν παραγγελίας — ρωτήστε μας για διαθεσιμότητα.</div></div></div>
+    </div>
+  </div>
+</section>
+<section class="py-5" id="steps">
+  <div class="container" style="max-width:900px">
+    <h2 style="font-size:30px" class="text-center">Πώς θα την αποκτήσεις</h2>
+    <p style="color:#5A5754" class="text-center mb-5">Σε καθοδηγούμε σε κάθε βήμα — και με videos στο κανάλι μας.</p>
+    <div class="sk-step"><div class="d-flex flex-column align-items-center"><div class="sk-step-n">1</div><div class="sk-step-line"></div></div><div class="pb-4"><div style="font-weight:800;font-size:19px" class="mt-2">Προμήθεια ΕΔΔΥ (USB token)</div><p style="color:#5A5754">Προμηθεύεσαι το Safenet 5110cc από το κατάστημά μας. Συνοδεύεται από οδηγίες εγκατάστασης και υποστήριξη.</p></div></div>
+    <div class="sk-step"><div class="d-flex flex-column align-items-center"><div class="sk-step-n">2</div><div class="sk-step-line"></div></div><div class="pb-4"><div style="font-weight:800;font-size:19px" class="mt-2">Υπεύθυνη Δήλωση στο gov.gr</div><p style="color:#5A5754">Δημιουργείς την αίτηση–ΥΔ με κωδικούς Taxisnet ή web banking. Κρατάς τον μοναδικό κωδικάριθμο για το επόμενο βήμα.</p></div></div>
+    <div class="sk-step"><div class="d-flex flex-column align-items-center"><div class="sk-step-n">3</div><div class="sk-step-line"></div></div><div class="pb-4"><div style="font-weight:800;font-size:19px" class="mt-2">Ηλεκτρονική αίτηση στην ΑΠΕΔ</div><p style="color:#5A5754">Συνδέεσαι στην εφαρμογή της ΑΠΕΔ με Taxisnet, συμπληρώνεις τον κωδικάριθμο της ΥΔ και υποβάλλεις.</p><div class="sk-step-note">Αν έχεις ενεργό πιστοποιητικό από την παλιά ΑΠΕΔ (πριν 17/1/2022), πρέπει πρώτα να ακυρωθεί.</div></div></div>
+    <div class="sk-step"><div class="d-flex flex-column align-items-center"><div class="sk-step-n">4</div><div class="sk-step-line"></div></div><div class="pb-4"><div style="font-weight:800;font-size:19px" class="mt-2">Φυσική ταυτοποίηση σε ΚΕΠ</div><p style="color:#5A5754">Πηγαίνεις σε οποιοδήποτε Εντεταλμένο Γραφείο–ΚΕΠ με το ταυτοποιητικό έγγραφο που δήλωσες. Η έγκριση ολοκληρώνεται έως 30 ημέρες.</p><div class="sk-step-note">Μην ξεχάσεις ταυτότητα ή διαβατήριο — το ίδιο έγγραφο με την αίτηση.</div></div></div>
+    <div class="sk-step"><div class="d-flex flex-column align-items-center"><div class="sk-step-n">5</div><div class="sk-step-line"></div></div><div class="pb-4"><div style="font-weight:800;font-size:19px" class="mt-2">Εγκατάσταση προγραμμάτων</div><p style="color:#5A5754">Εγκαθιστάς τους οδηγούς (drivers) της ΕΔΔΥ για Windows ή macOS και το middleware BIT4ID.</p><div class="sk-step-note">Tip: αν το BIT4ID δεν ανοίγει, δοκίμασε από νέο χρήστη Windows με λατινικούς χαρακτήρες και δικαιώματα διαχειριστή.</div></div></div>
+    <div class="sk-step"><div class="d-flex flex-column align-items-center"><div class="sk-step-n">6</div></div><div><div style="font-weight:800;font-size:19px" class="mt-2">Έκδοση ψηφιακού πιστοποιητικού</div><p style="color:#5A5754">Με τον οκταψήφιο κωδικό που λαμβάνεις με SMS, συνδέεσαι στην ΑΠΕΔ, πατάς «Έκδοση Πιστοποιητικού», δίνεις το PIN της συσκευής και τελείωσες.</p><div class="sk-step-note">Αν δεν ολοκληρώσεις την έκδοση μέσα σε 45 ημέρες από την ταυτοποίηση, η αίτηση ακυρώνεται.</div></div></div>
+  </div>
+</section>
+<section class="py-5" style="background:#191817">
+  <div class="container">
+    <h2 style="font-size:28px;color:#fff">Συχνά προβλήματα &amp; λύσεις</h2>
+    <p style="color:#8A8580" class="mb-4">Αν κολλήσεις, προσφέρουμε και απομακρυσμένη τεχνική υποστήριξη (AnyDesk).</p>
+    <div class="row g-3 row-cols-1 row-cols-md-3">
+      <div class="col"><div class="p-4 rounded-3 h-100" style="background:#242220"><div style="color:#E8A2AB;font-weight:700" class="mb-2">Κλείδωσα το Digital Signature PIN</div><div style="color:#B5B0AB;font-size:14px">Μετά από 3 λάθος καταχωρίσεις το PIN μπλοκάρει. Από το SafeNet Authentication Client → «Ορισμός PIN ψηφιακής υπογραφής», εισάγεις το PUK και ορίζεις νέο PIN.</div></div></div>
+      <div class="col"><div class="p-4 rounded-3 h-100" style="background:#242220"><div style="color:#E8A2AB;font-weight:700" class="mb-2">Κλείδωσα το Token Password</div><div style="color:#B5B0AB;font-size:14px">Μετά από 5 λάθος προσπάθειες το token κλειδώνει. Από την προβολή για προχωρημένους → «Ορισμός κωδικού πρόσβασης διακριτικού», με τον κωδικό διαχειριστή ορίζεις νέο password.</div></div></div>
+      <div class="col"><div class="p-4 rounded-3 h-100" style="background:#242220"><div style="color:#E8A2AB;font-weight:700" class="mb-2">Έληξε το πιστοποιητικό μου</div><div style="color:#B5B0AB;font-size:14px">Τα πιστοποιητικά ΑΠΕΔ ισχύουν 3 χρόνια και δεν ανανεώνονται — εκδίδεις νέο. Το υπάρχον token επαναχρησιμοποιείται μετά από αρχικοποίηση.</div></div></div>
+    </div>
+  </div>
+</section>
+<section class="sk-band-red py-5">
+  <div class="container d-flex justify-content-between align-items-center flex-wrap gap-3">
+    <div><h2 style="font-size:26px" class="mb-1">Ξεκίνα από το Βήμα 1 — προμήθεια ΕΔΔΥ.</h2><div style="color:#F5C3CA">USB token με οδηγίες εγκατάστασης και δωρεάν τεχνική υποστήριξη.</div></div>
+    <a href="/shop" class="btn btn-light" style="color:#C8102E;font-weight:700">Παραγγελία token</a>
+  </div>
+</section>
+            </div>
+                </t>
+            </t>
+        </field>
+    </record>
+</odoo>

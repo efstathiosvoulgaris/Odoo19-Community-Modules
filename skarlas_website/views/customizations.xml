@@ -1,0 +1,13 @@
+<odoo>
+    <!-- Top info bar above the standard Odoo header -->
+    <template id="sk_topbar" inherit_id="website.layout" name="SKARLAS Top Bar">
+        <xpath expr="//header" position="before">
+            <div class="sk-topbar d-none d-md-flex justify-content-center gap-4 py-1 px-3"
+                 style="background:#191817;color:#FAF9F8;font-size:13px;">
+                <span style="opacity:.85">Γεωργαντά 22, Λιβαδειά</span>
+                <span style="font-weight:600">☏ 2261 773 737</span>
+                <span style="opacity:.85">Δευ–Παρ 9:00–14:00 &amp; 17:30–21:00 · Σαβ 9:00–14:30</span>
+            </div>
+        </xpath>
+    </template>
+</odoo>

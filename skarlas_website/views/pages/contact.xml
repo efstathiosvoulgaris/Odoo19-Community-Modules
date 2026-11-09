@@ -1,0 +1,73 @@
+<odoo>
+    <record id="page_sk_contact" model="website.page">
+        <field name="name">Επικοινωνία</field>
+        <field name="type">qweb</field>
+        <field name="url">/epikoinonia</field>
+        <field name="is_published" eval="True"/>
+        <field name="key">skarlas_website.page_sk_contact</field>
+        <field name="arch" type="xml">
+            <t t-name="skarlas_website.page_sk_contact">
+                <t t-call="website.layout">
+                    <div id="wrap" class="oe_structure">
+
+<section class="pt-5 pb-4">
+  <div class="container">
+    <div class="sk-eyebrow mb-2">Επικοινωνία</div>
+    <h1 style="font-size:44px">Πέρνα από το κατάστημα ή στείλε μήνυμα.</h1>
+    <p class="lead" style="color:#5A5754">Τρεις γραμμές εξυπηρέτησης, ώστε να μιλάς κατευθείαν με το σωστό τμήμα.</p>
+  </div>
+</section>
+<section class="pb-4">
+  <div class="container">
+    <div class="row g-3 row-cols-1 row-cols-md-3">
+      <div class="col"><div class="sk-card"><div style="font-size:13px;font-weight:700;letter-spacing:.1em;color:#8A8580">ΠΩΛΗΣΕΙΣ</div><div style="font-weight:800;font-size:24px;color:#C8102E">2261 773 737</div><div style="color:#5A5754;font-size:14px">Παραγγελίες, διαθεσιμότητα, προσφορές</div></div></div>
+      <div class="col"><div class="sk-card"><div style="font-size:13px;font-weight:700;letter-spacing:.1em;color:#8A8580">SERVICE</div><div style="font-weight:800;font-size:24px;color:#C8102E">2261 071 444</div><div style="color:#5A5754;font-size:14px">Ραντεβού και πορεία επισκευών</div></div></div>
+      <div class="col"><div class="sk-card"><div style="font-size:13px;font-weight:700;letter-spacing:.1em;color:#8A8580">ΥΠΟΣΤΗΡΙΞΗ ΠΕΛΑΤΩΝ</div><div style="font-weight:800;font-size:24px;color:#C8102E">2261 071 442</div><div style="color:#5A5754;font-size:14px">Τεχνική υποστήριξη για πελάτες</div></div></div>
+    </div>
+  </div>
+</section>
+<section class="pb-5">
+  <div class="container">
+    <div class="row g-3">
+      <div class="col-md-6 d-flex flex-column gap-3">
+        <div class="sk-card">
+          <h3 style="font-size:19px" class="mb-3">Ωράριο λειτουργίας</h3>
+          <div class="d-flex justify-content-between"><span style="color:#5A5754">Δευτέρα, Τετάρτη</span><span style="font-weight:700">9:00–14:00</span></div>
+          <div class="d-flex justify-content-between"><span style="color:#5A5754">Τρίτη, Πέμπτη, Παρασκευή</span><span style="font-weight:700">9:00–14:00 &amp; 18:00–21:00</span></div>
+          <div class="d-flex justify-content-between"><span style="color:#5A5754">Σάββατο</span><span style="font-weight:700">9:00–14:00</span></div>
+          <div class="d-flex justify-content-between"><span style="color:#5A5754">Κυριακή</span><span style="font-weight:700;color:#C8102E">Κλειστά</span></div>
+        </div>
+        <div class="sk-card flex-grow-1">
+          <h3 style="font-size:19px" class="mb-2">Διεύθυνση &amp; email</h3>
+          <div style="font-size:15px;color:#3D3A37">Γεωργαντά 22, Λιβαδειά 32131<br/>info@eskarlas.gr</div>
+          <div class="sk-placeholder mt-3" style="aspect-ratio:16/7;border-radius:10px"><span>χάρτης google maps</span></div>
+          <div class="d-flex gap-3 mt-3" style="font-weight:600;font-size:14px">
+            <a href="https://www.facebook.com/eskarlas.gr/" style="color:#C8102E">Facebook</a>
+            <a href="https://www.instagram.com/eskarlas/" style="color:#C8102E">Instagram</a>
+            <a href="https://www.tiktok.com/@eskarlas.gr" style="color:#C8102E">TikTok</a>
+            <a href="https://www.youtube.com/channel/UC_VWdaXyA7uWrf6dfFCRiqA" style="color:#C8102E">YouTube</a>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="sk-band-dark p-4 h-100 d-flex flex-column" style="border-radius:16px">
+          <h3 style="font-size:22px" class="mb-1">Στείλε μας μήνυμα</h3>
+          <p style="color:#8A8580;font-size:14px">Απαντάμε συνήθως εντός μίας εργάσιμης ημέρας.</p>
+          <!-- Uses the built-in Odoo website form snippet; replace with s_website_form via editor if preferred -->
+          <form action="/website/form/mail.mail" method="post" class="d-flex flex-column gap-3 flex-grow-1 s_website_form" data-model_name="mail.mail">
+            <input type="text" name="name" placeholder="Ονοματεπώνυμο" class="form-control" style="background:#242220;border-color:#3D3A37;color:#fff"/>
+            <input type="text" name="email_from" placeholder="Email ή τηλέφωνο" class="form-control" style="background:#242220;border-color:#3D3A37;color:#fff"/>
+            <textarea name="description" rows="5" placeholder="Το μήνυμά σου — π.χ. συσκευή και πρόβλημα για service" class="form-control" style="background:#242220;border-color:#3D3A37;color:#fff"></textarea>
+            <button type="submit" class="btn btn-primary mt-auto">Αποστολή μηνύματος</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+            </div>
+                </t>
+            </t>
+        </field>
+    </record>
+</odoo>

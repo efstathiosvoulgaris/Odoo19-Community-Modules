@@ -1,0 +1,114 @@
+<odoo>
+    <record id="page_sk_home" model="website.page">
+        <field name="name">Αρχική ΣΚΑΡΛΑΣ</field>
+        <field name="type">qweb</field>
+        <field name="url">/home-skarlas</field>
+        <field name="is_published" eval="True"/>
+        <field name="key">skarlas_website.page_sk_home</field>
+        <field name="arch" type="xml">
+            <t t-name="skarlas_website.page_sk_home">
+                <t t-call="website.layout">
+                    <div id="wrap" class="oe_structure">
+
+<!-- HERO -->
+<section class="pt-5 pb-5" style="background:#FAF9F8">
+  <div class="container py-4">
+    <div class="row align-items-center g-5">
+      <div class="col-lg-7">
+        <span class="badge rounded-pill mb-3" style="background:#FBEAEC;color:#C8102E;font-weight:600;font-size:13px;padding:8px 14px">Πιστοποιημένο κατάστημα · ISO 9001 &amp; 27001</span>
+        <h1 style="font-size:52px;line-height:1.08">Τεχνολογία με υποστήριξη, στη Λιβαδειά.</h1>
+        <p class="lead" style="color:#5A5754;max-width:52ch">Υπολογιστές, κινητά, αναλώσιμα και gadgets — με πραγματικό τεχνικό τμήμα, εγγύηση service και after-sales υποστήριξη από ανθρώπους που ξέρεις.</p>
+        <div class="d-flex gap-3 flex-wrap mt-4">
+          <a href="/shop" class="btn btn-primary btn-lg">Shop τώρα</a>
+          <a href="/psifiaki-ypografi" class="btn btn-outline-secondary btn-lg">Ψηφιακή Υπογραφή →</a>
+        </div>
+        <div class="d-flex gap-5 mt-5">
+          <div><div style="font-weight:800;font-size:24px">25+</div><div style="font-size:13px;color:#8A8580">χρόνια στην τεχνολογία</div></div>
+          <div><div style="font-weight:800;font-size:24px">3</div><div style="font-size:13px;color:#8A8580">γραμμές εξυπηρέτησης</div></div>
+          <div><div style="font-weight:800;font-size:24px">100%</div><div style="font-size:13px;color:#8A8580">εγγύηση επισκευών</div></div>
+        </div>
+      </div>
+      <div class="col-lg-5 position-relative">
+        <div class="sk-placeholder" style="aspect-ratio:4/4.4"><span>φωτογραφία καταστήματος</span></div>
+        <div class="sk-pixels position-absolute" style="bottom:-16px;left:-4px">
+          <div></div><div></div><div></div><div></div><div></div>
+          <div></div><div></div><div></div><div></div><div></div>
+          <div></div><div></div><div></div><div></div><div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+<!-- ESHOP CATEGORIES -->
+<section class="py-5 bg-white border-top border-bottom" style="border-color:#EAE7E4 !important">
+  <div class="container">
+    <div class="d-flex justify-content-between align-items-baseline mb-4">
+      <h2 style="font-size:30px">Κατηγορίες Eshop</h2>
+      <a href="/shop" style="font-weight:600;color:#C8102E">Όλα τα προϊόντα →</a>
+    </div>
+    <div class="row g-3 row-cols-2 row-cols-md-3 row-cols-lg-6">
+      <div class="col"><a href="/shop" class="sk-card d-flex flex-column gap-2 text-decoration-none"><span style="font-size:26px">💻</span><span style="font-weight:600;font-size:14.5px">Laptops &amp; PC</span></a></div>
+      <div class="col"><a href="/shop" class="sk-card d-flex flex-column gap-2 text-decoration-none"><span style="font-size:26px">📱</span><span style="font-weight:600;font-size:14.5px">Smartphones</span></a></div>
+      <div class="col"><a href="/shop" class="sk-card d-flex flex-column gap-2 text-decoration-none"><span style="font-size:26px">🖨</span><span style="font-weight:600;font-size:14.5px">Μελάνια &amp; Αναλώσιμα</span></a></div>
+      <div class="col"><a href="/shop" class="sk-card d-flex flex-column gap-2 text-decoration-none"><span style="font-size:26px">⌨</span><span style="font-weight:600;font-size:14.5px">Περιφερειακά</span></a></div>
+      <div class="col"><a href="/shop" class="sk-card d-flex flex-column gap-2 text-decoration-none"><span style="font-size:26px">🎧</span><span style="font-weight:600;font-size:14.5px">Gadgets</span></a></div>
+      <div class="col"><a href="/shop" class="sk-card d-flex flex-column gap-2 text-decoration-none"><span style="font-size:26px">✏</span><span style="font-weight:600;font-size:14.5px">Γραφική Ύλη</span></a></div>
+    </div>
+  </div>
+</section>
+<!-- DIGITAL SIGNATURE BAND -->
+<section class="py-5">
+  <div class="container">
+    <div class="sk-band-dark p-5">
+      <div class="row align-items-center g-5">
+        <div class="col-lg-7">
+          <div class="sk-eyebrow mb-2" style="color:#E8A2AB">Ψηφιακή Υπογραφή</div>
+          <h2 style="font-size:34px">Απόκτησε ψηφιακή υπογραφή, με καθοδήγηση σε κάθε βήμα.</h2>
+          <p style="color:#B5B0AB;font-size:16.5px">Απαραίτητη για ηλεκτρονικούς διαγωνισμούς και έγγραφα δημοσίου. Ισχύς 3 χρόνια, με το συμβατό USB token (ΕΔΔΥ) και δωρεάν τεχνική υποστήριξη από το κατάστημά μας.</p>
+          <div class="d-flex gap-3 flex-wrap mt-3">
+            <a href="/psifiaki-ypografi" class="btn btn-primary">Οδηγός σε 6 βήματα</a>
+            <a href="/psifiaki-ypografi#token" class="btn btn-outline-light">Αγορά USB token</a>
+          </div>
+        </div>
+        <div class="col-lg-5">
+          <div class="sk-placeholder" style="aspect-ratio:4/3;background:repeating-linear-gradient(45deg,#242220 0 14px,#2C2A27 14px 28px)"><span style="background:#191817">safenet usb token</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+<!-- SERVICES -->
+<section class="pb-5">
+  <div class="container">
+    <h2 style="font-size:30px">Υπηρεσίες</h2>
+    <p style="color:#5A5754" class="mb-4">Τεχνικό τμήμα με πιστοποιήσεις, για ιδιώτες και επαγγελματίες.</p>
+    <div class="row g-3 row-cols-1 row-cols-md-3">
+      <div class="col"><a href="/services" class="sk-card d-flex flex-column gap-2 text-decoration-none">
+        <span class="sk-icon-chip">🔧</span><span style="font-weight:700;font-size:18px">Service κινητών &amp; tablet</span>
+        <span style="color:#5A5754;font-size:14.5px">Οθόνες, μπαταρίες, software — Apple, Samsung, Xiaomi, Huawei και όλες οι συσκευές της ευρωπαϊκής αγοράς. Με εγγύηση.</span>
+        <span style="color:#C8102E;font-weight:600;font-size:14px" class="mt-auto">Περισσότερα →</span></a></div>
+      <div class="col"><a href="/services" class="sk-card d-flex flex-column gap-2 text-decoration-none">
+        <span class="sk-icon-chip">🖥</span><span style="font-weight:700;font-size:18px">Service &amp; αναβάθμιση PC</span>
+        <span style="color:#5A5754;font-size:14.5px">Διάγνωση hardware/software, αναβαθμίσεις, ανάκτηση δεδομένων, δικτύωση και ασφάλεια συστημάτων.</span>
+        <span style="color:#C8102E;font-weight:600;font-size:14px" class="mt-auto">Περισσότερα →</span></a></div>
+      <div class="col"><a href="/services" class="sk-card d-flex flex-column gap-2 text-decoration-none">
+        <span class="sk-icon-chip">🌐</span><span style="font-weight:700;font-size:18px">Software &amp; Hosting</span>
+        <span style="color:#5A5754;font-size:14.5px">Ηλεκτρονική τιμολόγηση, ERP, ταμειακά συστήματα, κατασκευή eshop και φιλοξενία websites.</span>
+        <span style="color:#C8102E;font-weight:600;font-size:14px" class="mt-auto">Περισσότερα →</span></a></div>
+    </div>
+  </div>
+</section>
+<!-- CERTIFICATIONS -->
+<section class="py-4 bg-white border-top" style="border-color:#EAE7E4 !important">
+  <div class="container d-flex justify-content-center gap-5 flex-wrap py-2">
+    <div class="d-flex align-items-center gap-2"><span class="sk-icon-chip" style="border-radius:50%">✓</span><div><div style="font-weight:700;font-size:14px">ISO 9001:2015</div><div style="font-size:12.5px;color:#8A8580">Διαχείριση Ποιότητας</div></div></div>
+    <div class="d-flex align-items-center gap-2"><span class="sk-icon-chip" style="border-radius:50%">✓</span><div><div style="font-weight:700;font-size:14px">ISO 27001:2022</div><div style="font-size:12.5px;color:#8A8580">Ασφάλεια Πληροφοριών</div></div></div>
+    <div class="d-flex align-items-center gap-2"><span class="sk-icon-chip" style="border-radius:50%">✓</span><div><div style="font-weight:700;font-size:14px">GRECA Member</div><div style="font-size:12.5px;color:#8A8580">Greek eCommerce Association</div></div></div>
+  </div>
+</section>
+            </div>
+                </t>
+            </t>
+        </field>
+    </record>
+</odoo>

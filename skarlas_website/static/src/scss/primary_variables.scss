@@ -1,0 +1,44 @@
+//
+// SKARLAS brand — colors & typography
+// o-color-1 = primary (brand red), o-color-2 = secondary (ink),
+// o-color-3 = light bg, o-color-4 = white, o-color-5 = dark bg
+//
+
+$o-theme-font-configs: (
+    'Commissioner': (
+        'family': ('Commissioner', system-ui, sans-serif),
+        'url': 'Commissioner:300,400,500,600,700,800',
+        'properties': (
+            'base': (
+                'font-size-base': 1rem,
+            ),
+        ),
+    ),
+);
+
+$o-color-palettes: map-merge($o-color-palettes,
+    (
+        'eskarlas': (
+            'o-color-1': #C8102E,
+            'o-color-2': #191817,
+            'o-color-3': #FAF9F8,
+            'o-color-4': #FFFFFF,
+            'o-color-5': #191817,
+        ),
+    )
+);
+
+$o-website-values-palettes: (
+    (
+        'color-palettes-name': 'eskarlas',
+        'font': 'Commissioner',
+        'headings-font': 'Commissioner',
+        'navbar-font': 'Commissioner',
+        'buttons-font': 'Commissioner',
+        'btn-padding-y': .8rem,
+        'btn-padding-x': 1.6rem,
+        'btn-border-radius': .625rem,
+        'header-template': 'default',
+        'footer-template': 'default',
+    ),
+);
