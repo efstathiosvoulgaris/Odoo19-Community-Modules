@@ -12,6 +12,7 @@
                 <field name="date_start"/>
                 <field name="date_end"/>
                 <field name="amount" sum="Σύνολο"/>
+                <field name="hours_total" widget="float_time" optional="show"/>
                 <field name="currency_id" column_invisible="1"/>
                 <field name="user_id" widget="many2one_avatar_user"/>
                 <field name="state" widget="badge"
@@ -68,6 +69,11 @@
                             <field name="amount"/>
                             <field name="currency_id" invisible="1"/>
                             <field name="user_id" widget="many2one_avatar_user"/>
+                            <field name="hours_included" widget="float_time"/>
+                            <field name="hours_total" widget="float_time"/>
+                            <field name="hours_left" widget="float_time"
+                                   invisible="not hours_included"
+                                   decoration-danger="hours_left &lt; 0"/>
                         </group>
                         <group>
                             <field name="date_start"/>
@@ -81,6 +87,16 @@
                     <notebook>
                         <page string="Τι καλύπτει" name="notes">
                             <field name="notes" placeholder="Εξοπλισμός, επισκέψεις, όροι… Το υπογεγραμμένο PDF επισυνάπτεται δεξιά/κάτω, στη συνομιλία."/>
+                        </page>
+                        <page string="Ώρες" name="hours">
+                            <field name="hour_ids">
+                                <list editable="bottom">
+                                    <field name="date"/>
+                                    <field name="user_id" widget="many2one_avatar_user"/>
+                                    <field name="name"/>
+                                    <field name="hours" widget="float_time" sum="Σύνολο"/>
+                                </list>
+                            </field>
                         </page>
                     </notebook>
                 </sheet>
@@ -122,6 +138,53 @@
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">Νέο συμβόλαιο συντήρησης</p>
             <p>Πριν λήξει, ο υπεύθυνος παίρνει ειδοποίηση στις δραστηριότητες.</p>
+        </field>
+    </record>
+
+    <record id="service_contract_hours_view_list" model="ir.ui.view">
+        <field name="name">service.contract.hours.list</field>
+        <field name="model">service.contract.hours</field>
+        <field name="arch" type="xml">
+            <list editable="top">
+                <field name="date"/>
+                <field name="user_id" widget="many2one_avatar_user"/>
+                <field name="contract_id"/>
+                <field name="partner_id" optional="show"/>
+                <field name="name"/>
+                <field name="hours" widget="float_time" sum="Σύνολο"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="service_contract_hours_view_search" model="ir.ui.view">
+        <field name="name">service.contract.hours.search</field>
+        <field name="model">service.contract.hours</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="user_id"/>
+                <field name="contract_id"/>
+                <field name="partner_id"/>
+                <field name="name"/>
+                <filter name="mine" string="Δικές μου" domain="[('user_id', '=', uid)]"/>
+                <filter name="this_month" string="Αυτός ο μήνας"
+                        domain="[('date', '&gt;=', context_today().strftime('%Y-%m-01'))]"/>
+                <group>
+                    <filter name="group_user" string="Υπάλληλος" context="{'group_by': 'user_id'}"/>
+                    <filter name="group_contract" string="Συμβόλαιο" context="{'group_by': 'contract_id'}"/>
+                    <filter name="group_month" string="Μήνας" context="{'group_by': 'date:month'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_service_contract_hours" model="ir.actions.act_window">
+        <field name="name">Ώρες Εργασίας</field>
+        <field name="res_model">service.contract.hours</field>
+        <field name="view_mode">list</field>
+        <field name="context">{'search_default_this_month': 1, 'search_default_group_user': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Καμία καταχώριση ωρών</p>
+            <p>Οι ώρες γράφονται στην καρτέλα «Ώρες» κάθε συμβολαίου ή εδώ.</p>
         </field>
     </record>
 </odoo>

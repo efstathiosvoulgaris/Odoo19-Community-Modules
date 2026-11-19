@@ -85,6 +85,24 @@ class PosPaymentMethod(models.Model):
             if method._l10n_gr_prov_type_is_guessed() and company._l10n_gr_prov_active():
                 method.l10n_gr_prov_payment_type = '7'
 
+    def _l10n_gr_prov_ensure_credit_method(self, company):
+        """«Επί Πιστώσει» (myDATA 5): Odoo's journal-less Customer Account.
+
+        The document is issued unpaid and the amount stays on the customer.
+        Odoo's own «Customer Account» is renamed, a name somebody chose is
+        kept; with none at all, one is created. Returns 1 when created.
+        """
+        credit = self.search([('company_id', '=', company.id)]).filtered(
+            lambda m: m.type == 'pay_later')[:1]
+        if not credit:
+            self.create({'name': 'Επί Πιστώσει', 'company_id': company.id,
+                         'split_transactions': True})
+            return 1
+        if credit.with_context(lang='en_US').name in ('Customer Account', 'Λογαριασμός Πελάτη'):
+            for lang, _name in self.env['res.lang'].get_installed():
+                credit.with_context(lang=lang).name = 'Επί Πιστώσει'
+        return 0
+
     def _l10n_gr_prov_ensure_card_method(self, company, journal):
         """Make sure a card (type 7) method exists before seeding ours.
 
@@ -156,6 +174,7 @@ class PosPaymentMethod(models.Model):
         if card and card.l10n_gr_prov_payment_type != '7':
             card.l10n_gr_prov_payment_type = '7'
             counts['repaired'] += 1
+        counts['created'] += self._l10n_gr_prov_ensure_credit_method(company)
         for xmlid, name, code in GR_POS_PAYMENT_METHODS:
             full_xmlid = f'l10n_gr_provider_pos.{xmlid}_{company.id}'
             owned = self.env.ref(full_xmlid, raise_if_not_found=False)

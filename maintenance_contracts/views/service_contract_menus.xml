@@ -5,6 +5,8 @@
               sequence="46" groups="base.group_user"/>
     <menuitem id="menu_contracts" name="Συμβόλαια"
               parent="menu_contracts_root" action="action_service_contract" sequence="1"/>
+    <menuitem id="menu_contract_hours" name="Ώρες Εργασίας"
+              parent="menu_contracts_root" action="action_service_contract_hours" sequence="2"/>
     <menuitem id="menu_contracts_config" name="Διαμόρφωση"
               parent="menu_contracts_root" sequence="90" groups="base.group_system"/>
     <menuitem id="menu_contracts_settings" name="Ρυθμίσεις"

@@ -6,6 +6,9 @@ class ResCompany(models.Model):
 
     contract_notice_days = fields.Integer(
         string='Ειδοποίηση πριν τη λήξη (ημέρες)', default=30)
+    contract_notify_user_ids = fields.Many2many(
+        'res.users', 'res_company_contract_notify_users_rel', 'company_id', 'user_id',
+        string='Ειδοποίηση σε χρήστες', domain="[('share', '=', False)]")
     contract_journal_id = fields.Many2one(
         'account.journal', string='Ημερολόγιο Προτιμολογίου',
         domain="[('type', '=', 'sale')]")

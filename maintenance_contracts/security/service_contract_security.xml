@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Everyone reads all hours; each user writes only their own lines. -->
+    <record id="rule_contract_hours_own" model="ir.rule">
+        <field name="name">Ώρες συμβολαίου: μόνο οι δικές μου</field>
+        <field name="model_id" ref="model_service_contract_hours"/>
+        <field name="domain_force">[('user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+        <field name="perm_read" eval="False"/>
+    </record>
+    <record id="rule_contract_hours_manager" model="ir.rule">
+        <field name="name">Ώρες συμβολαίου: όλες (διαχειριστής)</field>
+        <field name="model_id" ref="model_service_contract_hours"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('account.group_account_manager'))]"/>
+    </record>
+    <record id="rule_contract_hours_company" model="ir.rule">
+        <field name="name">Ώρες συμβολαίου: εταιρεία</field>
+        <field name="model_id" ref="model_service_contract_hours"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+</odoo>

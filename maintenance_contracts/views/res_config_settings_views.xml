@@ -13,6 +13,11 @@
                                  help="Πόσες ημέρες πριν τη λήξη ο υπεύθυνος παίρνει «Ανανέωση συμβολαίου». Προτείνεται σε κάθε νέο συμβόλαιο και αλλάζει ανά συμβόλαιο.">
                             <field name="contract_notice_days"/>
                         </setting>
+                        <setting string="Ειδοποίηση σε χρήστες" name="contract_notify_users_setting"
+                                 help="Ποιοι ενημερώνονται όταν ένα συμβόλαιο λήγει, έληξε, ανανεώθηκε ή δεν ανανεώνεται (Inbox ή email, κατά τη ρύθμιση του καθενός). Κενό = όλοι οι εσωτερικοί χρήστες.">
+                            <field name="contract_notify_user_ids" widget="many2many_tags"
+                                   options="{'no_create': True}"/>
+                        </setting>
                     </block>
                     <block title="Προτιμολόγιο" name="contract_invoice_block">
                         <setting string="Ημερολόγιο" name="contract_journal_setting"

@@ -6,6 +6,8 @@ class ResConfigSettings(models.TransientModel):
 
     contract_notice_days = fields.Integer(
         related='company_id.contract_notice_days', readonly=False)
+    contract_notify_user_ids = fields.Many2many(
+        related='company_id.contract_notify_user_ids', readonly=False)
     contract_journal_id = fields.Many2one(
         related='company_id.contract_journal_id', readonly=False)
     contract_product_id = fields.Many2one(

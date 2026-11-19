@@ -1,6 +1,6 @@
 {
     'name': 'Συμβόλαια Συντήρησης',
-    'version': '1.0',
+    'version': '1.1',
     'category': 'Sales',
     'summary': 'Yearly maintenance contracts: expiry reminders, renewal, draft invoice',
     'description': (
@@ -14,6 +14,7 @@
         '\n'
         'Changelog\n'
         '---------\n'
+        '1.1 — Ώρες εργασίας ανά συμβόλαιο (καρτέλα «Ώρες», μενού «Ώρες Εργασίας», προαιρετικές ώρες που περιλαμβάνει). Ειδοποίηση στους χρήστες (ρύθμιση· κενό = όλοι) όταν λήγει, έληξε, ανανεώνεται ή δεν ανανεώνεται.\n'
         '1.0 — Initial release.'
     ),
     'author': 'Efstathios Voulgaris',
@@ -22,6 +23,7 @@
     'depends': ['account', 'mail'],
     'data': [
         'security/ir.model.access.csv',
+        'security/service_contract_security.xml',
         'data/service_contract_data.xml',
         'views/service_contract_views.xml',
         'views/res_partner_views.xml',

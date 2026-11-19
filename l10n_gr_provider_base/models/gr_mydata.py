@@ -1292,6 +1292,22 @@ TAX_RENAME_MAP = {
 TAX_ARCHIVE_TEMPLATES = tuple(
     f'l10n_gr_tax_p{rate}_O_eu' for rate in (24, 17, 13, 9, 6, 4, 0))
 
+# Chart / core accounts Odoo ships mislabelled for Greek: the l10n_gr cash
+# difference pair both read «εισόδημα από διαφορά μετρητών», the core
+# liquidity accounts have English names only. template id → (Greek name,
+# names Odoo ships — only those are replaced, a name the user chose stays).
+ACCOUNT_RENAME_MAP = {
+    'l10n_gr_64_14': ('Ζημιές από διαφορές ταμείου',
+                      ('cash difference expense', 'εισόδημα από διαφορά μετρητών')),
+    'l10n_gr_71_06': ('Κέρδη από διαφορές ταμείου',
+                      ('cash difference income', 'εισόδημα από διαφορά μετρητών')),
+    'transfer_account_id': ('Μεταφορές ρευστότητας', ('Liquidity Transfer',)),
+    'account_journal_payment_debit_account_id': ('Εισπράξεις υπό εκκαθάριση',
+                                                 ('Outstanding Receipts',)),
+    'account_journal_payment_credit_account_id': ('Πληρωμές υπό εκκαθάριση',
+                                                  ('Outstanding Payments',)),
+}
+
 # ── Extra-tax rates — % of net for auto-calculation ─────────────────────────
 # Categories absent from these maps are manual (fixed €/unit or variable).
 # NOTE: the readonly category lists in views/account_move_views.xml must match

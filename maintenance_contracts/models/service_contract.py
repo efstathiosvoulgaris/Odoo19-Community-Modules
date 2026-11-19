@@ -58,6 +58,14 @@ class ServiceContract(models.Model):
     invoice_ids = fields.One2many(
         'account.move', 'service_contract_id', string='Τιμολόγια')
     invoice_count = fields.Integer(compute='_compute_invoice_count')
+    hour_ids = fields.One2many(
+        'service.contract.hours', 'contract_id', string='Ώρες', copy=False)
+    hours_total = fields.Float(
+        string='Ώρες εργασίας', compute='_compute_hours', store=True)
+    hours_included = fields.Float(
+        string='Ώρες που περιλαμβάνει', tracking=True,
+        help='Προαιρετικό. Αν συμπληρωθεί, φαίνονται και οι ώρες που απομένουν.')
+    hours_left = fields.Float(string='Απομένουν', compute='_compute_hours_left')
 
     _check_dates = models.Constraint(
         'CHECK (date_end >= date_start)',
@@ -68,6 +76,16 @@ class ServiceContract(models.Model):
         for contract in self:
             contract.invoice_count = len(
                 contract.invoice_ids.filtered(lambda m: m.state != 'cancel'))
+
+    @api.depends('hour_ids.hours')
+    def _compute_hours(self):
+        for contract in self:
+            contract.hours_total = sum(contract.hour_ids.mapped('hours'))
+
+    @api.depends('hours_included', 'hours_total')
+    def _compute_hours_left(self):
+        for contract in self:
+            contract.hours_left = contract.hours_included - contract.hours_total
 
     @api.onchange('date_start')
     def _onchange_date_start(self):
@@ -90,6 +108,24 @@ class ServiceContract(models.Model):
             state = contract._date_state(today)
             if contract.state != state:
                 contract.state = state
+                # notify on the change only, so a daily cron says it once
+                if state in ('expiring', 'expired'):
+                    contract._notify_users(
+                        _('Το συμβόλαιο «%(name)s» του πελάτη %(partner)s %(what)s στις %(end)s.',
+                          name=contract.name, partner=contract.partner_id.display_name,
+                          what=_('έληξε') if state == 'expired' else _('λήγει'),
+                          end=contract.date_end.strftime('%d/%m/%Y')))
+
+    def _notify_users(self, body):
+        """A note on the contract that lands in the chosen users' Inbox (or
+        email, per their preference). Setting empty = every internal user of
+        the contract's company; the user who acted is never told."""
+        self.ensure_one()
+        users = self.company_id.contract_notify_user_ids or self.env['res.users'].search([
+            ('share', '=', False), ('company_ids', 'in', self.company_id.id)])
+        partners = (users - self.env.user).partner_id
+        self.message_post(body=body, subtype_xmlid='mail.mt_note',
+                          partner_ids=partners.ids)
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -149,11 +185,17 @@ class ServiceContract(models.Model):
         })
         self.write({'state': 'renewed', 'next_contract_id': new.id})
         self._close_reminders(_('Ανανεώθηκε: %s', new.display_name))
+        self._notify_users(_('Το συμβόλαιο «%(name)s» του πελάτη %(partner)s ανανεώθηκε έως %(end)s.',
+                             name=self.name, partner=self.partner_id.display_name,
+                             end=new.date_end.strftime('%d/%m/%Y')))
         return self._open(new)
 
     def action_not_renewed(self):
         self.write({'state': 'not_renewed'})
         self._close_reminders(_('Δεν ανανεώθηκε.'))
+        for contract in self:
+            contract._notify_users(_('Το συμβόλαιο «%(name)s» του πελάτη %(partner)s δεν ανανεώνεται.',
+                                     name=contract.name, partner=contract.partner_id.display_name))
 
     def action_reopen(self):
         self.write({'state': 'active'})

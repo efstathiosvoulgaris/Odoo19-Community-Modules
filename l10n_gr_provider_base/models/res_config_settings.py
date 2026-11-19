@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from odoo import fields, models, _
 
-from .gr_mydata import TAX_RENAME_MAP, TAX_ARCHIVE_TEMPLATES, gr_tax
+from .gr_mydata import ACCOUNT_RENAME_MAP, TAX_RENAME_MAP, TAX_ARCHIVE_TEMPLATES, gr_tax
 
 
 class ResConfigSettings(models.TransientModel):
@@ -85,12 +85,14 @@ class ResConfigSettings(models.TransientModel):
         # loaded before this module) — idempotent
         journal_counts = self.env['account.journal'] \
             ._l10n_gr_prov_create_journals(company)
-        # No chart sets the POS receivable account, so on a fresh database every
-        # POS payment move is created with a NULL account and hits the SQL
-        # constraint («Missing required account on accountable line»). Point it
-        # at the short-term trade receivable unless the user chose one already.
+        # The POS receivable is either empty (every POS payment move then hits
+        # «Missing required account on accountable line») or set by the chart
+        # to 38.01 Ταμείο — a cash account, so card/IRIS takings land in the
+        # till and «Επί Πιστώσει» cannot reconcile. Point it at the short-term
+        # trade receivable; a receivable account the user chose stays.
         pos_receivable = 0
-        if not company.account_default_pos_receivable_account_id:
+        current = company.account_default_pos_receivable_account_id
+        if not current or current.account_type != 'asset_receivable':
             account = gr_tax(self.env, company, 'l10n_gr_30_01_01_01')
             if account:
                 company.account_default_pos_receivable_account_id = account
@@ -98,6 +100,8 @@ class ResConfigSettings(models.TransientModel):
         # AADE §8.13 codes on the standard Odoo units (dispatch documents),
         # unarchiving the ones Odoo ships disabled (m³)
         unit_counts = self.env['uom.uom']._l10n_gr_prov_map_units()
+        purchase_excl = self._l10n_gr_prov_purchase_tax_excluded(company)
+        accounts_renamed = self._l10n_gr_prov_rename_accounts(company)
         return {
             'type': 'ir.actions.client',
             'tag': 'display_notification',
@@ -120,9 +124,40 @@ class ResConfigSettings(models.TransientModel):
                     'κωδικός myDATA, %(ordered)s ταξινομήθηκαν, %(skipped)s δεν '
                     'δημιουργήθηκαν επειδή ο κωδικός τους χρησιμοποιείται ήδη '
                     '(δείτε το log), %(pos_receivable)s λογαριασμός απαιτήσεων '
-                    'POS.',
+                    'POS, %(purchase_excl)s φόροι αγορών χωρίς ΦΠΑ στην τιμή, '
+                    '%(accounts_renamed)s λογαριασμοί με ελληνικό όνομα.',
                     renamed=renamed, activated=activated, archived=archived,
                     fp_fixed=fp_fixed, pos_receivable=pos_receivable,
+                    purchase_excl=purchase_excl, accounts_renamed=accounts_renamed,
                     **unit_counts, **journal_counts),
             },
         }
+
+    def _l10n_gr_prov_purchase_tax_excluded(self, company):
+        """Vendor bills carry net prices. «Prices include tax» on the company
+        is right for retail sales but drags every purchase tax along with it,
+        so VAT gets split out of a net price. Taxes whose include/exclude the
+        user set explicitly are left alone."""
+        taxes = self.env['account.tax'].with_context(active_test=False).search([
+            ('company_id', '=', company.id),
+            ('type_tax_use', '=', 'purchase'),
+            ('price_include_override', '=', False),
+        ]).filtered('price_include')
+        taxes.write({'price_include_override': 'tax_excluded'})
+        return len(taxes)
+
+    def _l10n_gr_prov_rename_accounts(self, company):
+        """Greek names for the accounts Odoo ships mislabelled
+        (ACCOUNT_RENAME_MAP); only a name Odoo shipped is replaced."""
+        renamed = 0
+        langs = [code for code, _n in self.env['res.lang'].get_installed()]
+        for template_id, (new_name, shipped) in ACCOUNT_RENAME_MAP.items():
+            account = gr_tax(self.env, company, template_id)
+            if not account:
+                continue
+            for lang in langs:
+                translated = account.with_context(lang=lang)
+                if translated.name in shipped:
+                    translated.name = new_name
+                    renamed += 1
+        return renamed

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Greece - E-Invoicing Provider (Point of Sale)',
-    'version': '1.13',
+    'version': '1.14',
     'category': 'Accounting/Localizations',
     'summary': 'POS receipts (ΑΛΠ) and invoices (ΤΙΜ) through the e-invoicing provider',
     'description': (
@@ -25,6 +25,8 @@
         '\n'
         'Changelog\n'
         '---------\n'
+        '1.14 — Το κουμπί τακτοποίησης ετοιμάζει και το «Επί Πιστώσει» (myDATA 5):\n'
+        'μετονομάζει τον «Λογαριασμό Πελάτη» του Odoo ή τον δημιουργεί αν λείπει.\n'
         '1.13 — Review P0 #25/#26. Παραγγελία που συγχρονίζεται μετά τα\n'
         'μεσάνυχτα εκδίδεται με τη σημερινή ημερομηνία (αλλιώς ER-30). Επιστροφή\n'
         'σε πώληση χωρίς ΜΑΡΚ σταματά με μήνυμα, πριν δοθούν χρήματα πίσω.\n'

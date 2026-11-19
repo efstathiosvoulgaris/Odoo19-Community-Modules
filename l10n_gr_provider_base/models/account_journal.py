@@ -145,6 +145,8 @@ class AccountJournal(models.Model):
         'sale': 'l10n_gr_70_01_01',       # Πωλήσεις εμπορευμάτων
         'purchase': 'l10n_gr_64_12_02',   # Λοιπά έξοδα
     }
+    # myDATA service documents → 70.07.01 Πωλήσεις υπηρεσιών
+    _GR_SERVICE_INV_TYPES = ('2.1', '2.2', '2.3', '2.4', '11.2')
 
     # NOTE: journals are deliberately NOT declared via @template — the chart
     # loader merges template journals onto existing ones (it grabbed the stock
@@ -173,6 +175,16 @@ class AccountJournal(models.Model):
                 lambda j: j.type == jtype and not j.default_account_id)
             missing.write({'default_account_id': account.id})
             counts['accounts'] += len(missing)
+        # Service documents (ΤΠΥ, ΑΠΥ…) book service income, not goods sales.
+        # Only journals still on the generic goods default move.
+        goods = self.env.ref(f'account.{company.id}_l10n_gr_70_01_01', raise_if_not_found=False)
+        services = self.env.ref(f'account.{company.id}_l10n_gr_70_07_01', raise_if_not_found=False)
+        if goods and services:
+            on_goods = journals.filtered(
+                lambda j: j.l10n_gr_edi_inv_type_default in self._GR_SERVICE_INV_TYPES
+                and j.default_account_id == goods)
+            on_goods.write({'default_account_id': services.id})
+            counts['accounts'] += len(on_goods)
         retail_wrong_form = journals.filtered(
             lambda j: j.l10n_gr_edi_inv_type_default in RETAIL_80MM_TYPES
             and j.l10n_gr_prov_print_form != 'gr_80mm')
