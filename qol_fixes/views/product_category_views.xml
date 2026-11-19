@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="product_category_form_public_categ" model="ir.ui.view">
+        <field name="name">product.category.form.qol.public.categ</field>
+        <field name="model">product.category</field>
+        <field name="inherit_id" ref="product.product_category_form_view"/>
+        <field name="arch" type="xml">
+            <field name="parent_id" position="after">
+                <label for="qol_public_categ_id"/>
+                <div class="o_row">
+                    <field name="qol_public_categ_id" options="{'no_create': True}"/>
+                    <button name="action_qol_apply_public_to_products" type="object"
+                            string="Ενημέρωση ειδών" class="btn-link" icon="fa-refresh"
+                            invisible="not qol_public_categ_id"
+                            help="Βάζει αυτή την κατηγορία eShop στα είδη της κατηγορίας που δεν έχουν καμία."/>
+                </div>
+                <field name="qol_no_eshop"/>
+            </field>
+        </field>
+    </record>
+
+    <record id="product_category_list_public_categ" model="ir.ui.view">
+        <field name="name">product.category.list.qol.public.categ</field>
+        <field name="model">product.category</field>
+        <field name="inherit_id" ref="product.product_category_list_view"/>
+        <field name="arch" type="xml">
+            <field name="display_name" position="after">
+                <field name="qol_public_categ_id" optional="show"/>
+            </field>
+        </field>
+    </record>
+
+    <!-- «Ενέργειες» on selected categories in the list -->
+    <record id="action_qol_link_public_by_name" model="ir.actions.server">
+        <field name="name">Σύνδεση με eShop (κατά όνομα)</field>
+        <field name="model_id" ref="product.model_product_category"/>
+        <field name="binding_model_id" ref="product.model_product_category"/>
+        <field name="binding_view_types">list</field>
+        <field name="state">code</field>
+        <field name="code">action = records.action_qol_link_public_by_name()</field>
+    </record>
+    <record id="action_qol_apply_public_to_products" model="ir.actions.server">
+        <field name="name">Ενημέρωση ειδών με την κατηγορία eShop</field>
+        <field name="model_id" ref="product.model_product_category"/>
+        <field name="binding_model_id" ref="product.model_product_category"/>
+        <field name="binding_view_types">list,form</field>
+        <field name="state">code</field>
+        <field name="code">action = records.action_qol_apply_public_to_products()</field>
+    </record>
+</odoo>

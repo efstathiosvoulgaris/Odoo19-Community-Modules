@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Odoo 19: Μικρές Διορθώσεις (QoL)',
-    'version': '1.6',
+    'version': '1.7',
     'category': 'Productivity',
     'summary': 'Small quality-of-life fixes for Odoo 19, always on',
     'description': (
@@ -20,7 +20,9 @@
         '* 1.4 — Contacts found by mobile or phone in every contact field.\n'
         '* 1.5 — The eshop cron is noupdate: an upgrade no longer switches it off.\n'
         '* 1.6 — Listed as an application (own icon), so Apps shows it without '
-        'clearing the «Apps» filter. No menu: the fixes live in the screens they fix.'
+        'clearing the «Apps» filter. No menu: the fixes live in the screens they fix.\n'
+        '* 1.7 — Product category linked to an eShop category: the product gets it automatically; '
+        'actions to link by name (creating missing eShop categories) and to fill existing products.'
     ),
     'author': 'Efstathios Voulgaris',
     'publisher': 'Efstathios Voulgaris',
@@ -32,6 +34,7 @@
         'views/purchase_order_list_views.xml',
         'views/res_partner_views.xml',
         'views/product_template_views.xml',
+        'views/product_category_views.xml',
         'data/ir_cron.xml',
     ],
     'assets': {

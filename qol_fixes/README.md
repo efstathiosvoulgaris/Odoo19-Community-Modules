@@ -1,6 +1,6 @@
 # Odoo 19: Μικρές Διορθώσεις (QoL)
 
-**Version:** 1.6 | **Odoo:** 19 | **License:** LGPL-3
+**Version:** 1.7 | **Odoo:** 19 | **License:** LGPL-3
 
 Small, independent quality-of-life fixes for Odoo 19. No settings — every fix
 is always on.
@@ -23,6 +23,7 @@ is always on.
 | 1.2 | Contacts | **Viber** button next to the mobile (`kinito`, from `l10n_gr_partner`) on the contact form. Opens `viber://chat?number=+30…` in the Viber app installed on the PC/phone; a 10-digit number is taken as Greek. Hidden when there is no mobile. |
 | 1.3 | Eshop | **Eshop follows stock.** Every 15′ (cron «Eshop: δημοσίευση/απόσυρση με βάση το απόθεμα»): a saleable storable product with stock is published, without stock withdrawn. Skroutz follows by itself (its feed takes published products with an MPN). Per-product opt-out «Χωρίς αυτόματη δημοσίευση». Services/non-storable never touched. The cron ships **inactive**: the addons folder is shared by test and skarlas, so it is switched on per database. Since 1.5 the record is `noupdate`, so an upgrade leaves that switch alone (1.4's upgrade had turned it off in both databases). |
 | 1.4 | Contacts | **Find a contact by mobile or phone** in every contact field (sale, service, CRM, invoices, ...) and in the contacts search «Όνομα»: `kinito` and `phone` added to `_rec_names_search`; a number typed with spaces/dashes («698 488 8478») is also tried digits-only. Not the POS (its customer search runs in the browser). |
+| 1.7 | Eshop | **Product category → eShop category.** Each product category has «Κατηγορία eShop». A product that gets that category (new product or category changed) gets the eShop category too; on a change the previous category's eShop category is removed, ones added by hand stay; a save that sets eShop categories itself is left alone. List «Ενέργειες»: «Σύνδεση με eShop (κατά όνομα)» links unlinked categories to the eShop category with the same path, creates it (and missing parents, empty categories too) when the name exists in no hand-made eShop category, and leaves for the user the ones whose name sits elsewhere in the eShop; «Χωρίς eShop» on a category keeps it out of the link action. «Ενημέρωση ειδών με την κατηγορία eShop» (also a button on the category form) gives it to the category's products that have no eShop category. |
 
 ## Considered and not done
 
