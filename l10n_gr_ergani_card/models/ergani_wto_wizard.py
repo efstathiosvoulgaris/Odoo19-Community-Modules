@@ -30,7 +30,7 @@ class ErganiWtoWizard(models.TransientModel):
     mode = fields.Selection([('change', 'Αλλαγή ωραρίου'), ('extend', 'Παράταση σήμερα')],
                             default='change', required=True)
     employee_ids = fields.Many2many('hr.employee', string='Εργαζόμενοι', required=True,
-                                    domain="[('ergani_enabled', '=', True)]")
+                                    domain="[('ergani_afm', '!=', False)]")
     date_from = fields.Date(string='Από', required=True, default=fields.Date.context_today)
     date_to = fields.Date(string='Έως', required=True, default=fields.Date.context_today)
     day_type = fields.Selection([

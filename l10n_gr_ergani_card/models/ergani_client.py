@@ -209,8 +209,9 @@ class ErganiClient:
         self.env.cr.commit()  # the new refresh token must survive a crash
 
     def _login(self, row):
-        body = {'Username': self.company.ergani_username or '',
-                'Password': self.company.ergani_password or '', 'Usertype': '02'}
+        body = {'Username': (self.company.ergani_username or '').strip(),
+                'Password': (self.company.ergani_password or '').strip(),
+                'Usertype': self.company.ergani_usertype or '02'}
         resp = self._http('POST', 'Authentication', 'login', body,
                           {'Content-Type': 'application/json'})
         if resp.status_code != 200:

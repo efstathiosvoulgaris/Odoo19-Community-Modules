@@ -30,3 +30,4 @@ access_ergani_wto_wizard_manager,ergani.wto.wizard manager,model_ergani_wto_wiza
 access_ergani_wto_wizard_system,ergani.wto.wizard system,model_ergani_wto_wizard,base.group_system,1,1,1,1
 access_ergani_wto_wizard_interval_manager,ergani.wto.wizard.interval manager,model_ergani_wto_wizard_interval,hr.group_hr_manager,1,1,1,1
 access_ergani_wto_wizard_interval_system,ergani.wto.wizard.interval system,model_ergani_wto_wizard_interval,base.group_system,1,1,1,1
+access_ergani_service_probe_system,ergani.service.probe system,model_ergani_service_probe,base.group_system,1,1,1,1

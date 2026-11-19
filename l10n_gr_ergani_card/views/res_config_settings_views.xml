@@ -30,7 +30,9 @@
                     </block>
                     <block title="Σύνδεση ΕΡΓΑΝΗ" name="ergani_connection_block">
                         <setting string="Λογαριασμός" name="ergani_account_setting"
-                                 help="Κωδικοί ΕΡΓΑΝΗ του εργοδότη (Usertype 02). Ορατοί μόνο σε διαχειριστές.">
+                                 help="Κωδικοί του εργοδότη για το API. Ορατοί μόνο σε διαχειριστές.">
+                            <div class="row"><label class="col-4" for="ergani_usertype"/>
+                                <field name="ergani_usertype" class="col-8"/></div>
                             <div class="row"><label class="col-4" for="ergani_username"/>
                                 <field name="ergani_username" class="col-8"/></div>
                             <div class="row"><label class="col-4" for="ergani_password"/>

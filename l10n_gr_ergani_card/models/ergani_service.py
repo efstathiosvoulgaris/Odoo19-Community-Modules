@@ -23,6 +23,7 @@ class ErganiService(models.Model):
     _name = 'ergani.service'
     _description = 'ΕΡΓΑΝΗ: διαθέσιμη υπηρεσία'
     _order = 'kind, code'
+    _rec_name = 'code'
 
     company_id = fields.Many2one('res.company', required=True, readonly=True)
     kind = fields.Selection([('service', 'Υπηρεσία (ExecuteService)'),
@@ -139,3 +140,72 @@ class ErganiWorktimeType(models.Model):
                               'Δείτε το «Αρχείο υποβολών».'))
         return {'type': 'ir.actions.client', 'tag': 'display_notification', 'params': {
             'type': 'success', 'message': _('Τύποι από το ΕΡΓΑΝΗ: %s.', found)}}
+
+
+class ErganiServiceProbe(models.TransientModel):
+    """«Δοκιμή» of a read service (EX_BASE_05/07/08…): fills the parameters the
+    ServicesList names and shows ΕΡΓΑΝΗ's raw answer, so the shape can be seen
+    before code depends on it. Only for the system admin: EX_BASE_07 returns
+    every employee's punches."""
+    _name = 'ergani.service.probe'
+    _description = 'ΕΡΓΑΝΗ: δοκιμή υπηρεσίας'
+
+    service_id = fields.Many2one('ergani.service', required=True, readonly=True)
+    date = fields.Date(string='Ημερομηνία', default=fields.Date.context_today)
+    # ponytail: the Date format of ExecuteService is undocumented — a knob until the trial shows it.
+    date_format = fields.Selection([('%Y-%m-%d', 'ΕΕΕΕ-ΜΜ-ΗΗ'), ('%d/%m/%Y', 'ΗΗ/ΜΜ/ΕΕΕΕ'),
+                                    ('%Y%m%d', 'ΕΕΕΕΜΜΗΗ')],
+                                   string='Μορφή ημερομηνίας', default='%Y-%m-%d', required=True)
+    branch_aa = fields.Integer(string='Α/Α παραρτήματος',
+                               default=lambda self: self.env.company.ergani_branch_aa)
+    afm = fields.Char(string='ΑΦΜ')
+    parameters_sent = fields.Text(string='Παράμετροι που στάλθηκαν', readonly=True)
+    result = fields.Text(string='Απάντηση ΕΡΓΑΝΗ', readonly=True)
+
+    def _ergani_params(self):
+        try:
+            spec = json.loads(self.service_id.parameters or '[]')
+        except ValueError:
+            spec = []
+        date = self.date or fields.Date.context_today(self)
+        values = {'pararthmaaa': self.branch_aa or 0, 'date': date.strftime(self.date_format),
+                  'afm': self.afm or '', 'reportyear': date.year, 'reportmonth': date.month}
+        params = {}
+        for p in spec if isinstance(spec, list) else []:
+            name = str((p or {}).get('name') or '')
+            value = values.get(name.lower())
+            if value in (None, '') and not (p or {}).get('isRequired'):
+                continue
+            if value in (None, ''):
+                raise UserError(_('Η παράμετρος «%s» δεν συμπληρώνεται αυτόματα.', name))
+            params[name] = value
+        return params
+
+    def action_run(self):
+        self.ensure_one()
+        if not self.env.user.has_group('base.group_system'):
+            raise UserError(_('Μόνο για τον διαχειριστή.'))
+        company = self.service_id.company_id
+        _company_ready(company)
+        params = self._ergani_params()
+        try:
+            data = ErganiClient(company).execute_service(self.service_id.code, params)
+            result = json.dumps(data, ensure_ascii=False, indent=2)
+        except ErganiError as e:
+            result = _('Σφάλμα: %s', e)
+        self.write({'parameters_sent': json.dumps(params, ensure_ascii=False),
+                    'result': result[:200000]})
+        return {'type': 'ir.actions.act_window', 'res_model': self._name, 'res_id': self.id,
+                'view_mode': 'form', 'target': 'new'}
+
+
+class ErganiServiceProbeAction(models.Model):
+    _inherit = 'ergani.service'
+
+    def action_ergani_probe(self):
+        self.ensure_one()
+        if self.kind != 'service':
+            raise UserError(_('Δοκιμή μόνο για υπηρεσίες ανάγνωσης (ExecuteService).'))
+        probe = self.env['ergani.service.probe'].create({'service_id': self.id})
+        return {'type': 'ir.actions.act_window', 'res_model': probe._name, 'res_id': probe.id,
+                'view_mode': 'form', 'target': 'new', 'name': self.code}

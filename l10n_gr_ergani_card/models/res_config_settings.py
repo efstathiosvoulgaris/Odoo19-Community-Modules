@@ -8,6 +8,7 @@ class ResConfigSettings(models.TransientModel):
     ergani_mode = fields.Selection(related='company_id.ergani_mode', readonly=False)
     ergani_username = fields.Char(related='company_id.ergani_username', readonly=False)
     ergani_password = fields.Char(related='company_id.ergani_password', readonly=False)
+    ergani_usertype = fields.Selection(related='company_id.ergani_usertype', readonly=False)
     ergani_branch_aa = fields.Integer(related='company_id.ergani_branch_aa', readonly=False)
     ergani_late_reason_code = fields.Char(
         related='company_id.ergani_late_reason_code', readonly=False)

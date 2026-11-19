@@ -22,6 +22,11 @@ class ResCompany(models.Model):
         help='Προσομοίωση: οι κάρτες καταγράφονται αλλά δεν στέλνονται πουθενά.')
     ergani_username = fields.Char(string='Χρήστης ΕΡΓΑΝΗ', groups='base.group_system')
     ergani_password = fields.Char(string='Κωδικός ΕΡΓΑΝΗ', groups='base.group_system')
+    # Authentication «Usertype» (guide v8 §2.1.1).
+    ergani_usertype = fields.Selection(
+        [('02', 'Κωδικοί ΕΡΓΑΝΗ (χρήστης παραρτήματος)'),
+         ('01', 'Εξωτερικός (π.χ. κωδικοί e-ΕΦΚΑ)')],
+        string='Τύπος κωδικών', default='02', required=True, groups='base.group_system')
     ergani_branch_aa = fields.Integer(string='Α/Α Παραρτήματος', default=0)
     ergani_late_reason_code = fields.Char(
         string='Κωδικός αιτιολογίας «σύνδεση ΕΡΓΑΝΗ»',
@@ -50,7 +55,7 @@ class ResCompany(models.Model):
     def write(self, vals):
         # Tokens belong to one environment and one account: drop them when
         # either changes, so a trial token never reaches production.
-        if {'ergani_mode', 'ergani_username', 'ergani_password'} & set(vals):
+        if {'ergani_mode', 'ergani_username', 'ergani_password', 'ergani_usertype'} & set(vals):
             self.env['ergani.session'].sudo().search(
                 [('company_id', 'in', self.ids)]).unlink()
         return super().write(vals)
