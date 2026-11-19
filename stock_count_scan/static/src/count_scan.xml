@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="stock_count_scan.CountScan">
+        <div class="o_action p-4 overflow-auto" style="max-width: 900px;">
+            <div class="d-flex align-items-center gap-2 mb-3">
+                <button class="btn btn-secondary" t-on-click="back">← Απογραφή</button>
+                <span class="ms-auto text-muted" t-if="state.status">
+                    <t t-esc="state.status.line_count"/> είδη · <t t-esc="state.status.total_qty"/> τεμ.
+                </span>
+            </div>
+
+            <div t-if="state.status and state.status.state !== 'counting'" class="alert alert-warning">
+                Η απογραφή δεν είναι «Σε μέτρημα»· τα σκαναρίσματα δεν μετράνε.
+            </div>
+
+            <div class="border rounded p-4 mb-3 text-center"
+                 t-att-class="state.error ? 'bg-danger-subtle' : (state.last ? 'bg-success-subtle' : '')">
+                <t t-if="state.error"><div class="fs-3 text-danger" t-esc="state.error"/></t>
+                <t t-elif="state.last">
+                    <div class="fs-4" t-esc="state.last.product"/>
+                    <div class="display-3 fw-bold" t-esc="state.last.qty"/>
+                </t>
+                <t t-else=""><div class="fs-4 text-muted">Σκανάρετε ένα είδος με το πιστόλι</div></t>
+            </div>
+
+            <form class="d-flex gap-2 mb-4" t-on-submit="onSubmit">
+                <input class="form-control" placeholder="…ή πληκτρολογήστε barcode / κωδικό και Enter"
+                       t-model="state.code"/>
+                <button type="button" class="btn"
+                        t-att-class="state.minus ? 'btn-danger' : 'btn-outline-danger'"
+                        t-on-click="() => this.state.minus = !this.state.minus"
+                        title="Το επόμενο σκανάρισμα αφαιρεί 1 (διόρθωση λάθους)">−1</button>
+            </form>
+
+            <table class="table table-sm" t-if="state.status and state.status.recent.length">
+                <thead><tr><th>Τελευταία σκαναρίσματα</th><th class="text-end">Τεμ.</th></tr></thead>
+                <tbody>
+                    <tr t-foreach="state.status.recent" t-as="row" t-key="row_index">
+                        <td t-esc="row.product"/>
+                        <td class="text-end" t-esc="row.qty"/>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </t>
+</templates>

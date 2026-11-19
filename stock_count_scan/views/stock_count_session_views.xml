@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="stock_count_session_list" model="ir.ui.view">
+        <field name="name">stock.count.session.list</field>
+        <field name="model">stock.count.session</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="accounting_date"/>
+                <field name="location_id"/>
+                <field name="line_count"/>
+                <field name="total_qty"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+                <field name="state" widget="badge"
+                       decoration-info="state == 'counting'" decoration-success="state == 'done'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="stock_count_session_form" model="ir.ui.view">
+        <field name="name">stock.count.session.form</field>
+        <field name="model">stock.count.session</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_start" type="object" string="Έναρξη μετρήματος"
+                            class="btn-primary" invisible="state != 'draft'"/>
+                    <button name="action_open_scan" type="object" string="Σκανάρισμα"
+                            class="btn-primary" invisible="state != 'counting'"/>
+                    <button name="action_finish" type="object" string="Ολοκλήρωση"
+                            invisible="state != 'counting'" groups="stock.group_stock_manager"
+                            confirm="Κάθε είδος της θέσης θα πάρει την ποσότητα που μετρήθηκε και όσα δεν σκαναρίστηκαν θα γίνουν 0, με ημερομηνία τη λογιστική ημερομηνία. Δεν αναιρείται. Συνέχεια;"/>
+                    <field name="state" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <div class="oe_title"><h1><field name="name" readonly="state == 'done'"/></h1></div>
+                    <group>
+                        <group>
+                            <field name="accounting_date" readonly="state == 'done'"/>
+                            <field name="location_id" readonly="state != 'draft'"/>
+                            <field name="company_id" groups="base.group_multi_company" readonly="state != 'draft'"/>
+                        </group>
+                        <group>
+                            <field name="line_count"/>
+                            <field name="total_qty"/>
+                        </group>
+                    </group>
+                    <div class="alert alert-warning" role="alert" invisible="not skipped_info">
+                        Είδη με παρτίδα/σειριακό δεν διορθώθηκαν (μετρήστε τα από τη Φυσική Απογραφή):
+                        <field name="skipped_info" nolabel="1"/>
+                    </div>
+                    <notebook>
+                        <page string="Μετρήσεις">
+                            <field name="line_ids" readonly="state != 'counting'">
+                                <list editable="bottom">
+                                    <field name="product_id"/>
+                                    <field name="default_code" optional="show"/>
+                                    <field name="barcode" optional="hide"/>
+                                    <field name="qty"/>
+                                    <field name="counted_at"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="stock_count_session_action" model="ir.actions.act_window">
+        <field name="name">Απογραφή με σκανάρισμα</field>
+        <field name="res_model">stock.count.session</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <menuitem id="stock_count_session_menu" parent="stock.menu_stock_adjustments"
+              action="stock_count_session_action" sequence="11"/>
+</odoo>

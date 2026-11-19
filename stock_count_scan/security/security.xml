@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="rule_count_session_company" model="ir.rule">
+        <field name="name">Count session: own companies</field>
+        <field name="model_id" ref="model_stock_count_session"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+    <record id="rule_count_line_company" model="ir.rule">
+        <field name="name">Count line: own companies</field>
+        <field name="model_id" ref="model_stock_count_session_line"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+</odoo>
